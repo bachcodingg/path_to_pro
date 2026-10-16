@@ -28,7 +28,13 @@ export function setToken(token: string | null): void {
   }
 }
 
+export const DEMO = import.meta.env.VITE_DEMO === "1";
+
 export async function api<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<T> {
+  if (DEMO) {
+    const { demoHandle } = await import("./demo");
+    return (await demoHandle(path, init.method ?? "GET", init.json)) as T;
+  }
   const headers = new Headers(init.headers);
   const token = getToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
@@ -54,10 +60,17 @@ export async function api<T>(path: string, init: RequestInit & { json?: unknown 
 }
 
 export async function download(path: string, filename: string): Promise<void> {
-  const token = getToken();
-  const res = await fetch(path, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-  if (!res.ok) throw new ApiError(res.status, res.statusText);
-  const url = URL.createObjectURL(await res.blob());
+  let blob: Blob;
+  if (DEMO) {
+    const data = await api<unknown>(path);
+    blob = new Blob([typeof data === "string" ? data : JSON.stringify(data, null, 2)]);
+  } else {
+    const token = getToken();
+    const res = await fetch(path, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!res.ok) throw new ApiError(res.status, res.statusText);
+    blob = await res.blob();
+  }
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;

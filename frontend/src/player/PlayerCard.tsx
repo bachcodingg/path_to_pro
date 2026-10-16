@@ -30,7 +30,7 @@ export function PlayerCard() {
               <p className="text-5xl font-extrabold">{overall}</p>
               <p className="text-pitch-200 text-xs font-semibold uppercase">avg percentile</p>
             </div>
-            <img src="/icon.svg" alt="" className="h-10 w-10" />
+            <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="h-10 w-10" />
           </div>
           <p className="mt-4 text-2xl font-extrabold">{data.name}</p>
           <p className="text-pitch-200 text-sm">Compared with players {STATUS_TEXT[data.maturity_status] ?? ""}</p>

@@ -40,7 +40,7 @@ export function Login() {
     <main className="dark flex min-h-full items-center justify-center bg-pitch-950 p-4">
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center text-white">
-          <img src="/icon.svg" alt="" className="mx-auto mb-3 h-14 w-14" />
+          <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="mx-auto mb-3 h-14 w-14" />
           <h1 className="text-3xl font-extrabold tracking-tight">PathToPro</h1>
           <p className="mt-1 text-pitch-200">Train smart. Grow safe. Get better.</p>
         </div>

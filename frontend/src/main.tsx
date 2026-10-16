@@ -3,12 +3,14 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import { AuthProvider } from "./shared/auth";
+import { DemoBanner } from "./shared/DemoBanner";
 import "./index.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, "")}>
       <AuthProvider>
+        <DemoBanner />
         <App />
       </AuthProvider>
     </BrowserRouter>

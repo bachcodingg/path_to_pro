@@ -1,0 +1,50 @@
+name: Website (GitHub Pages)
+
+# Builds the static demo website: the snapshot is recorded from the real backend on the
+# synthetic season, then the frontend is built in demo mode and deployed to Pages.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ./backend
+      - name: Record demo snapshot from the API
+        run: python backend/scripts/demo_snapshot.py frontend/public/demo/snapshot.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Build demo website
+        working-directory: frontend
+        run: npm ci && npm run build:demo
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

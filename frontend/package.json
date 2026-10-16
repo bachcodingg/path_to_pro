@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run src",
-    "lint": "tsc -b --noEmit"
+    "lint": "tsc -b --noEmit",
+    "build:demo": "node scripts/build-demo.mjs",
+    "test:demo": "playwright test -c playwright.demo.config.ts"
   },
   "dependencies": {
     "class-variance-authority": "0.7.1",

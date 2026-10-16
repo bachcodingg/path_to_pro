@@ -31,7 +31,7 @@ export function GuardianHome() {
     <div className="bg-surface-2 min-h-full">
       <header className="bg-pitch-800 flex items-center justify-between px-4 py-3 text-white">
         <div className="flex items-center gap-2">
-          <img src="/icon.svg" alt="" className="h-8 w-8" />
+          <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="h-8 w-8" />
           <span className="font-extrabold">PathToPro · Family</span>
         </div>
         <button onClick={logout} className="tap flex items-center gap-1 text-sm">

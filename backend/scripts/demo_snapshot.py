@@ -1,0 +1,102 @@
+"""Record what each demo account sees, for the static demo website.
+
+Seeds the synthetic season into a throwaway database, signs in as every demo account
+through the real API (FastAPI TestClient) and saves the responses. The frontend's
+demo mode (VITE_DEMO=1) answers API calls from this file in the browser, so the
+website runs without a server. All data is synthetic.
+
+    python scripts/demo_snapshot.py ../frontend/public/demo/snapshot.json
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import sys
+import tempfile
+from pathlib import Path
+
+_tmp = tempfile.mkdtemp(prefix="pathtopro-snapshot-")
+os.environ["DATABASE_URL"] = f"sqlite:///{_tmp}/demo.db"
+os.environ.setdefault("PATHTOPRO_SCHEDULER", "off")
+os.environ.setdefault("PATHTOPRO_LLM", "off")
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from fastapi.testclient import TestClient  # noqa: E402
+
+from api.db import SessionLocal, init_db  # noqa: E402
+from api.main import app  # noqa: E402
+from api.services.seed import DEMO_PASSWORD, seed  # noqa: E402
+
+PLAYERS = ["p15@demo.pathtopro", "p03@demo.pathtopro", "p07@demo.pathtopro"]
+STAFF = ["coach@demo.pathtopro", "physio@demo.pathtopro"]
+GUARDIANS = ["guardian02@demo.pathtopro"]
+
+
+def main(out: Path) -> None:
+    init_db()
+    with SessionLocal() as db:
+        info = seed(db)
+    import datetime as _dt
+
+    snap: dict = {"meta": {"today": info["today"], "story": info["story"], "password": DEMO_PASSWORD, "generated": _dt.datetime.now(_dt.UTC).isoformat()}, "users": {}, "staff": {}}
+    with TestClient(app) as c:
+
+        def login(email: str) -> dict:
+            r = c.post("/api/auth/login", json={"email": email, "password": DEMO_PASSWORD})
+            r.raise_for_status()
+            return {"Authorization": f"Bearer {r.json()['token']}"}
+
+        def get(h: dict, path: str):
+            r = c.get(path, headers=h)
+            r.raise_for_status()
+            return r.json()
+
+        for email in PLAYERS:
+            h = login(email)
+            snap["users"][email] = {
+                "me": get(h, "/api/auth/me"),
+                "responses": {
+                    p: get(h, p)
+                    for p in [
+                        "/api/me/today",
+                        "/api/me/week?offset=-1",
+                        "/api/me/week?offset=0",
+                        "/api/me/week?offset=1",
+                        "/api/me/growth",
+                        "/api/me/card",
+                        "/api/me/roadmap",
+                    ]
+                },
+            }
+        for email in STAFF:
+            snap["users"][email] = {"me": get(login(email), "/api/auth/me"), "responses": {}}
+        h = login("coach@demo.pathtopro")
+        heatmap = get(h, "/api/coach/heatmap")
+        staff = {
+            "/api/coach/heatmap": heatmap,
+            "/api/coach/inbox": get(h, "/api/coach/inbox"),
+            "/api/coach/lineup": get(h, "/api/coach/lineup"),
+            "/api/coach/agent-log": get(h, "/api/coach/agent-log?limit=300"),
+            "/api/coach/calibration": get(h, "/api/coach/calibration"),
+            "/api/physio/queue": get(h, "/api/physio/queue"),
+            "/api/physio/phv": get(h, "/api/physio/phv"),
+        }
+        for row in heatmap["players"]:
+            staff[f"/api/coach/players/{row['id']}"] = get(h, f"/api/coach/players/{row['id']}")
+        snap["staff"] = staff
+        for email in GUARDIANS:
+            h = login(email)
+            kids = get(h, "/api/guardian/children")
+            resp = {"/api/guardian/children": kids}
+            for k in kids:
+                for sub in ("summary", "consent", "export"):
+                    resp[f"/api/guardian/children/{k['id']}/{sub}"] = get(h, f"/api/guardian/children/{k['id']}/{sub}")
+            snap["users"][email] = {"me": get(h, "/api/auth/me"), "responses": resp}
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(snap, separators=(",", ":")), encoding="utf-8")
+    print(f"wrote {out} ({out.stat().st_size / 1024:.0f} KB), today={info['today']}")
+
+
+if __name__ == "__main__":
+    main(Path(sys.argv[1] if len(sys.argv) > 1 else "../frontend/public/demo/snapshot.json"))

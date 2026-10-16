@@ -24,8 +24,19 @@ test("coach approves the tired player's lighter week with one key press", async 
   expect(Date.now() - started).toBeLessThan(20_000);
 });
 
-test("tired player sees the Why? card with the approver", async ({ browser }) => {
-  const page = await browser.newPage({ viewport: { width: 412, height: 915 } });
+test("tired player sees the Why? card with the approver", async ({ page }) => {
+  // Approve as coach if still pending (the previous test does it on the real server; the
+  // static demo keeps state per browser), then switch to the player.
+  await login(page, "coach@demo.pathtopro");
+  await page.getByRole("link", { name: "Substitution board" }).click();
+  await expect(page.getByRole("heading", { name: "Substitution board" })).toBeVisible();
+  const card = page.getByRole("article", { name: /^(Session swap|Load cut|Intensity change|Match minutes limit): Leon U.$/ });
+  if (await card.count()) {
+    await card.getByRole("button", { name: "Approve" }).click();
+    await expect(page.getByText("Applied: Leon U.")).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.setViewportSize({ width: 412, height: 915 });
   await login(page, "p15@demo.pathtopro");
   await page.getByRole("button", { name: /Your sessions were changed|Your week was made lighter|Your match minutes are limited|Session intensity adjusted/ }).first().click();
   await expect(page.getByText("Approved by Alex Weber").first()).toBeVisible();
@@ -50,7 +61,7 @@ test("tactics board, scouting report and match commentary", async ({ page }) => 
 
 test("physio queue has the pain report and can acknowledge it", async ({ page }) => {
   await login(page, "physio@demo.pathtopro");
-  await page.goto("/physio");
+  await page.goto("physio");
   await expect(page.getByText("Pain reported").first()).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/physio-queue.png` });
   const before = await page.getByRole("button", { name: "I've spoken to them" }).count();

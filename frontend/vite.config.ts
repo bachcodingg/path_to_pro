@@ -4,7 +4,10 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
+const base = process.env.VITE_BASE ?? "/";
+
 export default defineConfig({
+  base,
   plugins: [
     react(),
     tailwindcss(),
@@ -18,7 +21,8 @@ export default defineConfig({
         theme_color: "#0f3d2e",
         background_color: "#0b1f17",
         display: "standalone",
-        start_url: "/player",
+        start_url: "./",
+        scope: "./",
         icons: [
           { src: "icon-192.png", sizes: "192x192", type: "image/png" },
           { src: "icon-512.png", sizes: "512x512", type: "image/png" },
@@ -26,10 +30,10 @@ export default defineConfig({
         ],
       },
       workbox: {
-        navigateFallback: "/index.html",
+        navigateFallback: `${base}index.html`,
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => url.pathname.startsWith("/api/me/"),
+            urlPattern: ({ url }) => url.pathname.includes("/api/me/"),
             handler: "NetworkFirst",
             options: { cacheName: "player-api", networkTimeoutSeconds: 4 },
           },

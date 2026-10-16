@@ -38,7 +38,7 @@ export function CoachLayout() {
     <div className="bg-surface-2 text-ink flex min-h-full">
       <aside className="bg-pitch-800 hidden w-60 shrink-0 flex-col p-4 text-white md:flex">
         <div className="mb-6 flex items-center gap-2">
-          <img src="/icon.svg" alt="" className="h-8 w-8" />
+          <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="h-8 w-8" />
           <span className="text-lg font-extrabold">PathToPro</span>
         </div>
         <nav aria-label="Staff navigation" className="flex-1 space-y-1">

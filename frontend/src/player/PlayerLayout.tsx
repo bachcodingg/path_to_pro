@@ -20,7 +20,7 @@ export function PlayerLayout() {
       <div className="mx-auto flex min-h-screen max-w-md flex-col">
         <header className="flex items-center justify-between px-4 pt-[max(env(safe-area-inset-top),12px)] pb-2">
           <div className="flex items-center gap-2">
-            <img src="/icon.svg" alt="" className="h-8 w-8" />
+            <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="h-8 w-8" />
             <span className="text-lg font-extrabold">PathToPro</span>
           </div>
           <button className="tap text-ink-2 flex items-center gap-1 text-sm" onClick={logout} aria-label={t("common.signout")}>
