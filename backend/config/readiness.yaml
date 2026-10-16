@@ -1,0 +1,10 @@
+# Readiness score weights. These are team defaults, NOT values from a study.
+# Clubs may change them; the sensitivity test (eval) checks robustness to +/-0.1 shifts.
+weights:
+  hrv: 0.40
+  hooper: 0.35
+  sleep: 0.25
+bands:
+  green_min: 70
+  amber_min: 50
+sleep_target_hours: 9.0

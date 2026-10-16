@@ -1,0 +1,72 @@
+# Synthetic season config. Same seed + same config => identical season.
+seed: 2026
+n_players: 25
+age_range: [13.0, 19.0]       # uniform at season start, so players are 13-18
+weeks: 40
+start_date: 2026-08-31        # a Monday
+policy: baseline              # baseline = fixed weekly template, no adjustment
+
+growth:
+  phv_age_mean: 14.0
+  phv_age_sd: 0.9
+  adult_height_mean: 178.0
+  adult_height_sd: 7.0
+  growth_amplitude_cm: 40.0   # height gained across the logistic curve
+  logistic_scale_years: 1.0   # peak velocity = amplitude / (4 * scale)
+  measure_every_days: 28
+
+schedule:
+  match_weekday: 5            # Saturday
+  second_match_weekday: 2     # Wednesday evening
+  second_match_prob: 0.15
+  exam_weeks: [10, 11, 23, 24, 35, 36]
+  exam_weekdays: [1, 2]       # Tue, Wed
+
+load:
+  session_rpe_mean: 5.5
+  session_rpe_sd: 1.5
+  session_minutes: [60, 100]
+  match_rpe_mean: 7.5
+  match_rpe_sd: 1.0
+  match_minutes: [70, 90]
+  execution_rpe_noise_sd: 0.5   # players don't hit the target RPE exactly
+
+sleep:
+  mean: 7.5
+  sd: 0.8
+  person_sd: 0.4
+  exam_drop: [0.5, 1.0]
+  evening_match_drop: [0.5, 1.0]
+
+hrv:
+  ln_rmssd_mean: 4.2
+  ln_rmssd_person_sd: 0.3
+  daily_noise_sd: 0.07
+  fatigue_decay: 0.6          # most of a session's effect is gone after 2-3 days
+  fatigue_coef: 0.15          # lnRMSSD drop per 1000 AU of residual fatigue
+  sleep_coef: 0.05            # lnRMSSD drop per hour of sleep below 7.5 h
+
+wellness:
+  checkin_compliance: 0.9
+  red_mood_daily_prob: 0.002
+  red_mood_exam_multiplier: 3.0
+
+injury:
+  variant: load               # load | readiness | random
+  base_daily_prob: 0.004
+  out_days: [7, 28]
+  acwr_coef: 2.0              # per unit of ACWR above 1.0
+  phv_coef: 0.7
+  readiness_coef: 0.04        # per readiness point below 70
+
+tests:
+  every_weeks: 4
+  weekday: 0                  # Monday
+  noise_sd_z: 0.15
+  training_effect_z:          # z-score gain per matching session
+    speed: {sprint_10m: 0.012, sprint_30m: 0.012}
+    strength: {cmj: 0.015}
+    tactical: {yoyo_ir1: 0.006}
+    technical: {yoyo_ir1: 0.004}
+    match: {yoyo_ir1: 0.008}
+  detraining_z_per_injured_day: 0.004

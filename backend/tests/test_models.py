@@ -1,0 +1,48 @@
+from datetime import date
+
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session as DbSession
+
+from domain.enums import Role, SessionType
+from domain.models import Base, Guardian, PlanItem, Player, Squad, StaffMember, WeeklyPlan, health_columns
+
+PLAN_ENTITIES = {
+    "players", "guardians", "squads", "staff_members", "sessions", "matches", "session_loads",
+    "wellness_checkins", "sleep_records", "hrv_records", "anthropometrics", "test_results", "idp_goals",
+    "drills", "weekly_plans", "plan_items", "agent_runs", "proposals", "approvals", "escalations",
+    "consent_records", "audit_log",
+}  # fmt: skip
+
+
+def test_all_22_plan_entities_exist():
+    tables = set(Base.metadata.tables) - {"player_guardians"}
+    assert tables == PLAN_ENTITIES
+
+
+def test_health_fields_are_tagged():
+    tagged = health_columns()
+    assert {"sleep_quality", "fatigue", "stress", "soreness", "mood_red", "pain_reported"} <= set(
+        tagged["wellness_checkins"]
+    )
+    assert tagged["hrv_records"] == ["ln_rmssd"]
+    assert "players" not in tagged
+
+
+def test_create_schema_and_round_trip():
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    with DbSession(engine) as db:
+        squad = Squad(name="U15 Academy", age_group="U15")
+        coach = StaffMember(name="Coach A", email="coach@example.org", role=Role.COACH)
+        player = Player(squad=squad, display_name="Player 01", birth_date=date(2011, 5, 1), sex="male")
+        player.guardians.append(Guardian(name="Guardian 01", email="g1@example.org"))
+        db.add_all([squad, coach, player])
+        db.flush()
+        plan = WeeklyPlan(player_id=player.id, starts_on=date(2026, 10, 19))
+        plan.items.append(PlanItem(day=date(2026, 10, 19), kind=SessionType.RECOVERY, target_rpe=3, minutes=45))
+        db.add(plan)
+        db.commit()
+
+        got = db.scalars(select(WeeklyPlan)).one()
+        assert got.items[0].kind == SessionType.RECOVERY
+        assert db.scalars(select(Player)).one().guardians[0].name == "Guardian 01"

@@ -1,0 +1,60 @@
+# PLACEHOLDER norms for the synthetic demo. Replace with published academy norms
+# (cite source per test) before any real use. Groups: age groups U13-U19 and
+# bio-banded groups pre_phv / circa_phv / post_phv.
+tests:
+  sprint_10m:
+    unit: s
+    lower_is_better: true
+    groups:
+      U13: {mean: 2.05, sd: 0.10}
+      U14: {mean: 1.98, sd: 0.10}
+      U15: {mean: 1.92, sd: 0.09}
+      U16: {mean: 1.87, sd: 0.08}
+      U17: {mean: 1.83, sd: 0.08}
+      U18: {mean: 1.80, sd: 0.07}
+      U19: {mean: 1.78, sd: 0.07}
+      pre_phv: {mean: 2.02, sd: 0.10}
+      circa_phv: {mean: 1.93, sd: 0.09}
+      post_phv: {mean: 1.82, sd: 0.08}
+  sprint_30m:
+    unit: s
+    lower_is_better: true
+    groups:
+      U13: {mean: 5.00, sd: 0.22}
+      U14: {mean: 4.85, sd: 0.21}
+      U15: {mean: 4.70, sd: 0.20}
+      U16: {mean: 4.56, sd: 0.18}
+      U17: {mean: 4.45, sd: 0.17}
+      U18: {mean: 4.38, sd: 0.16}
+      U19: {mean: 4.33, sd: 0.15}
+      pre_phv: {mean: 4.95, sd: 0.22}
+      circa_phv: {mean: 4.72, sd: 0.20}
+      post_phv: {mean: 4.42, sd: 0.17}
+  cmj:
+    unit: cm
+    lower_is_better: false
+    groups:
+      U13: {mean: 28.0, sd: 4.0}
+      U14: {mean: 30.5, sd: 4.2}
+      U15: {mean: 33.0, sd: 4.5}
+      U16: {mean: 35.5, sd: 4.5}
+      U17: {mean: 37.5, sd: 4.6}
+      U18: {mean: 39.0, sd: 4.6}
+      U19: {mean: 40.0, sd: 4.7}
+      pre_phv: {mean: 29.0, sd: 4.0}
+      circa_phv: {mean: 32.5, sd: 4.4}
+      post_phv: {mean: 38.0, sd: 4.6}
+  yoyo_ir1:
+    unit: m
+    lower_is_better: false
+    groups:
+      U13: {mean: 1000, sd: 300}
+      U14: {mean: 1200, sd: 320}
+      U15: {mean: 1400, sd: 340}
+      U16: {mean: 1650, sd: 360}
+      U17: {mean: 1850, sd: 380}
+      U18: {mean: 2000, sd: 380}
+      U19: {mean: 2100, sd: 380}
+      pre_phv: {mean: 1100, sd: 310}
+      circa_phv: {mean: 1400, sd: 340}
+      post_phv: {mean: 1900, sd: 380}
