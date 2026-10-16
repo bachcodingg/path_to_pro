@@ -200,6 +200,7 @@ def seed(db: Session, n_players: int = 25, story: bool = True) -> dict:
     db.flush()
 
     story_ids = _story(db, players, yesterday) if story else {}
+    story_player = next((p for p in players.values() if p.display_name == story_ids.get("tired_player")), None)
 
     # Synthetic staff ratings (coach and physio) for the last STATUS_DAYS, for calibration
     first_status = today - timedelta(days=STATUS_DAYS)
@@ -220,6 +221,8 @@ def seed(db: Session, n_players: int = 25, story: bool = True) -> dict:
     db.flush()
     d = week_start - timedelta(days=1)
     while d <= yesterday:
+        if story and d == yesterday:
+            _heavy_session(db, story_player, today)
         for p in players.values():
             agent_runner.run_player(db, p, d, "nightly")
         db.flush()
@@ -278,6 +281,27 @@ def _story(db: Session, players: dict[str, Player], yesterday: date) -> dict:
     chk.pain_reported, chk.soreness = True, 6
     db.flush()
     return {"tired_player": tired.display_name, "tired_email": tired.email, "pain_player": pain.display_name}
+
+
+def _heavy_session(db: Session, player: Player | None, day: date) -> None:
+    """Demo story: the team plan has a heavy gym session for the tired player tomorrow.
+
+    With his flags (short sleep, low HRV, load spike, growth zone) any re-plan lowers it by
+    more than 1 RPE or swaps it, so the change always needs the coach. This keeps the demo
+    the same on every platform instead of depending on near-equal solver optima.
+    """
+    from domain.models import PlanItem, WeeklyPlan
+
+    if player is None:
+        return
+    item = db.scalars(
+        select(PlanItem)
+        .join(WeeklyPlan)
+        .where(WeeklyPlan.player_id == player.id, WeeklyPlan.status == "active", PlanItem.day == day)
+    ).first()
+    if item is not None and item.kind != SessionType.MATCH:
+        item.kind, item.target_rpe, item.minutes = SessionType.STRENGTH, 8, 60
+        db.flush()
 
 
 def agent_runner_drills() -> list[Drill]:

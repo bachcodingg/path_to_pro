@@ -67,8 +67,10 @@ jobs:
       - name: Semgrep
         run: pipx run semgrep scan --config p/python --config p/typescript --config p/secrets --error --exclude frontend/node_modules
       - name: Trivy (dependencies and Dockerfiles)
-        uses: aquasecurity/trivy-action@v0.33.1
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
+          version: v0.74.0
+          skip-dirs: frontend/node_modules
           scan-type: fs
           scanners: vuln,secret,misconfig
           severity: CRITICAL,HIGH
