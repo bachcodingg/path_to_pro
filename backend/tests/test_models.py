@@ -14,9 +14,31 @@ PLAN_ENTITIES = {
 }  # fmt: skip
 
 
+EXTRA = {"player_guardians", "user_accounts", "player_notes", "task_completions", "daily_status", "app_settings"}
+
+
 def test_all_22_plan_entities_exist():
-    tables = set(Base.metadata.tables) - {"player_guardians"}
+    tables = set(Base.metadata.tables) - EXTRA
     assert tables == PLAN_ENTITIES
+
+
+def test_health_fields_are_encrypted_at_rest():
+    from sqlalchemy import text
+
+    from domain.models import HRVRecord
+
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    with DbSession(engine) as db:
+        squad = Squad(name="U15", age_group="U15")
+        player = Player(squad=squad, display_name="P", birth_date=date(2011, 1, 1), sex="male")
+        db.add_all([squad, player])
+        db.flush()
+        db.add(HRVRecord(player_id=player.id, day=date(2026, 10, 1), ln_rmssd=4.21))
+        db.commit()
+        raw = db.execute(text("select ln_rmssd from hrv_records")).scalar_one()
+        assert "4.21" not in raw and raw.startswith("gAAAA")  # Fernet token
+        assert db.scalars(select(HRVRecord)).one().ln_rmssd == 4.21
 
 
 def test_health_fields_are_tagged():

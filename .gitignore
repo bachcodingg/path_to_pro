@@ -8,3 +8,7 @@ backend/data/
 node_modules/
 dist/
 .env
+backend/pathtopro.db
+backend/eval_results/
+backend/llm_cache/*/
+!backend/llm_cache/.gitkeep

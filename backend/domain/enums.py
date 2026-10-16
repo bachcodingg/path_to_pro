@@ -36,6 +36,7 @@ class ProposalStatus(str, Enum):
     EDITED = "edited"
     REJECTED = "rejected"
     ESCALATED = "escalated"
+    SUPERSEDED = "superseded"  # a newer proposal for the same player replaced it
 
 
 class AgentName(str, Enum):

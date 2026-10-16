@@ -11,10 +11,17 @@ dependencies = [
     "numpy>=1.26",
     "pyyaml>=6.0",
     "ortools>=9.10",
+    "anthropic>=1.0",
+    "pyjwt>=2.8",
+    "cryptography>=42",
+    "apscheduler>=3.10,<4",
+    "uvicorn[standard]>=0.30",
+    "psycopg[binary]>=3.2",
+    "matplotlib>=3.8",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.5"]
+dev = ["pytest>=8", "ruff>=0.5", "httpx>=0.27"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
@@ -30,8 +37,8 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["analytics*", "agents*", "domain*", "simulator*", "eval*"]
+include = ["analytics*", "agents*", "domain*", "simulator*", "eval*", "planner*", "api*"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]
-ignore = ["E501", "UP042", "B905"]
+ignore = ["E501", "UP042", "B905", "B008"]

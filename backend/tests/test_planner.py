@@ -43,11 +43,28 @@ def test_same_input_same_week():
     assert len(sigs) == 1
 
 
-def test_infeasible_hard_rules_fall_back_to_template():
-    # Cap below even a 30-minute match: nothing feasible, so the safe template is used.
-    i = inp(match_days=[5], acwr=1.8, chronic_daily_load=30)
+def test_solver_failure_falls_back_to_template(monkeypatch):
+    # Since a returning player can sit out a match, the hard rules are always satisfiable;
+    # the template still guards against the solver timing out or failing.
+    import planner.model as pm
+
+    real = pm._solve
+
+    def failing(*args):
+        model, solver, _ = real(*args)
+        return model, solver, pm.cp_model.UNKNOWN
+
+    monkeypatch.setattr(pm, "_solve", failing)
+    i = inp(match_days=[5], exam_days=[2], acwr=1.8, chronic_daily_load=30)
     r = plan_week(i)
     assert r.status == "template"
+    assert hard_violations(r, i) == []
+
+
+def test_long_layoff_sits_out_the_match():
+    i = inp(match_days=[5], acwr=1.8, chronic_daily_load=30)  # cap 210 AU < any minutes played
+    r = plan_week(i)
+    assert r.days[5].kind == SessionType.MATCH and r.days[5].minutes == 0
     assert hard_violations(r, i) == []
 
 

@@ -48,6 +48,7 @@ class PlannerInput(BaseModel):
     in_phv_window: bool = False
     acwr: float | None = None
     chronic_daily_load: float = 300.0  # EWMA chronic load, AU per day
+    acute_daily_load: float | None = None  # EWMA acute load today (for projected ACWR); None = chronic
     preferred_days: list[Weekday] = []
     min_training_sessions: int = 3
     days: int = Field(default=7, ge=1, le=7, description="planning horizon; < 7 for a mid-week re-plan")

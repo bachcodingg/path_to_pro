@@ -51,6 +51,7 @@ class Assessment:
     growth: GrowthStatus | None
     acwr: float | None
     chronic_daily_load: float
+    acute_daily_load: float
     monotony: float | None
     hrv_z: float | None
     chips: list[str] = field(default_factory=list)  # short data chips for "Why?" cards
@@ -70,10 +71,12 @@ def assess(h: PlayerHistory, config: ReadinessConfig | None = None) -> Assessmen
         series = ewma_acwr_series(loads, initial=h.preseason_daily_load)
         acwr = series[-1].ratio if series else None
         chronic = series[-1].chronic if series else h.preseason_daily_load
+        acute = series[-1].acute if series else h.preseason_daily_load
     else:
         acwr = ewma_acwr(loads)
         series = ewma_acwr_series(loads)
         chronic = series[-1].chronic if series else 0.0
+        acute = series[-1].acute if series else 0.0
     mono = monotony(loads[-7:]) if len(loads) >= 7 else None
 
     z = None
@@ -112,6 +115,7 @@ def assess(h: PlayerHistory, config: ReadinessConfig | None = None) -> Assessmen
         growth=g,
         acwr=acwr,
         chronic_daily_load=chronic,
+        acute_daily_load=acute,
         monotony=mono,
         hrv_z=z,
         chips=_chips(h, acwr, z, g, loads),

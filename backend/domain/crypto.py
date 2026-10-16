@@ -1,0 +1,89 @@
+"""Field-level encryption for health data (plan section 10).
+
+Health columns are stored as Fernet tokens (AES-128-CBC + HMAC-SHA256). The key
+comes from PATHTOPRO_FIELD_KEY; in development a fixed dev key is used and a
+warning is logged. Encrypted columns cannot be filtered or sorted in SQL, which
+is acceptable: they are always read per player.
+"""
+
+from __future__ import annotations
+
+import base64
+import hashlib
+import logging
+import os
+from functools import lru_cache
+
+from cryptography.fernet import Fernet
+from sqlalchemy import Text
+from sqlalchemy.types import TypeDecorator
+
+log = logging.getLogger(__name__)
+_DEV_SEED = b"pathtopro-dev-only-not-a-secret"
+
+
+@lru_cache(maxsize=1)
+def fernet() -> Fernet:
+    key = os.environ.get("PATHTOPRO_FIELD_KEY")
+    if not key:
+        if os.environ.get("PATHTOPRO_ENV") == "production":
+            raise RuntimeError("PATHTOPRO_FIELD_KEY must be set in production")
+        log.warning("PATHTOPRO_FIELD_KEY not set: using the development key")
+        key = base64.urlsafe_b64encode(hashlib.sha256(_DEV_SEED).digest()).decode()
+    return Fernet(key.encode() if isinstance(key, str) else key)
+
+
+class _Encrypted(TypeDecorator):
+    impl = Text
+    cache_ok = True
+    python_type: type = str
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        return fernet().encrypt(str(self._dump(value)).encode()).decode()
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        return self._load(fernet().decrypt(value.encode()).decode())
+
+    def _dump(self, value):
+        return value
+
+    def _load(self, raw: str):
+        return raw
+
+
+class EncryptedFloat(_Encrypted):
+    def _load(self, raw: str) -> float:
+        return float(raw)
+
+
+class EncryptedInt(_Encrypted):
+    def _load(self, raw: str) -> int:
+        return int(raw)
+
+
+class EncryptedBool(_Encrypted):
+    def _dump(self, value) -> str:
+        return "1" if value else "0"
+
+    def _load(self, raw: str) -> bool:
+        return raw == "1"
+
+
+class EncryptedStr(_Encrypted):
+    pass
+
+
+class EncryptedJSON(_Encrypted):
+    def _dump(self, value) -> str:
+        import json
+
+        return json.dumps(value, sort_keys=True)
+
+    def _load(self, raw: str):
+        import json
+
+        return json.loads(raw)

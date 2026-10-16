@@ -21,6 +21,8 @@ from datetime import timedelta
 
 from ortools.sat.python import cp_model
 
+from analytics.load import ACUTE_DAYS as ACWR_ACUTE_DAYS
+from analytics.load import CHRONIC_DAYS as ACWR_CHRONIC_DAYS
 from domain.enums import SessionType
 from planner.schema import (
     MATCH_RPE,
@@ -58,9 +60,10 @@ W_NON_PREFERRED = 1
 W_MD_PLUS_1 = 4
 W_SECOND_REST = 3  # academies usually give two days off a week
 W_MATCH_MINUTES = 2  # per 15 match minutes below 90
-W_OVER_RAMP = 1  # per 25 AU above chronic x RAMP_LIMIT (= 4 points per 100 AU)
-RAMP_LIMIT = 1.4  # soft penalty starts here; ACWR > 1.5 is the spike flag
-MATCH_MINUTE_OPTIONS = [30, 45, 60, 90]
+W_PROJECTED_ACWR = 4  # per 25 AU of projected acute load above the limit (~100 AU of session load)
+PROJECTED_ACWR_LIMIT = 1.4  # margin under the 1.5 flag for RPE noise and match-minute variation
+EWMA_SCALE = 1000  # integer scaling of the EWMA coefficients for CP-SAT
+MATCH_MINUTE_OPTIONS = [0, 30, 45, 60, 90]  # 0 = in the squad but not playing (return to play)
 W_SAME_TYPE = 2  # per session of one type beyond MAX_SAME_TYPE
 MAX_SAME_TYPE = 2
 W_FOOTBALL = 3  # academy weeks are built around technical and tactical work
@@ -158,14 +161,9 @@ class _Model:
             m.Add(sum(self.is_rest[d] for d in D) >= 2).OnlyEnforceIf(one_rest.Not())
             penalties.append(W_SECOND_REST * one_rest)
 
-        # Projected ramp: weekly load well above the chronic load is what makes ACWR spike
-        # (typically after time off). Penalised hard enough to trade against match minutes.
-        ramp_limit = round(inp.chronic_daily_load * n * RAMP_LIMIT)
-        over = m.NewIntVar(0, 100_000 // LOAD_UNIT_AU, "over_ramp")
-        m.Add(LOAD_UNIT_AU * over >= self.week_load - ramp_limit)
-        penalties.append(W_OVER_RAMP * over)
+        penalties.extend(self._projected_acwr(inp))
         for d in matches:
-            cut = m.NewIntVar(0, 4, f"mmcut_{d}")
+            cut = m.NewIntVar(0, 6, f"mmcut_{d}")
             m.Add(15 * cut == 90 - self.match_min[d])
             penalties.append(W_MATCH_MINUTES * cut)
 
@@ -203,6 +201,31 @@ class _Model:
                 penalties.append(c.weight * v)
 
         m.Minimize(PENALTY_SCALE * sum(penalties) + dev)
+
+    def _projected_acwr(self, inp: PlannerInput) -> list:
+        """Penalise days whose projected EWMA ACWR would exceed the limit.
+
+        With today's acute A0 and chronic C0, the acute and chronic load on plan day d are
+        linear in the planned loads:  X_d = (1-l)^(d+1) X0 + sum_k<=d l (1-l)^(d-k) load_k.
+        So acute_d <= limit * chronic_d is a linear constraint on the plan.
+        """
+        m, n = self.m, self.n
+        la, lc = 2 / (ACWR_ACUTE_DAYS + 1), 2 / (ACWR_CHRONIC_DAYS + 1)
+        a0 = inp.acute_daily_load if inp.acute_daily_load is not None else inp.chronic_daily_load
+        c0 = inp.chronic_daily_load
+        if c0 <= 0:
+            return []
+        out = []
+        for d in range(n):
+            coef = {
+                k: round(EWMA_SCALE * (la * (1 - la) ** (d - k) - PROJECTED_ACWR_LIMIT * lc * (1 - lc) ** (d - k)))
+                for k in range(d + 1)
+            }
+            rhs = EWMA_SCALE * (PROJECTED_ACWR_LIMIT * c0 * (1 - lc) ** (d + 1) - a0 * (1 - la) ** (d + 1))
+            excess = m.NewIntVar(0, 10_000, f"acwr_excess_{d}")
+            m.Add(EWMA_SCALE * LOAD_UNIT_AU * excess >= sum(coef[k] * self.load[k] for k in coef) - round(rhs))
+            out.append(W_PROJECTED_ACWR * excess)
+        return out
 
     def _hard_pairs(self, threshold: int):
         m = self.m

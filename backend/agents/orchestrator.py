@@ -100,6 +100,7 @@ def run_cycle(
         update={
             "acwr": a.acwr,
             "chronic_daily_load": a.chronic_daily_load or planner_input.chronic_daily_load,
+            "acute_daily_load": a.acute_daily_load if a.chronic_daily_load else None,
             "in_phv_window": planner_input.in_phv_window or bool(a.growth and a.growth.in_phv_window),
         }
     )

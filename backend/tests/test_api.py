@@ -1,0 +1,186 @@
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import func, select
+
+from api.db import SessionLocal, init_db
+from api.main import app
+from api.services.seed import seed
+from domain.models import AuditLog, Player, SessionLoad
+
+
+@pytest.fixture(scope="module")
+def demo():
+    init_db()
+    with SessionLocal() as db:
+        info = seed(db, n_players=6)
+    with TestClient(app) as client:
+        yield client, info
+
+
+def login(client, email, password="demo1234"):
+    r = client.post("/api/auth/login", json={"email": email, "password": password})
+    assert r.status_code == 200, r.text
+    return {"Authorization": f"Bearer {r.json()['token']}"}
+
+
+def test_login_and_me(demo):
+    client, _ = demo
+    assert client.post("/api/auth/login", json={"email": "coach@demo.pathtopro", "password": "nope"}).status_code == 401
+    h = login(client, "coach@demo.pathtopro")
+    assert client.get("/api/auth/me", headers=h).json()["role"] == "coach"
+
+
+def test_rbac(demo):
+    client, _ = demo
+    assert client.get("/api/coach/inbox").status_code == 401
+    player = login(client, "p03@demo.pathtopro")
+    assert client.get("/api/coach/inbox", headers=player).status_code == 403
+    assert client.get("/api/physio/queue", headers=player).status_code == 403
+    assert client.get("/api/guardian/children", headers=player).status_code == 403
+    coach = login(client, "coach@demo.pathtopro")
+    assert client.get("/api/me/today", headers=coach).status_code == 403
+
+
+def test_player_screens(demo):
+    client, _ = demo
+    h = login(client, "p03@demo.pathtopro")
+    today = client.get("/api/me/today", headers=h).json()
+    assert {"readiness", "session", "tasks", "why", "streak"} <= set(today)
+    week = client.get("/api/me/week", headers=h).json()
+    assert len(week["days"]) == 7 and len(week["last_week"]) == 7
+    growth = client.get("/api/me/growth", headers=h).json()
+    assert growth["measurements"] and growth["phv_window"]
+    card = client.get("/api/me/card", headers=h).json()
+    assert {a["kpi"] for a in card["attributes"]} >= {"sprint_10m", "cmj"}
+    road = client.get("/api/me/roadmap", headers=h).json()
+    assert road["checkpoints"] and road["badges"]
+
+
+def test_reads_of_health_data_are_audited(demo):
+    client, _ = demo
+    h = login(client, "p04@demo.pathtopro")
+    with SessionLocal() as db:
+        before = db.scalar(select(func.count()).select_from(AuditLog).where(AuditLog.action == "read"))
+    client.get("/api/me/today", headers=h)
+    client.get("/api/me/growth", headers=h)
+    with SessionLocal() as db:
+        after = db.scalar(select(func.count()).select_from(AuditLog).where(AuditLog.action == "read"))
+    assert after - before >= 2
+
+
+def test_normal_checkin_updates_readiness(demo):
+    client, _ = demo
+    h = login(client, "p05@demo.pathtopro")
+    r = client.post(
+        "/api/me/checkin",
+        headers=h,
+        json={"sleep_quality": 2, "fatigue": 2, "stress": 2, "soreness": 2, "mood": "green", "sleep_hours": 8.5, "duration_s": 21},
+    )
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert not body["escalated"]
+    assert body["today"]["checked_in"] and body["today"]["readiness_is_today"]
+
+
+def test_red_checkin_reaches_physio_within_5_minutes(demo):
+    client, _ = demo
+    h = login(client, "p06@demo.pathtopro")
+    r = client.post(
+        "/api/me/checkin",
+        headers=h,
+        json={"sleep_quality": 5, "fatigue": 5, "stress": 6, "soreness": 3, "mood": "red", "duration_s": 25},
+    )
+    assert r.json()["escalated"]
+    physio = login(client, "physio@demo.pathtopro")
+    queue = client.get("/api/physio/queue", headers=physio).json()
+    mine = [e for e in queue if e["kind"] == "red_mood"]
+    assert mine and mine[0]["notified_after_s"] < 300
+    # Acknowledge clears it from the queue.
+    assert client.post(f"/api/physio/escalations/{mine[0]['id']}/ack", headers=physio).status_code == 200
+    assert not [e for e in client.get("/api/physio/queue", headers=physio).json() if e["id"] == mine[0]["id"]]
+
+
+def test_coach_inbox_approve_shows_why_card(demo):
+    client, info = demo
+    coach = login(client, "coach@demo.pathtopro")
+    inbox = client.get("/api/coach/inbox", headers=coach).json()
+    swaps = [p for p in inbox if p["kind"] != "new_goal"]
+    assert swaps, "demo story should leave a plan change in the inbox"
+    prop = next((p for p in swaps if p["player"]["name"] == info["story"]["tired_player"]), swaps[0])
+    assert prop["current"] and prop["proposed"] and prop["chips"]
+    r = client.post(f"/api/coach/proposals/{prop['id']}/decision", headers=coach, json={"action": "approve"})
+    assert r.json()["status"] == "approved"
+    # Deciding twice is refused.
+    again = client.post(f"/api/coach/proposals/{prop['id']}/decision", headers=coach, json={"action": "approve"})
+    assert again.status_code == 422
+    with SessionLocal() as db:
+        email = db.get(Player, prop["player"]["id"]).email
+    why = client.get("/api/me/today", headers=login(client, email)).json()["why"]
+    assert any(w["approved_by"] == "Alex Weber" for w in why)
+
+
+def test_coach_edit_cannot_break_hard_rules(demo):
+    client, _ = demo
+    coach = login(client, "coach@demo.pathtopro")
+    inbox = [p for p in client.get("/api/coach/inbox", headers=coach).json() if p["proposed"]]
+    if not inbox:
+        pytest.skip("no plan proposal left")
+    prop = inbox[0]
+    match = next((i for i, d in enumerate(prop["proposed"]) if d["kind"] == "match"), None)
+    if match is None or match == 0:
+        pytest.skip("no match day with a day before it")
+    md1 = prop["proposed"][match - 1]["date"]
+    r = client.post(
+        f"/api/coach/proposals/{prop['id']}/decision",
+        headers=coach,
+        json={"action": "edit", "edits": [{"day": md1, "kind": "strength", "rpe": 8}]},
+    )
+    assert r.status_code == 422 and "H3" in r.json()["detail"]
+
+
+def test_heatmap_lineup_profile_log(demo):
+    client, _ = demo
+    coach = login(client, "coach@demo.pathtopro")
+    hm = client.get("/api/coach/heatmap", headers=coach).json()
+    assert len(hm["dates"]) == 14 and len(hm["players"]) == 6
+    assert any(c["band"] for p in hm["players"] for c in p["cells"])
+    lu = client.get("/api/coach/lineup", headers=coach).json()
+    assert len(lu["players"]) == 6
+    pid = hm["players"][0]["id"]
+    prof = client.get(f"/api/coach/players/{pid}", headers=coach).json()
+    assert len(prof["series"]) == 56
+    assert client.post(f"/api/coach/players/{pid}/notes", headers=coach, json={"text": "Good week"}).status_code == 200
+    log = client.get("/api/coach/agent-log", headers=coach, params={"agent": "planner"}).json()
+    assert log and all(r["agent"] == "planner" for r in log)
+    csv = client.get("/api/coach/agent-log.csv", headers=coach)
+    assert csv.headers["content-type"].startswith("text/csv") and "commentary" in csv.text
+
+
+def test_guardian_scope_consent_export_delete(demo):
+    client, _ = demo
+    g = login(client, "guardian02@demo.pathtopro")
+    kids = client.get("/api/guardian/children", headers=g).json()
+    assert len(kids) == 1
+    kid = kids[0]["id"]
+    with SessionLocal() as db:
+        other = db.scalars(select(Player).where(Player.id != kid)).first().id
+    assert client.get(f"/api/guardian/children/{other}/summary", headers=g).status_code == 403
+    assert client.get(f"/api/guardian/children/{kid}/summary", headers=g).status_code == 200
+
+    r = client.put(f"/api/guardian/children/{kid}/consent", headers=g, json={"data_type": "wellness", "granted": False})
+    assert {i["data_type"]: i["granted"] for i in r.json()["items"]}["wellness"] is False
+    with SessionLocal() as db:
+        email = db.get(Player, kid).email
+    p = login(client, email)
+    blocked = client.post(
+        "/api/me/checkin", headers=p, json={"sleep_quality": 2, "fatigue": 2, "stress": 2, "soreness": 2}
+    )
+    assert blocked.status_code == 403
+    client.put(f"/api/guardian/children/{kid}/consent", headers=g, json={"data_type": "wellness", "granted": True})
+
+    export = client.get(f"/api/guardian/children/{kid}/export", headers=g)
+    assert export.status_code == 200 and export.json()["session_loads"]
+    deleted = client.delete(f"/api/guardian/children/{kid}/data", headers=g)
+    assert deleted.status_code == 200 and deleted.json()["deleted"]["session_loads"] > 0
+    with SessionLocal() as db:
+        assert db.scalar(select(func.count()).select_from(SessionLoad).where(SessionLoad.player_id == kid)) == 0

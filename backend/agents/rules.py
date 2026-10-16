@@ -66,7 +66,7 @@ def default_constraints(flags: list[Flag], goals: list[DevGoal], inp: PlannerInp
         # Shift load later in the week rather than removing it: easy days now.
         for d in (0, 1):
             if d not in inp.match_days:
-                soft.append(MaxRpeOnDay(day=d, rpe=4, weight=7, why="poor recovery: easy first two days"))
+                soft.append(MaxRpeOnDay(day=d, rpe=4, weight=5, why="poor recovery: easy first two days"))
         reasons.append("easy start while recovery is low")
     if FlagKind.HIGH_MONOTONY in kinds:
         soft.append(NoHardBackToBack(rpe_threshold=6, weight=5, why="monotony high: vary intensity"))
@@ -80,7 +80,7 @@ def default_constraints(flags: list[Flag], goals: list[DevGoal], inp: PlannerInp
             MinSessions(
                 session=g.session,
                 count=g.sessions_per_week,
-                weight=6,
+                weight=7,
                 why=f"development goal: {KPI_LABEL.get(g.kpi, g.kpi)}",
             )
         )

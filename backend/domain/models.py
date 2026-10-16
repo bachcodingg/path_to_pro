@@ -1,7 +1,8 @@
-"""Data model (plan section 6): 22 entities on PostgreSQL via SQLAlchemy 2.
+"""Data model (plan section 6): 22 entities on PostgreSQL via SQLAlchemy 2, plus
+login accounts and coach notes.
 
-Columns holding health data carry `info={"health": True}`. The API layer uses
-this tag for field-level encryption and to write an AuditLog entry on every read.
+Columns holding health data carry `info={"health": True}` and are stored encrypted
+(domain/crypto.py). The API writes an AuditLog entry on every read of them.
 """
 
 from __future__ import annotations
@@ -9,9 +10,24 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, date, datetime
 
-from sqlalchemy import JSON, Boolean, Column, Date, DateTime, Enum, Float, ForeignKey, Integer, String, Table, Text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Table,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
+from domain.crypto import EncryptedBool, EncryptedFloat, EncryptedInt, EncryptedJSON, EncryptedStr
 from domain.enums import AgentName, ConsentDataType, ProposalStatus, Role, SessionType
 
 HEALTH = {"health": True}
@@ -75,6 +91,7 @@ class Player(Base):
     birth_date: Mapped[date] = mapped_column(Date)
     sex: Mapped[str] = mapped_column(String(10))
     preferred_days: Mapped[list[int]] = mapped_column(JSON, default=list)
+    exam_dates: Mapped[list[str]] = mapped_column(JSON, default=list)  # ISO dates: no session those evenings
     # Named adult who receives red check-ins and pain reports (no agent counselling).
     escalation_contact_id: Mapped[str | None] = mapped_column(ForeignKey("staff_members.id"))
     squad: Mapped[Squad] = relationship(back_populates="players")
@@ -136,9 +153,9 @@ class SessionLoad(Base):
     session_id: Mapped[str | None] = mapped_column(ForeignKey("sessions.id"))
     match_id: Mapped[str | None] = mapped_column(ForeignKey("matches.id"))
     day: Mapped[date] = mapped_column(Date, index=True)
-    rpe: Mapped[float] = mapped_column(Float, info=HEALTH)
+    rpe: Mapped[float] = mapped_column(EncryptedFloat, info=HEALTH)
     minutes: Mapped[float] = mapped_column(Float)
-    load_au: Mapped[float] = mapped_column(Float, info=HEALTH)
+    load_au: Mapped[float] = mapped_column(EncryptedFloat, info=HEALTH)
 
 
 # --------------------------------------------------------------------------- wellness and growth
@@ -149,12 +166,12 @@ class WellnessCheckin(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
     player_id: Mapped[str] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
     day: Mapped[date] = mapped_column(Date, index=True)
-    sleep_quality: Mapped[int] = mapped_column(Integer, info=HEALTH)  # Hooper items 1-7
-    fatigue: Mapped[int] = mapped_column(Integer, info=HEALTH)
-    stress: Mapped[int] = mapped_column(Integer, info=HEALTH)
-    soreness: Mapped[int] = mapped_column(Integer, info=HEALTH)
-    mood_red: Mapped[bool] = mapped_column(Boolean, default=False, info=HEALTH)
-    pain_reported: Mapped[bool] = mapped_column(Boolean, default=False, info=HEALTH)
+    sleep_quality: Mapped[int] = mapped_column(EncryptedInt, info=HEALTH)  # Hooper items 1-7
+    fatigue: Mapped[int] = mapped_column(EncryptedInt, info=HEALTH)
+    stress: Mapped[int] = mapped_column(EncryptedInt, info=HEALTH)
+    soreness: Mapped[int] = mapped_column(EncryptedInt, info=HEALTH)
+    mood_red: Mapped[bool] = mapped_column(EncryptedBool, default=False, info=HEALTH)
+    pain_reported: Mapped[bool] = mapped_column(EncryptedBool, default=False, info=HEALTH)
     # No free-text diary in the MVP (data minimisation).
     submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     duration_s: Mapped[float | None] = mapped_column(Float)  # UI target: median < 30 s
@@ -165,7 +182,7 @@ class SleepRecord(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
     player_id: Mapped[str] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
     night_of: Mapped[date] = mapped_column(Date, index=True)
-    hours: Mapped[float] = mapped_column(Float, info=HEALTH)
+    hours: Mapped[float] = mapped_column(EncryptedFloat, info=HEALTH)
     source: Mapped[str] = mapped_column(String(30), default="manual")
 
 
@@ -174,7 +191,7 @@ class HRVRecord(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
     player_id: Mapped[str] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
     day: Mapped[date] = mapped_column(Date, index=True)
-    ln_rmssd: Mapped[float] = mapped_column(Float, info=HEALTH)
+    ln_rmssd: Mapped[float] = mapped_column(EncryptedFloat, info=HEALTH)
     source: Mapped[str] = mapped_column(String(30), default="wearable")
 
 
@@ -183,9 +200,9 @@ class Anthropometrics(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
     player_id: Mapped[str] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
     day: Mapped[date] = mapped_column(Date)
-    height_cm: Mapped[float] = mapped_column(Float, info=HEALTH)
-    sitting_height_cm: Mapped[float] = mapped_column(Float, info=HEALTH)
-    weight_kg: Mapped[float] = mapped_column(Float, info=HEALTH)
+    height_cm: Mapped[float] = mapped_column(EncryptedFloat, info=HEALTH)
+    sitting_height_cm: Mapped[float] = mapped_column(EncryptedFloat, info=HEALTH)
+    weight_kg: Mapped[float] = mapped_column(EncryptedFloat, info=HEALTH)
 
 
 # --------------------------------------------------------------------------- development
@@ -327,3 +344,67 @@ class AuditLog(Base):
     entity: Mapped[str] = mapped_column(String(50))
     entity_id: Mapped[str | None] = mapped_column(String(36))
     details: Mapped[dict] = mapped_column(JSON, default=dict)
+
+
+# --------------------------------------------------------------------------- accounts and notes
+
+
+class UserAccount(Base):
+    """Login identity. Exactly one of player/guardian/staff is set, matching `role`."""
+
+    __tablename__ = "user_accounts"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    email: Mapped[str] = mapped_column(String(200), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(300))
+    role: Mapped[Role] = mapped_column(Enum(Role))
+    player_id: Mapped[str | None] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"))
+    guardian_id: Mapped[str | None] = mapped_column(ForeignKey("guardians.id", ondelete="CASCADE"))
+    staff_id: Mapped[str | None] = mapped_column(ForeignKey("staff_members.id", ondelete="CASCADE"))
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class PlayerNote(Base):
+    """Coach note on a player's timeline (scouting report view)."""
+
+    __tablename__ = "player_notes"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    player_id: Mapped[str] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    author_id: Mapped[str] = mapped_column(ForeignKey("staff_members.id"))
+    day: Mapped[date] = mapped_column(Date)
+    text: Mapped[str] = mapped_column(String(1000))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class TaskCompletion(Base):
+    """A recovery task the player ticked on the Today screen."""
+
+    __tablename__ = "task_completions"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    player_id: Mapped[str] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    day: Mapped[date] = mapped_column(Date)
+    task: Mapped[str] = mapped_column(String(60))
+
+
+class DailyStatus(Base):
+    """What the Monitor computed for one player on one day (feeds Today and the heatmap)."""
+
+    __tablename__ = "daily_status"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    player_id: Mapped[str] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    day: Mapped[date] = mapped_column(Date, index=True)
+    readiness: Mapped[float | None] = mapped_column(EncryptedFloat, info=HEALTH)
+    band: Mapped[str | None] = mapped_column(EncryptedStr, info=HEALTH)
+    acwr: Mapped[float | None] = mapped_column(EncryptedFloat, info=HEALTH)
+    in_phv_window: Mapped[bool] = mapped_column(EncryptedBool, default=False, info=HEALTH)
+    maturity_offset: Mapped[float | None] = mapped_column(EncryptedFloat, info=HEALTH)
+    flags: Mapped[list] = mapped_column(EncryptedJSON, default=list, info=HEALTH)
+    chips: Mapped[list] = mapped_column(EncryptedJSON, default=list, info=HEALTH)
+    __table_args__ = (UniqueConstraint("player_id", "day"),)
+
+
+class AppSetting(Base):
+    """Small key/value store (e.g. the demo's fixed 'today')."""
+
+    __tablename__ = "app_settings"
+    key: Mapped[str] = mapped_column(String(50), primary_key=True)
+    value: Mapped[str] = mapped_column(String(500))

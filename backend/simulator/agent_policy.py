@@ -86,6 +86,7 @@ class AgentPolicy:
             in_phv_window=bool(a.growth and a.growth.in_phv_window),
             acwr=a.acwr,
             chronic_daily_load=a.chronic_daily_load or PRESEASON_DAILY_LOAD,
+            acute_daily_load=a.acute_daily_load if a.chronic_daily_load else None,
             min_training_sessions=max(1, round(3 * (7 - start_wd) / 7)),
             days=7 - start_wd,
             rpe_ceiling=ceiling,
@@ -127,8 +128,10 @@ class AgentPolicy:
         self.goal_log[(ps.profile.player_id, ctx.week)] = list(goals)
         self._last_flags[ps.profile.player_id] = {f.kind for f in a.planning_flags}
         if a.safety_flags:
+            # Staff handle it; the team template stands, minus what hard rules never allow.
             self.decisions["escalate"] += 1
-            return self.baseline.plan_week(ps, ctx, rng)
+            plan = self.baseline.plan_week(ps, ctx, rng)
+            return {d: s for d, s in plan.items() if d not in ctx.exam_days}
         days = self._plan(ps, ctx, a, goals, 0, "weekly")
         self.decisions["weekly_plan"] += 1
         return self._to_week_plan(days)
