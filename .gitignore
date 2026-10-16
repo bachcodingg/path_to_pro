@@ -12,3 +12,6 @@ backend/pathtopro.db
 backend/eval_results/
 backend/llm_cache/*/
 !backend/llm_cache/.gitkeep
+frontend/test-results/
+frontend/playwright-report/
+frontend/dist/

@@ -1,0 +1,46 @@
+# One command: docker compose up --build   then open http://localhost:8080
+# The demo seeds synthetic data on first start (seed service).
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: pathtopro
+      POSTGRES_USER: pathtopro
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pathtopro-dev}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pathtopro"]
+      interval: 3s
+      retries: 20
+
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://pathtopro:${POSTGRES_PASSWORD:-pathtopro-dev}@db:5432/pathtopro
+      PATHTOPRO_JWT_SECRET: ${PATHTOPRO_JWT_SECRET:-dev-only-change-me-this-is-not-a-secret-key}
+      PATHTOPRO_FIELD_KEY: ${PATHTOPRO_FIELD_KEY:-}
+      PATHTOPRO_CORS: http://localhost:8080
+      PATHTOPRO_LLM: ${PATHTOPRO_LLM:-auto}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    depends_on:
+      db: {condition: service_healthy}
+    ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 3s
+      retries: 30
+
+  seed:
+    image: curlimages/curl:8.11.1
+    depends_on:
+      api: {condition: service_healthy}
+    command: ["-fsS", "-X", "POST", "http://api:8000/api/demo/seed?players=25"]
+    restart: "no"
+
+  web:
+    build: ./frontend
+    depends_on: [api]
+    ports: ["8080:80"]
+
+volumes:
+  pgdata:

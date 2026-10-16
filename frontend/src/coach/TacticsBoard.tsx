@@ -1,0 +1,149 @@
+// "Line-up readiness": next match formation, each dot coloured by readiness.
+// Drag a bench player onto a position (or select + click) to compare/swap.
+import { useEffect, useState } from "react";
+import { Pitch } from "../shared/Pitch";
+import type { Band } from "../shared/types";
+import { useApi } from "../shared/useApi";
+import { BandBadge, Card, ErrorNote, Spinner, cn, fmtDay } from "../shared/ui";
+
+interface LineupPlayer {
+  id: string;
+  name: string;
+  readiness: number | null;
+  band: Band | null;
+  flags: string[];
+  phv: boolean;
+}
+interface Lineup {
+  match: { date: string; opponent: string; competition: string | null } | null;
+  players: LineupPlayer[];
+}
+
+// 4-3-3 on a 100 x 150 pitch, own goal at the bottom
+const SLOTS = [
+  { x: 50, y: 138, pos: "GK" },
+  { x: 15, y: 112, pos: "LB" },
+  { x: 38, y: 118, pos: "CB" },
+  { x: 62, y: 118, pos: "CB" },
+  { x: 85, y: 112, pos: "RB" },
+  { x: 28, y: 85, pos: "CM" },
+  { x: 50, y: 92, pos: "DM" },
+  { x: 72, y: 85, pos: "CM" },
+  { x: 18, y: 45, pos: "LW" },
+  { x: 50, y: 38, pos: "ST" },
+  { x: 82, y: 45, pos: "RW" },
+];
+const FILL: Record<Band, string> = { green: "#2f7fe0", amber: "#e3a008", red: "#ea6a12" };
+
+export function TacticsBoard() {
+  const { data, error, loading, reload } = useApi<Lineup>("/api/coach/lineup");
+  const [xi, setXi] = useState<string[]>([]);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [hover, setHover] = useState<LineupPlayer | null>(null);
+
+  useEffect(() => {
+    if (data && !xi.length) setXi(data.players.slice(0, 11).map((p) => p.id));
+  }, [data, xi.length]);
+
+  if (loading && !data) return <Spinner />;
+  if (error || !data) return <ErrorNote message={error ?? "No data"} onRetry={reload} />;
+
+  const byId = Object.fromEntries(data.players.map((p) => [p.id, p]));
+  const bench = data.players.filter((p) => !xi.includes(p.id));
+  const avg = (ids: string[]) => {
+    const v = ids.map((i) => byId[i]?.readiness).filter((x): x is number => x != null);
+    return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length) : null;
+  };
+
+  function place(slot: number, playerId: string) {
+    setXi((cur) => {
+      const next = [...cur];
+      const from = next.indexOf(playerId);
+      if (from >= 0) [next[from], next[slot]] = [next[slot], next[from]];
+      else next[slot] = playerId;
+      return next;
+    });
+    setPicked(null);
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h1 className="text-2xl font-extrabold">Line-up readiness</h1>
+        <p className="text-ink-2 text-sm">
+          {data.match
+            ? `Next: ${data.match.competition ?? "Match"} vs ${data.match.opponent}, ${fmtDay(data.match.date, { weekday: "long", day: "numeric", month: "short" })}`
+            : "No upcoming match"}{" "}
+          · starting XI average readiness {avg(xi) ?? "–"}
+        </p>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,420px)_1fr]">
+        <Card className="p-2">
+          <Pitch label="Formation" className="w-full">
+            {SLOTS.map((s, i) => {
+              const p = byId[xi[i]];
+              return (
+                <g
+                  key={i}
+                  transform={`translate(${s.x} ${s.y})`}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => place(i, e.dataTransfer.getData("text/plain"))}
+                  onClick={() => (picked ? place(i, picked) : setHover(p ?? null))}
+                  onMouseEnter={() => setHover(p ?? null)}
+                  style={{ cursor: "pointer" }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${s.pos}: ${p?.name ?? "empty"}, readiness ${p?.readiness ?? "unknown"}`}
+                  onKeyDown={(e) => e.key === "Enter" && picked && place(i, picked)}
+                >
+                  <circle r={6.5} fill={p?.band ? FILL[p.band] : "#6b7f74"} stroke={p?.phv ? "#e3a008" : "#fff"} strokeWidth={p?.phv ? 1.6 : 0.8} />
+                  <text y={2} textAnchor="middle" fontSize={4.5} fontWeight={800} fill="#fff">
+                    {p?.readiness != null ? Math.round(p.readiness) : "–"}
+                  </text>
+                  <text y={11} textAnchor="middle" fontSize={3.8} fill="#fff" fontWeight={600}>
+                    {p?.name.split(" ")[0] ?? s.pos}
+                  </text>
+                </g>
+              );
+            })}
+          </Pitch>
+        </Card>
+        <div className="space-y-3">
+          {hover && (
+            <Card>
+              <div className="flex items-center justify-between">
+                <p className="font-bold">{hover.name}</p>
+                <BandBadge band={hover.band} score={hover.readiness} />
+              </div>
+              <p className="text-ink-2 mt-1 text-sm">{hover.flags.length ? hover.flags.join(" · ") : "No flags"}</p>
+            </Card>
+          )}
+          <Card>
+            <p className="mb-2 font-bold">Bench</p>
+            <p className="text-ink-2 mb-2 text-xs">Drag a player onto a position, or select one and click a position.</p>
+            <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+              {bench.map((p) => (
+                <li key={p.id}>
+                  <button
+                    draggable
+                    onDragStart={(e) => e.dataTransfer.setData("text/plain", p.id)}
+                    onClick={() => setPicked(picked === p.id ? null : p.id)}
+                    onMouseEnter={() => setHover(p)}
+                    className={cn("tap border-line flex w-full items-center justify-between rounded-xl border px-3", picked === p.id && "ring-pitch-400 ring-2")}
+                    aria-pressed={picked === p.id}
+                  >
+                    <span className="font-medium">
+                      {p.name}
+                      {p.phv && <span className="text-ready-amber ml-1 text-xs">growth</span>}
+                    </span>
+                    <BandBadge band={p.band} score={p.readiness} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}

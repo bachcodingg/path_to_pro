@@ -123,3 +123,17 @@ export function ErrorNote({ message, onRetry }: { message: string; onRetry?: () 
 export function fmtDay(iso: string, opts: Intl.DateTimeFormatOptions = { weekday: "short" }): string {
   return new Date(iso + "T12:00:00").toLocaleDateString("en-GB", opts);
 }
+
+export function ordinal(n: number): string {
+  const s = ["th", "st", "nd", "rd"],
+    v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+export function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+export function fmtValue(v: number, unit: string): string {
+  return unit === "m" ? String(Math.round(v)) : String(v);
+}
