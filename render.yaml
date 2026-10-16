@@ -1,0 +1,38 @@
+# Render Blueprint: https://render.com -> New -> Blueprint -> this repository.
+# One web service (API + website, Docker) and a PostgreSQL database, both in Frankfurt (EU).
+# Free tier: the service sleeps after 15 min without traffic (first request ~1 min), and a
+# free database expires after 30 days. Demo data is synthetic and loaded on first start.
+databases:
+  - name: pathtopro-db
+    databaseName: pathtopro
+    user: pathtopro
+    plan: free
+    region: frankfurt
+
+services:
+  - type: web
+    name: pathtopro
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: frankfurt
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pathtopro-db
+          property: connectionString
+      - key: PATHTOPRO_JWT_SECRET
+        generateValue: true
+      - key: PATHTOPRO_FIELD_KEY
+        generateValue: true
+      - key: PATHTOPRO_AUTOSEED
+        value: "on"
+      - key: PATHTOPRO_SCHEDULER
+        value: "off"
+      - key: PATHTOPRO_LLM
+        value: "auto"
+      # Optional: an Anthropic API key turns on Claude for the agents (leave empty for rules only).
+      - key: ANTHROPIC_API_KEY
+        sync: false

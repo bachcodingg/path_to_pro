@@ -5,9 +5,11 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 from datetime import date
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -32,6 +34,38 @@ def nightly_job() -> None:
             log.info("nightly run for %s: %s", squad.name, out)
 
 
+_data_state = {"status": "ready"}
+
+
+def _autoseed() -> None:
+    """Demo deployments: load the synthetic season into an empty database, in the
+    background so the server answers health checks while it runs."""
+    if not settings.autoseed:
+        return
+    from domain.models import Player
+
+    with SessionLocal() as db:
+        if db.scalars(select(Player.id).limit(1)).first() is not None:
+            return
+
+    def run() -> None:
+        from api.services.seed import seed
+
+        _data_state["status"] = "seeding"
+        try:
+            with SessionLocal() as db:
+                log.info("seeded the synthetic demo season: %s", seed(db))
+            _data_state["status"] = "ready"
+        except Exception:
+            log.exception("demo seeding failed")
+            _data_state["status"] = "error"
+
+    import threading
+
+    _data_state["status"] = "seeding"
+    threading.Thread(target=run, name="autoseed", daemon=True).start()
+
+
 def _load_today() -> None:
     from api.services.calibration import load_saved
 
@@ -45,6 +79,7 @@ def _load_today() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    _autoseed()
     _load_today()
     scheduler = None
     if settings.scheduler:
@@ -72,7 +107,7 @@ for r in (auth.router, player.router, coach.router, physio.router, guardian.rout
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"ok": True, "today": clock.today().isoformat()}
+    return {"ok": True, "today": clock.today().isoformat(), "data": _data_state["status"]}
 
 
 @app.post("/api/demo/seed")
@@ -89,3 +124,20 @@ def demo_seed(players: int = 25, db: Session = Depends(get_db)) -> dict:
 def admin_nightly(_: CurrentUser = Depends(require(Role.ADMIN))) -> dict:
     nightly_job()
     return {"ok": True}
+
+
+# --------------------------------------------------------------------------- website (single-container deploy)
+
+if settings.static_dir and Path(settings.static_dir, "index.html").exists():
+    _static = Path(settings.static_dir).resolve()
+
+    @app.get("/{path:path}", include_in_schema=False)
+    def website(path: str):
+        """Serve the built React app; unknown paths get index.html (client-side routing)."""
+        if path.startswith("api/"):
+            raise HTTPException(404, "Not found")
+        target = (_static / path).resolve()
+        if path and target.is_file() and _static in target.parents:
+            headers = {"Cache-Control": "public, max-age=31536000, immutable"} if path.startswith("assets/") else {}
+            return FileResponse(target, headers=headers)
+        return FileResponse(_static / "index.html", headers={"Cache-Control": "no-cache"})
