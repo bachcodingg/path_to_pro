@@ -15,3 +15,4 @@ backend/llm_cache/*/
 frontend/test-results/
 frontend/playwright-report/
 frontend/dist/
+frontend/*.tsbuildinfo
