@@ -2,7 +2,7 @@
 
 Hard rules (always enforced, never from the LLM):
   H1 fixtures fixed; matches only on match days
-  H2 at least one rest day
+  H2 at least one rest day (full weeks; a short mid-week re-plan keeps the week's rest day)
   H3 match day minus 1 at RPE <= 4
   H4 in the PHV window, no speed session above RPE 6
   H5 when ACWR > 1.5, weekly load <= cap
@@ -39,6 +39,7 @@ from planner.schema import (
 )
 
 TIME_LIMIT_S = 2.0
+MIN_DAYS_FOR_REST_RULE = 4
 ACWR_CAP_THRESHOLD = 1.5
 ACWR_CAP_FACTOR = 1.0  # cap = chronic weekly load when ACWR is high
 MD_MINUS_1_MAX_RPE = 4
@@ -55,6 +56,11 @@ W_MIN_TRAINING = 6
 W_BACK_TO_BACK = 3
 W_NON_PREFERRED = 1
 W_MD_PLUS_1 = 4
+W_SECOND_REST = 3  # academies usually give two days off a week
+W_MATCH_MINUTES = 2  # per 15 match minutes below 90
+W_OVER_RAMP = 1  # per 25 AU above chronic x RAMP_LIMIT (= 4 points per 100 AU)
+RAMP_LIMIT = 1.4  # soft penalty starts here; ACWR > 1.5 is the spike flag
+MATCH_MINUTE_OPTIONS = [30, 45, 60, 90]
 W_SAME_TYPE = 2  # per session of one type beyond MAX_SAME_TYPE
 MAX_SAME_TYPE = 2
 W_FOOTBALL = 3  # academy weeks are built around technical and tactical work
@@ -64,7 +70,7 @@ MD_PLUS_1_MAX_RPE = 3
 
 def weekly_cap(inp: PlannerInput) -> int | None:
     if inp.acwr is not None and inp.acwr > ACWR_CAP_THRESHOLD:
-        return round(inp.chronic_daily_load * 7 * ACWR_CAP_FACTOR)
+        return round(inp.chronic_daily_load * inp.days * ACWR_CAP_FACTOR)
     return None
 
 
@@ -78,7 +84,8 @@ class _Model:
     def __init__(self, inp: PlannerInput, cs: ConstraintSet, enforced: list[SoftConstraint]):
         self.inp, self.cs = inp, cs
         m = self.m = cp_model.CpModel()
-        D = range(7)
+        self.n = n = inp.days
+        D = range(n)
         self.x = {(d, t): m.NewBoolVar(f"x_{d}_{t.value}") for d in D for t in TYPES}
         self.rpe = {d: m.NewIntVar(0, 10, f"rpe_{d}") for d in D}
         rpe_t = {(d, t): m.NewIntVar(0, 10, f"rpe_{d}_{t.value}") for d in D for t in TYPES}
@@ -90,18 +97,28 @@ class _Model:
                 m.Add(rpe_t[d, t] == 0).OnlyEnforceIf(self.x[d, t].Not())
                 m.Add(self.rpe[d] >= lo).OnlyEnforceIf(self.x[d, t])  # H7
                 m.Add(self.rpe[d] <= hi).OnlyEnforceIf(self.x[d, t])
-        self.load = {d: sum(SESSION_MINUTES[t] * rpe_t[d, t] for t in TYPES) for d in D}
+        matches = set(inp.match_days)
+        # Match minutes are a decision (return-to-play limits); the fixture itself is fixed.
+        self.match_min = {
+            d: m.NewIntVarFromDomain(cp_model.Domain.FromValues(MATCH_MINUTE_OPTIONS), f"mm_{d}") for d in matches
+        }
+        self.load = {
+            d: MATCH_RPE * self.match_min[d]
+            if d in matches
+            else sum(SESSION_MINUTES[t] * rpe_t[d, t] for t in TYPES if t != SessionType.MATCH)
+            for d in D
+        }
         self.week_load = sum(self.load.values())
         self.is_rest = {d: self.x[d, SessionType.REST] for d in D}
 
-        matches = set(inp.match_days)
         for d in D:  # H1
             if d in matches:
                 m.Add(self.x[d, SessionType.MATCH] == 1)
                 m.Add(self.rpe[d] == MATCH_RPE)
             else:
                 m.Add(self.x[d, SessionType.MATCH] == 0)
-        m.Add(sum(self.is_rest[d] for d in D if d not in matches) >= 1)  # H2
+        if n >= MIN_DAYS_FOR_REST_RULE:  # H2
+            m.Add(sum(self.is_rest[d] for d in D if d not in matches) >= 1)
         for d in matches:  # H3
             if d - 1 >= 0 and d - 1 not in matches:
                 m.Add(self.rpe[d - 1] <= MD_MINUS_1_MAX_RPE)
@@ -114,10 +131,14 @@ class _Model:
         for d in inp.exam_days:  # H6
             if d not in matches:
                 m.Add(self.is_rest[d] == 1)
+        if inp.rpe_ceiling is not None:  # a re-plan never adds load to a day
+            for d, ceiling in enumerate(inp.rpe_ceiling[:n]):
+                if d not in matches:
+                    m.Add(self.rpe[d] <= ceiling)
 
         # ---- soft constraints
         penalties = []
-        target = round(inp.chronic_daily_load * 7 * inp.target_load_factor * cs.load_factor)
+        target = inp.target_load(cs.load_factor)
         if self.cap is not None:
             target = min(target, self.cap)
         # Deviation from the target load in coarse units: nobody can tell 10 AU apart,
@@ -132,7 +153,23 @@ class _Model:
         m.Add(short >= inp.min_training_sessions - n_training)
         penalties.append(W_MIN_TRAINING * short)
 
-        penalties.append(W_BACK_TO_BACK * self._hard_pairs(7))
+        if n == 7:
+            one_rest = m.NewBoolVar("only_one_rest")
+            m.Add(sum(self.is_rest[d] for d in D) >= 2).OnlyEnforceIf(one_rest.Not())
+            penalties.append(W_SECOND_REST * one_rest)
+
+        # Projected ramp: weekly load well above the chronic load is what makes ACWR spike
+        # (typically after time off). Penalised hard enough to trade against match minutes.
+        ramp_limit = round(inp.chronic_daily_load * n * RAMP_LIMIT)
+        over = m.NewIntVar(0, 100_000 // LOAD_UNIT_AU, "over_ramp")
+        m.Add(LOAD_UNIT_AU * over >= self.week_load - ramp_limit)
+        penalties.append(W_OVER_RAMP * over)
+        for d in matches:
+            cut = m.NewIntVar(0, 4, f"mmcut_{d}")
+            m.Add(15 * cut == 90 - self.match_min[d])
+            penalties.append(W_MATCH_MINUTES * cut)
+
+        penalties.append(W_BACK_TO_BACK * self._hard_pairs(7))  # threshold RPE 7
 
         for t in TRAINING:
             if t == SessionType.RECOVERY:
@@ -146,7 +183,7 @@ class _Model:
         penalties.append(W_FOOTBALL * few)
 
         for d in matches:  # day after a match: recovery or rest
-            if d + 1 < 7 and d + 1 not in matches:
+            if d + 1 < n and d + 1 not in matches:
                 over = m.NewIntVar(0, 10, f"md1_{d}")
                 m.Add(over >= self.rpe[d + 1] - MD_PLUS_1_MAX_RPE)
                 penalties.append(W_MD_PLUS_1 * over)
@@ -170,13 +207,13 @@ class _Model:
     def _hard_pairs(self, threshold: int):
         m = self.m
         hard = {}
-        for d in range(7):
+        for d in range(self.n):
             b = m.NewBoolVar(f"hard_{d}_{threshold}")
             m.Add(self.rpe[d] >= threshold).OnlyEnforceIf(b)
             m.Add(self.rpe[d] < threshold).OnlyEnforceIf(b.Not())
             hard[d] = b
         pairs = []
-        for d in range(6):
+        for d in range(self.n - 1):
             p = m.NewBoolVar(f"pair_{d}_{threshold}")
             m.AddBoolAnd([hard[d], hard[d + 1]]).OnlyEnforceIf(p)
             m.AddBoolOr([hard[d].Not(), hard[d + 1].Not()]).OnlyEnforceIf(p.Not())
@@ -184,7 +221,7 @@ class _Model:
         return sum(pairs)
 
     def _violation(self, c: SoftConstraint):
-        m, D = self.m, range(7)
+        m, D = self.m, range(self.n)
         if isinstance(c, MinSessions):
             v = m.NewIntVar(0, 7, "")
             m.Add(v >= c.count - sum(self.x[d, c.session] for d in D))
@@ -194,13 +231,13 @@ class _Model:
             m.Add(v >= sum(self.x[d, c.session] for d in D) - c.count)
             return v
         if isinstance(c, MaxRpeOnDay):
-            if c.day in self.inp.match_days:
+            if c.day in self.inp.match_days or c.day >= self.n:
                 return None
             v = m.NewIntVar(0, 10, "")
             m.Add(v >= self.rpe[c.day] - c.rpe)
             return v
         if isinstance(c, RestOnDay):
-            if c.day in self.inp.match_days:
+            if c.day in self.inp.match_days or c.day >= self.n:
                 return None
             return 1 - self.is_rest[c.day]
         if isinstance(c, NoHardBackToBack):
@@ -223,11 +260,11 @@ def safe_template(inp: PlannerInput) -> list[PlanDay]:
     days = []
     matches, exams = set(inp.match_days), set(inp.exam_days)
     toggle = True
-    for d in range(7):
+    for d in range(inp.days):
         dt = inp.start + timedelta(days=d)
         if d in matches:
             kind, rpe = SessionType.MATCH, MATCH_RPE
-        elif d in exams or d + 1 in matches or d == 6:
+        elif d in exams or d + 1 in matches or d == 6 or (inp.rpe_ceiling and inp.rpe_ceiling[d] < 3):
             kind, rpe = SessionType.REST, 0
         else:
             kind, rpe = (SessionType.TECHNICAL, 4) if toggle else (SessionType.RECOVERY, 3)
@@ -252,12 +289,11 @@ def plan_week(inp: PlannerInput, cs: ConstraintSet | None = None) -> PlanResult:
         model, solver, status = _solve(inp, cs, enforced)
         if status in (cp_model.OPTIMAL, cp_model.FEASIBLE):
             days = []
-            for d in range(7):
+            for d in range(inp.days):
                 kind = next(t for t in TYPES if solver.Value(model.x[d, t]))
                 rpe = solver.Value(model.rpe[d])
-                days.append(
-                    PlanDay(day=d, date=inp.start + timedelta(days=d), kind=kind, rpe=rpe, minutes=SESSION_MINUTES[kind])
-                )
+                minutes = solver.Value(model.match_min[d]) if d in model.match_min else SESSION_MINUTES[kind]
+                days.append(PlanDay(day=d, date=inp.start + timedelta(days=d), kind=kind, rpe=rpe, minutes=minutes))
             if dropped:
                 label = "relaxed"
             else:
@@ -305,7 +341,8 @@ def hard_violations(result: PlanResult, inp: PlannerInput) -> list[str]:
             out.append(f"H4 day {d}")
         if d in inp.exam_days and d not in matches and pd.kind != SessionType.REST:
             out.append(f"H6 day {d}")
-    if not any(pd.kind == SessionType.REST for d, pd in days.items() if d not in matches):
+    no_rest = not any(pd.kind == SessionType.REST for d, pd in days.items() if d not in matches)
+    if inp.days >= MIN_DAYS_FOR_REST_RULE and no_rest:
         out.append("H2 no rest day")
     cap = weekly_cap(inp)
     if cap is not None and result.weekly_load > cap:

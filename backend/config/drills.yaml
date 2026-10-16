@@ -1,0 +1,35 @@
+# Curated drill library. The Development Coach only picks from this list.
+# plyometric: true drills are filtered out for players in the PHV window.
+drills:
+  - {id: spd-acc-10, name: "Acceleration starts (3 x 4 x 10 m)", kpi: sprint_10m, session: speed, rpe: 6, minutes: 20, plyometric: false, min_age: 13,
+     description: "Falling and 2-point starts over 10 m, full recovery between reps. Focus: forward lean, powerful first 3 steps."}
+  - {id: spd-resisted, name: "Partner-resisted sprints", kpi: sprint_10m, session: speed, rpe: 7, minutes: 20, plyometric: false, min_age: 14,
+     description: "Partner holds a band for 5 m then releases. 6 reps, walk-back recovery."}
+  - {id: spd-reaction, name: "Reaction gate races", kpi: sprint_10m, session: speed, rpe: 6, minutes: 15, plyometric: false, min_age: 13,
+     description: "Coach call or ball drop triggers 1v1 races through a 10 m gate. Game-like, high quality, low volume."}
+  - {id: spd-flying-20, name: "Flying 20s", kpi: sprint_30m, session: speed, rpe: 7, minutes: 20, plyometric: false, min_age: 14,
+     description: "20 m build-up then 20 m at max speed. 4-5 reps, 2-3 min rest. Tall posture, relaxed shoulders."}
+  - {id: spd-wickets, name: "Wicket runs", kpi: sprint_30m, session: speed, rpe: 5, minutes: 15, plyometric: false, min_age: 13,
+     description: "Mini-hurdles spaced to stride length to train upright sprint mechanics."}
+  - {id: spd-bounding, name: "Bounding for speed", kpi: sprint_30m, session: speed, rpe: 7, minutes: 15, plyometric: true, min_age: 15,
+     description: "Alternate-leg bounds over 20 m, 4-6 reps. High tendon load: not during a growth spurt."}
+  - {id: str-goblet, name: "Goblet squat technique", kpi: cmj, session: strength, rpe: 5, minutes: 20, plyometric: false, min_age: 13,
+     description: "3 x 8 light goblet squats, focus on depth and knee alignment."}
+  - {id: str-trapbar, name: "Trap-bar deadlift", kpi: cmj, session: strength, rpe: 7, minutes: 25, plyometric: false, min_age: 15,
+     description: "4 x 5 at a weight that leaves 2-3 reps in reserve. Coach-supervised."}
+  - {id: str-hip-thrust, name: "Hip thrusts and single-leg bridges", kpi: cmj, session: strength, rpe: 5, minutes: 15, plyometric: false, min_age: 13,
+     description: "Glute strength for jumping and sprinting. 3 x 10 each."}
+  - {id: str-box-jumps, name: "Box jumps (step down)", kpi: cmj, session: strength, rpe: 6, minutes: 15, plyometric: true, min_age: 14,
+     description: "Low box, stick the landing, step down. 4 x 4. Not during a growth spurt."}
+  - {id: str-landing, name: "Landing mechanics", kpi: cmj, session: strength, rpe: 3, minutes: 10, plyometric: false, min_age: 13,
+     description: "Drop-and-stick from standing, soft knees. Safe in the growth zone and protects knees."}
+  - {id: end-ssg-4v4, name: "4v4 small-sided games", kpi: yoyo_ir1, session: tactical, rpe: 7, minutes: 24, plyometric: false, min_age: 13,
+     description: "4 x 4 min on a 30 x 20 m pitch, 2 min rest. Endurance with the ball."}
+  - {id: end-possession, name: "Possession rondos with transitions", kpi: yoyo_ir1, session: tactical, rpe: 6, minutes: 20, plyometric: false, min_age: 13,
+     description: "5v2 rondos, losing team sprints to recover. Repeated-effort fitness."}
+  - {id: end-intervals, name: "15-15 running intervals", kpi: yoyo_ir1, session: tactical, rpe: 7, minutes: 18, plyometric: false, min_age: 14,
+     description: "15 s run / 15 s walk for 2 x 8 min. Pace set from Yo-Yo result."}
+  - {id: tec-ball-mastery, name: "Ball mastery circuit", kpi: technique, session: technical, rpe: 4, minutes: 20, plyometric: false, min_age: 13,
+     description: "Sole rolls, inside-outside touches, turns. Low load, high touches."}
+  - {id: tec-passing-pattern, name: "Passing patterns under pressure", kpi: technique, session: technical, rpe: 5, minutes: 20, plyometric: false, min_age: 13,
+     description: "Diamond passing with a passive then active defender."}

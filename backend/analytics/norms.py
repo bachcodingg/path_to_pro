@@ -61,7 +61,8 @@ class NormTable:
         return Norm(mean=g["mean"], sd=g["sd"], lower_is_better=t["lower_is_better"])
 
     def age_percentile(self, test: str, value: float, age_years: float) -> float:
-        return percentile(value, self.norm(test, age_group(age_years)))
+        # Outside the U13-U19 table, compare with the nearest group.
+        return percentile(value, self.norm(test, age_group(min(max(age_years, 12.0), 18.99))))
 
     def bio_banded_percentile(self, test: str, value: float, status: MaturityStatus) -> float:
         """Compare against players of the same maturity, so late maturers aren't

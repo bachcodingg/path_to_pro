@@ -74,6 +74,10 @@ class PlayerState:
     pain_pending: bool = False
     missed_in_row: int = 0
     ability_z: dict[str, float] = field(default_factory=dict)
+    # What staff would see: latest measured values, not the hidden truth above.
+    latest_tests: dict[str, float] = field(default_factory=dict)
+    latest_measure: dict | None = None
+    today_checkin: dict | None = None
 
     @property
     def true_maturity_offset(self) -> float:
@@ -156,8 +160,9 @@ class SeasonResult:
     anthropometrics: list[dict] = field(default_factory=list)
     tests: list[dict] = field(default_factory=list)
     injuries: list[dict] = field(default_factory=list)
+    fixtures: list[dict] = field(default_factory=list)
 
-    TABLES = ("players", "daily", "sessions", "checkins", "anthropometrics", "tests", "injuries")
+    TABLES = ("players", "daily", "sessions", "checkins", "anthropometrics", "tests", "injuries", "fixtures")
 
     def to_csv(self, out_dir: Path) -> list[Path]:
         import csv
@@ -265,19 +270,35 @@ class SeasonSimulator:
             )
         prev_evening_match: dict[str, bool] = {ps.profile.player_id: False for ps in players}
 
+        adjust = getattr(self.policy, "adjust_day", None)
         for ctx in self._fixtures():
+            if ctx.week * 7 % c["growth"]["measure_every_days"] == 0:
+                for ps in players:
+                    self._measure(ps, ctx.dates[0], res)
             plans = {ps.profile.player_id: self.policy.plan_week(ps, ctx, self.rng_policy) for ps in players}
             exam_week = bool(ctx.exam_days)
+            for wd, d in enumerate(ctx.dates):
+                res.fixtures.append(
+                    {
+                        "date": d.isoformat(),
+                        "week": ctx.week,
+                        "weekday": wd,
+                        "match": wd in ctx.match_days,
+                        "evening_match": wd in ctx.evening_match_days,
+                        "exam": wd in ctx.exam_days,
+                        "test_day": ctx.test_day == wd,
+                    }
+                )
             for wd, d in enumerate(ctx.dates):
                 for ps in players:
                     pid = ps.profile.player_id
                     self._morning(ps, d, exam_week, prev_evening_match[pid], res, ctx)
+                    if adjust is not None and not ps.is_injured(d):
+                        plans[pid] = adjust(ps, ctx, wd, plans[pid], self.rng_policy)
                     load, evening = self._train(ps, d, wd, ctx, plans[pid], res)
                     prev_evening_match[pid] = evening
                     if ctx.test_day == wd and not ps.is_injured(d):
                         self._test_day(ps, d, res)
-                    if (d - ctx.dates[0]).days == 0 and ctx.week * 7 % c["growth"]["measure_every_days"] == 0:
-                        self._measure(ps, d, res)
                     res.daily.append(
                         {
                             "player_id": pid,
@@ -349,6 +370,7 @@ class SeasonSimulator:
             config=self.readiness_cfg,
         )
         ps.readiness_scores.append(None if r is None else r.score)
+        ps.today_checkin = {"hooper": hooper, "mood_red": mood_red, "pain": pain, "completed": completed}
         res.checkins.append(
             {
                 "player_id": ps.profile.player_id,
@@ -376,6 +398,8 @@ class SeasonSimulator:
                 kind = SessionType.MATCH
                 planned_rpe = rpe = float(np.clip(rng.normal(lc["match_rpe_mean"], lc["match_rpe_sd"]), 1, 10))
                 minutes = float(rng.integers(lc["match_minutes"][0], lc["match_minutes"][1] + 1))
+                if wd in plan and plan[wd].kind == SessionType.MATCH:  # coach-set minutes limit
+                    minutes = min(minutes, plan[wd].minutes)
                 evening = wd in ctx.evening_match_days
             elif wd in plan and plan[wd].kind != SessionType.REST:
                 s = plan[wd]
@@ -442,6 +466,7 @@ class SeasonSimulator:
         for t in TESTS:
             z = ps.ability_z[t] + rng.normal(0, noise)
             value = _norm_value(self.norms, t, ps.age, z)
+            ps.latest_tests[t] = round(value, 2)
             res.tests.append(
                 {"player_id": ps.profile.player_id, "date": d.isoformat(), "test": t, "value": round(value, 2)}
             )
@@ -454,13 +479,13 @@ class SeasonSimulator:
         target = float(np.clip(ps.true_maturity_offset, -MIRWALD_VALID_YEARS, MIRWALD_VALID_YEARS))
         target += ps.profile.mirwald_bias
         sh = sitting_height_for_offset(ps.age, h, w, target)
-        res.anthropometrics.append(
-            {
-                "player_id": ps.profile.player_id,
-                "date": d.isoformat(),
-                "age": round(ps.age, 3),
-                "height_cm": round(h + rng.normal(0, 0.3), 1),
-                "sitting_height_cm": round(sh + rng.normal(0, 0.3), 1),
-                "weight_kg": round(w + rng.normal(0, 0.3), 1),
-            }
-        )
+        row = {
+            "player_id": ps.profile.player_id,
+            "date": d.isoformat(),
+            "age": round(ps.age, 3),
+            "height_cm": round(h + rng.normal(0, 0.3), 1),
+            "sitting_height_cm": round(sh + rng.normal(0, 0.3), 1),
+            "weight_kg": round(w + rng.normal(0, 0.3), 1),
+        }
+        ps.latest_measure = row
+        res.anthropometrics.append(row)

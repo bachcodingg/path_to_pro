@@ -22,6 +22,7 @@ class ActionKind(str, Enum):
     SESSION_SWAP = "session_swap"
     LOAD_CUT = "load_cut"
     NEW_GOAL = "new_goal"
+    MATCH_MINUTES = "match_minutes"  # return-to-play minutes limit: a selection decision
 
 
 class Decision(str, Enum):
@@ -47,7 +48,7 @@ class Ruling:
 
 
 _ALWAYS_AUTO = {ActionKind.REMINDER, ActionKind.SLEEP_TASK, ActionKind.DRILL_SUGGESTION}
-_ALWAYS_COACH = {ActionKind.SESSION_SWAP, ActionKind.NEW_GOAL}
+_ALWAYS_COACH = {ActionKind.SESSION_SWAP, ActionKind.NEW_GOAL, ActionKind.MATCH_MINUTES}
 
 
 def decide(proposal: Proposal, active_flags: Sequence[Flag] = ()) -> Ruling:

@@ -44,11 +44,25 @@ def test_same_input_same_week():
 
 
 def test_infeasible_hard_rules_fall_back_to_template():
-    # Cap below the match load alone: nothing feasible, so the safe template is used.
-    i = inp(match_days=[5], acwr=1.8, chronic_daily_load=90)
+    # Cap below even a 30-minute match: nothing feasible, so the safe template is used.
+    i = inp(match_days=[5], acwr=1.8, chronic_daily_load=30)
     r = plan_week(i)
     assert r.status == "template"
     assert hard_violations(r, i) == []
+
+
+def test_return_to_play_limits_match_minutes():
+    # Back from injury: chronic load has dropped, so a full match would be a spike.
+    i = inp(match_days=[5], acwr=1.8, chronic_daily_load=90)  # cap 630 < 720 AU full match
+    r = plan_week(i)
+    assert r.status == "optimal"
+    assert r.days[5].kind == SessionType.MATCH
+    assert r.days[5].minutes < 90
+    assert r.weekly_load <= r.weekly_load_cap
+
+
+def test_full_match_in_a_normal_week():
+    assert plan_week(inp(match_days=[5])).days[5].minutes == 90
 
 
 def test_conflicting_llm_constraints_are_dropped_lowest_weight_first():

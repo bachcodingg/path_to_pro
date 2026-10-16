@@ -50,7 +50,17 @@ class PlannerInput(BaseModel):
     chronic_daily_load: float = 300.0  # EWMA chronic load, AU per day
     preferred_days: list[Weekday] = []
     min_training_sessions: int = 3
-    target_load_factor: float = 1.0  # target weekly load = chronic * 7 * factor
+    days: int = Field(default=7, ge=1, le=7, description="planning horizon; < 7 for a mid-week re-plan")
+    club_weekly_load: float = 2350.0  # the club's planned weekly load in AU (= the fixed template's volume)
+    max_ramp: float = 1.3  # plan at most chronic load x 1.3, the top of the usual 0.8-1.3 ACWR range
+    target_load_factor: float = 1.0
+    # Re-plans may only make days easier: per-day RPE ceiling from the current plan (0 = stays rest).
+    rpe_ceiling: list[int] | None = None
+
+    def target_load(self, llm_factor: float = 1.0) -> int:
+        planned = self.club_weekly_load * self.days / 7
+        safe = self.chronic_daily_load * self.days * self.max_ramp
+        return round(min(planned, safe) * self.target_load_factor * llm_factor)
 
 
 # --------------------------------------------------------------------------- LLM constraint set

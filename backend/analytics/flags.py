@@ -48,6 +48,7 @@ class PlayerSnapshot:
     """Everything the Monitor knows about one player on one evening."""
 
     daily_loads: Sequence[float] = ()  # oldest first, includes today, 0 on rest days
+    acwr: float | None = None  # precomputed (e.g. EWMA seeded with pre-season load); else from daily_loads
     recent_sleep_hours: Sequence[float] = ()  # oldest first, includes last night
     hrv_z: float | None = None
     readiness_band: Band | None = None
@@ -62,7 +63,7 @@ class PlayerSnapshot:
 def evaluate(s: PlayerSnapshot) -> list[Flag]:
     flags: list[Flag] = []
 
-    acwr = ewma_acwr(s.daily_loads)
+    acwr = s.acwr if s.acwr is not None else ewma_acwr(s.daily_loads)
     if acwr is not None and acwr > ACWR_FLAG_THRESHOLD:
         flags.append(Flag(FlagKind.LOAD_SPIKE, f"ACWR {acwr:.2f}", acwr))
 

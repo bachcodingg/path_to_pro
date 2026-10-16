@@ -31,3 +31,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["analytics*", "agents*", "domain*", "simulator*", "eval*"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501", "UP042", "B905"]
