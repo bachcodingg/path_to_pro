@@ -50,15 +50,8 @@ jobs:
           node-version: "22"
       - run: pip install -e "./backend[dev]"
       - run: cd frontend && npm ci && npx playwright install --with-deps chromium
-      - name: Start API and web
-        env:
-          PATHTOPRO_LLM: "off"
-          PATHTOPRO_SCHEDULER: "off"
-        run: |
-          (cd backend && uvicorn api.main:app --port 8000 &)
-          (cd frontend && npx vite --port 5173 --strictPort &)
-          for i in $(seq 1 60); do curl -sf 127.0.0.1:8000/api/health && curl -sf 127.0.0.1:5173 >/dev/null && break; sleep 1; done
-      - run: mkdir -p docs/screenshots && cd frontend && npx playwright test
+      - name: End-to-end tests (Playwright starts the API and web app)
+        run: mkdir -p docs/screenshots && cd frontend && npx playwright test
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -74,7 +67,7 @@ jobs:
       - name: Semgrep
         run: pipx run semgrep scan --config p/python --config p/typescript --config p/secrets --error --exclude frontend/node_modules
       - name: Trivy (dependencies and Dockerfiles)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.33.1
         with:
           scan-type: fs
           scanners: vuln,secret,misconfig
@@ -82,6 +75,6 @@ jobs:
           ignore-unfixed: true
           exit-code: "1"
       - name: gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
