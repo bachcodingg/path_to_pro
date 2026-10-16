@@ -399,6 +399,8 @@ class DailyStatus(Base):
     maturity_offset: Mapped[float | None] = mapped_column(EncryptedFloat, info=HEALTH)
     flags: Mapped[list] = mapped_column(EncryptedJSON, default=list, info=HEALTH)
     chips: Mapped[list] = mapped_column(EncryptedJSON, default=list, info=HEALTH)
+    # Component scores (0-100) behind the readiness score; used for weight calibration.
+    components: Mapped[dict | None] = mapped_column(EncryptedJSON, default=dict, info=HEALTH)
     __table_args__ = (UniqueConstraint("player_id", "day"),)
 
 
@@ -408,3 +410,20 @@ class AppSetting(Base):
     __tablename__ = "app_settings"
     key: Mapped[str] = mapped_column(String(50), primary_key=True)
     value: Mapped[str] = mapped_column(String(500))
+
+
+class StaffRating(Base):
+    """A coach's or physio's own judgement of a player's readiness on a day.
+
+    Paired with that day's component scores, these ratings calibrate the readiness
+    weights (analytics/calibration.py). The latest rating per staff/player/day counts.
+    """
+
+    __tablename__ = "staff_ratings"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    player_id: Mapped[str] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    staff_id: Mapped[str] = mapped_column(ForeignKey("staff_members.id"))
+    day: Mapped[date] = mapped_column(Date, index=True)
+    band: Mapped[str] = mapped_column(EncryptedStr, info=HEALTH)  # green | amber | red
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    __table_args__ = (UniqueConstraint("player_id", "staff_id", "day"),)

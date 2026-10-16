@@ -13,7 +13,7 @@ from datetime import date
 from analytics.flags import Flag, PlayerSnapshot, evaluate
 from analytics.load import ewma_acwr, ewma_acwr_series, monotony
 from analytics.maturation import GrowthStatus, Sex, growth_status
-from analytics.readiness import Readiness, ReadinessConfig, hrv_z, readiness
+from analytics.readiness import Band, Readiness, ReadinessConfig, active_config, hrv_z, readiness
 
 
 @dataclass
@@ -40,6 +40,7 @@ class PlayerHistory:
     missed_checkins_in_row: int = 0
     measurements: Measurements | None = None
     preseason_daily_load: float | None = None  # seeds the EWMA when history is short
+    previous_band: Band | None = None  # yesterday's readiness band, for the colour buffer
 
 
 @dataclass
@@ -87,7 +88,8 @@ def assess(h: PlayerHistory, config: ReadinessConfig | None = None) -> Assessmen
         sleep_hours=h.sleep_hours[-1] if h.sleep_hours else None,
         ln_rmssd=h.ln_rmssd[-1] if h.ln_rmssd else None,
         hrv_baseline=list(h.ln_rmssd[:-1]),
-        config=config,
+        config=config or active_config(),
+        previous_band=h.previous_band,
     )
     g = None
     if h.measurements is not None:

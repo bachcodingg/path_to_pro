@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import csv
 import io
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -18,7 +18,7 @@ from api import clock
 from api.db import get_db
 from api.deps import CurrentUser, age_on, audit, player_in_scope, require, staff_of
 from api.routers.player import player_card, roadmap_view
-from api.services import agent_runner, views
+from api.services import agent_runner, calibration, views
 from domain.enums import AgentName, ProposalStatus, Role
 from domain.models import (
     AgentRun,
@@ -31,6 +31,7 @@ from domain.models import (
     PlayerNote,
     Proposal,
     StaffMember,
+    StaffRating,
     WeeklyPlan,
 )
 
@@ -391,3 +392,58 @@ def run_nightly(user: CurrentUser = Depends(require(Role.COACH)), db: Session = 
     audit(db, user, "run", "agent_run", None, **out)
     db.commit()
     return out
+
+
+# --------------------------------------------------------------------------- staff ratings + calibration
+
+
+class Rating(BaseModel):
+    band: Literal["green", "amber", "red"]
+    day: date | None = None
+
+
+@router.post("/players/{player_id}/rating")
+def rate_player(
+    player_id: str, body: Rating, user: CurrentUser = Depends(require(*STAFF)), db: Session = Depends(get_db)
+) -> dict:
+    """Staff's own judgement of how ready a player looks (used to calibrate the score)."""
+    p = player_in_scope(player_id, user, db)
+    staff = staff_of(user, db)
+    day = body.day or clock.today()
+    if day > clock.today():
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Cannot rate a future day")
+    row = db.scalars(
+        select(StaffRating).where(StaffRating.player_id == p.id, StaffRating.staff_id == staff.id, StaffRating.day == day)
+    ).first()
+    if row is None:
+        row = StaffRating(player_id=p.id, staff_id=staff.id, day=day, band=body.band)
+        db.add(row)
+    else:
+        row.band = body.band
+    audit(db, user, "create", "staff_rating", p.id, day=day.isoformat())
+    db.commit()
+    return {"player_id": p.id, "day": day.isoformat(), "band": body.band}
+
+
+@router.get("/calibration")
+def calibration_report(user: CurrentUser = Depends(require(*STAFF)), db: Session = Depends(get_db)) -> dict:
+    out = calibration.report(db, staff_of(user, db).squad_id)
+    audit(db, user, "read", "staff_rating", None, view="calibration", n=out["n"])
+    db.commit()
+    return out
+
+
+class Weights(BaseModel):
+    weights: dict[str, float] | None = Field(default=None, description="null resets to the default weights")
+
+
+@router.post("/calibration/apply")
+def calibration_apply(body: Weights, user: CurrentUser = Depends(require(Role.COACH)), db: Session = Depends(get_db)) -> dict:
+    """A coach reviews the suggestion and applies it (or resets). Takes effect for new scores."""
+    try:
+        calibration.apply(db, body.weights)
+    except ValueError as e:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(e)) from e
+    audit(db, user, "update", "readiness_weights", None, weights=body.weights)
+    db.commit()
+    return calibration.report(db, staff_of(user, db).squad_id)

@@ -31,14 +31,14 @@
       "acwr_spike_pct": 2.2,
       "monotony_weeks": 4,
       "monotony_pct": 0.4,
-      "weekly_load_mean": 1727.5634,
-      "weekly_load_sd": 651.1276126846718,
+      "weekly_load_mean": 1727.4028,
+      "weekly_load_sd": 650.4065560341162,
       "sleep_mean": 7.481314285714285,
       "sleep_sd": 0.8998328026100523,
-      "ln_rmssd_mean": 4.172632285714285,
-      "readiness_mean": 66.05782857142857,
-      "readiness_red_pct": 12.371428571428572,
-      "readiness_green_pct": 39.871428571428574,
+      "ln_rmssd_mean": 4.172637142857143,
+      "readiness_mean": 66.06094285714285,
+      "readiness_red_pct": 12.414285714285715,
+      "readiness_green_pct": 39.84285714285714,
       "checkin_compliance_pct": 90.02857142857142,
       "injuries": 36,
       "injuries_in_phv": 8,
@@ -54,20 +54,20 @@
       "session_on_exam_day": 275,
       "md_minus_1_too_hard": 101
     },
-    "planner_runs": 1688,
+    "planner_runs": 1686,
     "planner_status": {
-      "optimal": 1688
+      "optimal": 1686
     },
     "constraint_source": {
-      "rules": 1688
+      "rules": 1686
     },
-    "solver_max_s_player_week": 0.21121909999055788,
-    "solver_mean_s_player_week": 0.03206465100707879,
-    "solver_max_s_squad_week": 1.6620459998957813,
+    "solver_max_s_player_week": 0.7172178999753669,
+    "solver_mean_s_player_week": 0.08677486565797744,
+    "solver_max_s_squad_week": 4.250127199920826,
     "decisions": {
       "weekly_plan": 999,
-      "coach_approval": 442,
-      "escalate": 28,
+      "coach_approval": 439,
+      "escalate": 30,
       "auto_apply_notify_coach": 7
     }
   },
@@ -98,14 +98,14 @@
       "acwr_spike_pct": 2.2,
       "monotony_weeks": 3,
       "monotony_pct": 0.3,
-      "weekly_load_mean": 1708.9919,
-      "weekly_load_sd": 661.0093613893755,
+      "weekly_load_mean": 1708.5878,
+      "weekly_load_sd": 660.6298204676807,
       "sleep_mean": 7.481317142857143,
       "sleep_sd": 0.8999633211528169,
-      "ln_rmssd_mean": 4.173616428571428,
-      "readiness_mean": 66.09174285714286,
+      "ln_rmssd_mean": 4.173648428571429,
+      "readiness_mean": 66.09472857142856,
       "readiness_red_pct": 12.428571428571429,
-      "readiness_green_pct": 39.9,
+      "readiness_green_pct": 39.92857142857143,
       "checkin_compliance_pct": 90.01428571428572,
       "injuries": 40,
       "injuries_in_phv": 9,
@@ -114,27 +114,27 @@
     },
     "spike_reduction_pct": 66.15384615384616,
     "monotony_reduction_pct": null,
-    "dev_delivery_pct": 91.18028534370947,
+    "dev_delivery_pct": 91.24513618677042,
     "plan_hard_violations": 0,
     "executed_violations_agents": {},
     "executed_violations_baseline": {
       "session_on_exam_day": 270,
       "md_minus_1_too_hard": 103
     },
-    "planner_runs": 1691,
+    "planner_runs": 1690,
     "planner_status": {
-      "optimal": 1691
+      "optimal": 1690
     },
     "constraint_source": {
-      "rules": 1691
+      "rules": 1690
     },
-    "solver_max_s_player_week": 0.2068903999752365,
-    "solver_mean_s_player_week": 0.03139606865900439,
-    "solver_max_s_squad_week": 1.614793499931693,
+    "solver_max_s_player_week": 0.5732080000452697,
+    "solver_mean_s_player_week": 0.08779621615405911,
+    "solver_max_s_squad_week": 4.278616700030398,
     "decisions": {
       "weekly_plan": 999,
-      "coach_approval": 447,
-      "escalate": 25,
+      "coach_approval": 445,
+      "escalate": 27,
       "auto_apply_notify_coach": 6
     }
   },
@@ -165,13 +165,13 @@
       "acwr_spike_pct": 1.8,
       "monotony_weeks": 4,
       "monotony_pct": 0.4,
-      "weekly_load_mean": 1794.5495,
-      "weekly_load_sd": 608.0464821045756,
+      "weekly_load_mean": 1794.0621999999998,
+      "weekly_load_sd": 607.208926079945,
       "sleep_mean": 7.481314285714285,
       "sleep_sd": 0.8998328026100523,
-      "ln_rmssd_mean": 4.169109714285714,
-      "readiness_mean": 65.9673,
-      "readiness_red_pct": 12.528571428571428,
+      "ln_rmssd_mean": 4.169132285714285,
+      "readiness_mean": 65.96708571428572,
+      "readiness_red_pct": 12.557142857142857,
       "readiness_green_pct": 39.74285714285714,
       "checkin_compliance_pct": 90.02857142857142,
       "injuries": 28,
@@ -181,27 +181,27 @@
     },
     "spike_reduction_pct": 58.13953488372093,
     "monotony_reduction_pct": null,
-    "dev_delivery_pct": 91.58354114713217,
+    "dev_delivery_pct": 91.52119700748129,
     "plan_hard_violations": 0,
     "executed_violations_agents": {},
     "executed_violations_baseline": {
       "session_on_exam_day": 277,
       "md_minus_1_too_hard": 105
     },
-    "planner_runs": 1697,
+    "planner_runs": 1694,
     "planner_status": {
-      "optimal": 1697
+      "optimal": 1694
     },
     "constraint_source": {
-      "rules": 1697
+      "rules": 1694
     },
-    "solver_max_s_player_week": 0.19954790000338107,
-    "solver_mean_s_player_week": 0.031837333825048615,
-    "solver_max_s_squad_week": 1.6575475000427105,
+    "solver_max_s_player_week": 0.46196670003701,
+    "solver_mean_s_player_week": 0.08833649138134653,
+    "solver_max_s_squad_week": 4.397483200009447,
     "decisions": {
       "weekly_plan": 999,
-      "coach_approval": 442,
-      "escalate": 27,
+      "coach_approval": 439,
+      "escalate": 29,
       "auto_apply_notify_coach": 7
     }
   },
@@ -210,12 +210,52 @@
     "mae": 0.302700216154742
   },
   "readiness_sensitivity_pct": {
-    "hrv+0.1": 12.642857142857142,
-    "hrv-0.1": 15.028571428571428,
-    "hooper+0.1": 6.785714285714286,
-    "hooper-0.1": 5.585714285714285,
-    "sleep+0.1": 13.257142857142858,
-    "sleep-0.1": 11.985714285714286
+    "hrv+0.1": 12.057142857142857,
+    "hrv-0.1": 14.314285714285715,
+    "hooper+0.1": 7.385714285714286,
+    "hooper-0.1": 6.057142857142857,
+    "sleep+0.1": 12.814285714285715,
+    "sleep-0.1": 11.357142857142858
+  },
+  "readiness_colours": {
+    "buffer": {
+      "up": 8,
+      "down": 0
+    },
+    "sensitivity_no_buffer": 15.028571428571428,
+    "sensitivity_buffer": 14.314285714285715,
+    "sensitivity_calibrated": 13.028571428571428,
+    "changes_no_buffer_pct": 58.22857142857143,
+    "changes_buffer_pct": 44.0,
+    "red_days_no_buffer_pct": 13.942857142857143,
+    "red_days_buffer_pct": 16.957142857142856,
+    "calibration": {
+      "n": 2072,
+      "weights_before": {
+        "hrv": 0.4,
+        "hooper": 0.35,
+        "sleep": 0.25
+      },
+      "weights_after": {
+        "hrv": 0.35000000000000003,
+        "hooper": 0.55,
+        "sleep": 0.1
+      },
+      "before": {
+        "n": 2072,
+        "accuracy": 0.5111003861003861,
+        "kappa": 0.32104758281924484,
+        "red_recall": 0.4095744680851064
+      },
+      "after": {
+        "n": 2072,
+        "accuracy": 0.5197876447876448,
+        "kappa": 0.33598332818771226,
+        "red_recall": 0.4148936170212766
+      },
+      "cv_kappa_before": 0.32104758281924484,
+      "cv_kappa_after": 0.33598332818771226
+    }
   },
   "safety_scenarios": {
     "passed": 50,
@@ -240,7 +280,7 @@
       100.0
     ]
   },
-  "red_checkin_to_escalation_s": 0.00027329998556524515,
+  "red_checkin_to_escalation_s": 0.0005804999964311719,
   "llm": {
     "backend": null,
     "first_try_valid_pct": null,

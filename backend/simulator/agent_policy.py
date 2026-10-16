@@ -44,6 +44,7 @@ class AgentPolicy:
         self.outcomes: list[dict] = []  # one row per planner run, for the evaluation
         self.decisions: dict[str, int] = defaultdict(int)
         self._last_flags: dict[str, set] = {}
+        self._bands: dict[str, object] = {}  # yesterday's readiness band, for the colour buffer
 
     # ------------------------------------------------------------------ helpers
 
@@ -64,6 +65,7 @@ class AgentPolicy:
             if m is None
             else Measurements(m["age"], m["height_cm"], m["sitting_height_cm"], m["weight_kg"]),
             preseason_daily_load=PRESEASON_DAILY_LOAD,
+            previous_band=self._bands.get(ps.profile.player_id),
         )
 
     def _status(self, a: Assessment) -> MaturityStatus:
@@ -142,6 +144,7 @@ class AgentPolicy:
             return plan
         pid = ps.profile.player_id
         a = assess(self._history(ps, ctx.dates[wd], include_today_checkin=True))
+        self._bands[pid] = a.readiness.band if a.readiness else None
         if a.safety_flags:
             self.decisions["escalate"] += 1
             return plan  # named staff handle it; no agent action

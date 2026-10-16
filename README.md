@@ -52,15 +52,21 @@ More: [architecture](docs/architecture.md) · [demo script](docs/demo-script.md)
 | Player-weeks with ACWR > 1.5 | ≥ 50% fewer | **58-66% fewer** |
 | Development sessions delivered | ≥ 90% | **91-92%** |
 | Solver time | < 2 s / player-week | **≤ 0.21 s** |
-| Readiness weight sensitivity | < 10% bands change | 15% (finding: plan's weights need hysteresis or calibration) |
+| Readiness colour changes day to day | fewer, no delayed warnings | 58% -> 44% of days (safety-first buffer) |
+| Weights calibrated against staff ratings | better agreement, red recall kept | kappa 0.32 -> 0.34 (synthetic ratings) |
+| Readiness weight sensitivity | < 10% bands change | 15.0% -> 13.0% with buffer + calibration (see [safety case](docs/safety-case.md)) |
 
 Not yet measured: LLM first-try validity (needs an API key), expert plan ratings and SUS
 (need people). Weeks with monotony > 2 can't show a reduction: the baseline never exceeds 2.
 
+**Readiness calibration:** staff rate players in the heatmap ("How ready does he look?");
+the Calibration page suggests weights that agree best with staff without missing more red
+days, and a coach applies them. Demo ratings are synthetic.
+
 ## Tests
 
 ```bash
-cd backend && pytest                      # 112 unit, scenario and API tests
+cd backend && pytest                      # 125 unit, scenario and API tests
 cd frontend && npm test                   # Vitest
 cd frontend && npx playwright test        # end-to-end demo flow (API on :8000, web on :5173)
 ```

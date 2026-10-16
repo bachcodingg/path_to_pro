@@ -200,7 +200,7 @@ class SeasonSimulator:
         self.rng_fixtures = np.random.default_rng([seed, 1])
         self.rng_policy = np.random.default_rng([seed, 2])
 
-    _STREAMS: ClassVar[dict[str, int]] = {"morning": 0, "train": 1, "injury": 2, "test": 3, "measure": 4}
+    _STREAMS: ClassVar[dict[str, int]] = {"morning": 0, "train": 1, "injury": 2, "test": 3, "measure": 4, "staff": 5}
 
     def _rng(self, ps: PlayerState, d: date, purpose: str) -> np.random.Generator:
         return np.random.default_rng([self.cfg["seed"], 10, ps.profile.index, d.toordinal(), self._STREAMS[purpose]])
@@ -371,6 +371,8 @@ class SeasonSimulator:
         )
         ps.readiness_scores.append(None if r is None else r.score)
         ps.today_checkin = {"hooper": hooper, "mood_red": mood_red, "pain": pain, "completed": completed}
+        staff = self._staff_rating(ps, d, sleep, exam_week)
+        comps = {} if r is None else dict(r.components)
         res.checkins.append(
             {
                 "player_id": ps.profile.player_id,
@@ -385,8 +387,29 @@ class SeasonSimulator:
                 "sleep_hours": round(sleep, 2),
                 "ln_rmssd": round(ln, 3),
                 "missed_in_row": ps.missed_in_row,
+                "comp_hrv": None if comps.get("hrv") is None else round(comps["hrv"], 2),
+                "comp_hooper": None if comps.get("hooper") is None else round(comps["hooper"], 2),
+                "comp_sleep": None if comps.get("sleep") is None else round(comps["sleep"], 2),
+                "staff_rating": staff,
             }
         )
+
+    def _staff_rating(self, ps: PlayerState, d: date, sleep: float, exam_week: bool) -> str | None:
+        """Synthetic staff judgement (green/amber/red) on some days, for calibrating the
+        readiness weights. Staff see the player's true state (fatigue, sleep debt, exam
+        stress) through their own noise; this is a stand-in until real ratings exist."""
+        sc = self.cfg["staff_ratings"]
+        rng = self._rng(ps, d, "staff")
+        if rng.random() >= sc["share_of_days"]:
+            return None
+        latent = (
+            100
+            - sc["fatigue_coef"] * ps.fatigue
+            - sc["sleep_debt_coef"] * max(0.0, 8.0 - sleep)
+            - (sc["exam_penalty"] if exam_week else 0.0)
+            + rng.normal(0, sc["noise_sd"])
+        )
+        return "green" if latent >= 70 else "amber" if latent >= 50 else "red"
 
     def _train(self, ps: PlayerState, d: date, wd: int, ctx: WeekContext, plan, res) -> tuple[float, bool]:
         c, rng = self.cfg, self._rng(ps, d, "train")

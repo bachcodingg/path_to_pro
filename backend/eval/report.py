@@ -25,7 +25,8 @@ def markdown(r: dict) -> str:
     hard = sum(v[k]["plan_hard_violations"] for k in VARIANTS)
     exec_hard = sum(sum(v[k]["executed_violations_agents"].values()) for k in VARIANTS)
     s = r["safety_scenarios"]
-    sens = r["readiness_sensitivity_pct"]
+    rd = r["readiness_colours"]
+    cal = rd["calibration"]
     llm = r["llm"]
     rows = [
         ("Hard constraint violations", "0", f"{hard} in plans, {exec_hard} in executed weeks", hard == 0 and exec_hard == 0),
@@ -80,8 +81,24 @@ def markdown(r: dict) -> str:
         (
             "Readiness weight sensitivity",
             "< 10% of daily bands change at +/-0.1",
-            f"max {max(sens.values()):.1f}%",
-            max(sens.values()) < 10,
+            f"{rd['sensitivity_no_buffer']:.1f}% without buffer, {rd['sensitivity_buffer']:.1f}% with buffer, "
+            f"{rd['sensitivity_calibrated']:.1f}% with buffer + calibrated weights",
+            rd["sensitivity_calibrated"] < 10,
+        ),
+        (
+            "Readiness colour stability (colour buffer)",
+            "fewer day-to-day colour changes, warnings never delayed",
+            f"{rd['changes_no_buffer_pct']:.0f}% -> {rd['changes_buffer_pct']:.0f}% of days change colour "
+            f"(buffer up {rd['buffer']['up']:g}, down {rd['buffer']['down']:g})",
+            rd["changes_buffer_pct"] < rd["changes_no_buffer_pct"] and rd["buffer"]["down"] == 0,
+        ),
+        (
+            "Weights calibrated against staff ratings",
+            "better agreement, red recall not lower",
+            f"kappa {cal['before']['kappa']:.2f} -> {cal['after']['kappa']:.2f} "
+            f"(held-out {cal['cv_kappa_before']:.2f} -> {cal['cv_kappa_after']:.2f}), red recall "
+            f"{cal['before']['red_recall']:.0%} -> {cal['after']['red_recall']:.0%}, n={cal['n']} synthetic ratings",
+            cal["after"]["kappa"] >= cal["before"]["kappa"] and cal["after"]["red_recall"] >= cal["before"]["red_recall"],
         ),
     ]
     out = [

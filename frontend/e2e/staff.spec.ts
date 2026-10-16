@@ -69,3 +69,15 @@ test("guardian sees summary and can switch consent", async ({ page }) => {
   await expect(sw).toBeChecked({ checked: was });
   await page.screenshot({ path: `${SHOTS}/guardian.png`, fullPage: true });
 });
+
+test("coach rates a player and reviews the readiness calibration", async ({ page }) => {
+  await login(page, "coach@demo.pathtopro");
+  await page.getByRole("button", { name: /Leon U\. .*: \d+/ }).first().click();
+  await page.getByRole("button", { name: "Take care" }).click();
+  await expect(page.getByText("Saved. Used to calibrate the score.")).toBeVisible();
+
+  await page.getByRole("link", { name: "Calibration" }).click();
+  await expect(page.getByRole("heading", { name: "Readiness calibration" })).toBeVisible();
+  await expect(page.getByText("Staff red days the score also calls red")).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/coach-calibration.png`, fullPage: true });
+});

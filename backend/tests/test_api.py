@@ -184,3 +184,29 @@ def test_guardian_scope_consent_export_delete(demo):
     assert deleted.status_code == 200 and deleted.json()["deleted"]["session_loads"] > 0
     with SessionLocal() as db:
         assert db.scalar(select(func.count()).select_from(SessionLoad).where(SessionLoad.player_id == kid)) == 0
+
+
+def test_staff_rating_and_calibration(demo):
+    client, _ = demo
+    coach = login(client, "coach@demo.pathtopro")
+    pid = client.get("/api/coach/heatmap", headers=coach).json()["players"][0]["id"]
+    r = client.post(f"/api/coach/players/{pid}/rating", headers=coach, json={"band": "amber"})
+    assert r.status_code == 200 and r.json()["band"] == "amber"
+    assert client.post(f"/api/coach/players/{pid}/rating", headers=coach, json={"band": "purple"}).status_code == 422
+
+    rep = client.get("/api/coach/calibration", headers=coach).json()
+    assert rep["n"] > 0 and set(rep["current"]) == {"hrv", "hooper", "sleep"}
+    assert rep["hysteresis"]["down"] == 0
+
+    bad = client.post("/api/coach/calibration/apply", headers=coach, json={"weights": {"hrv": 0.9, "hooper": 0.05, "sleep": 0.05}})
+    assert bad.status_code == 422
+    new = {"hrv": 0.3, "hooper": 0.5, "sleep": 0.2}
+    ok = client.post("/api/coach/calibration/apply", headers=coach, json={"weights": new})
+    assert ok.status_code == 200 and ok.json()["current"] == new
+    reset = client.post("/api/coach/calibration/apply", headers=coach, json={"weights": None})
+    assert reset.json()["current"] == {"hrv": 0.4, "hooper": 0.35, "sleep": 0.25}
+
+    physio = login(client, "physio@demo.pathtopro")
+    assert client.post("/api/coach/calibration/apply", headers=physio, json={"weights": new}).status_code == 403
+    player = login(client, "p03@demo.pathtopro")
+    assert client.post(f"/api/coach/players/{pid}/rating", headers=player, json={"band": "red"}).status_code == 403

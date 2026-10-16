@@ -1,5 +1,6 @@
 // "Dressing room": players x last 14 days, cell = readiness. Ring = PHV window, triangle = load flag.
 import { useState } from "react";
+import { api } from "../shared/api";
 import { Link } from "react-router-dom";
 import type { Heatmap as HeatmapData, HeatmapRow } from "../shared/types";
 import { useApi } from "../shared/useApi";
@@ -96,6 +97,7 @@ export function Heatmap() {
             </p>
             <p className="text-ink-2 text-sm">Current flags: {sel.row.flags.length ? sel.row.flags.join(", ").replaceAll("_", " ") : "none"}</p>
           </div>
+          <RateButtons playerId={sel.row.id} day={sel.row.cells[sel.i].date} />
           <div className="flex items-center gap-3">
             <BandBadge band={sel.row.cells[sel.i].band} score={sel.row.cells[sel.i].score} />
             <Link to={`/coach/players/${sel.row.id}`} className="text-pitch-600 font-semibold hover:underline">
@@ -125,6 +127,30 @@ function Legend() {
       <span className="flex items-center gap-1">
         <span className="text-ready-red">▲</span> Load spike
       </span>
+    </div>
+  );
+}
+
+function RateButtons({ playerId, day }: { playerId: string; day: string }) {
+  const [saved, setSaved] = useState<string | null>(null);
+  async function rate(band: "green" | "amber" | "red") {
+    await api(`/api/coach/players/${playerId}/rating`, { method: "POST", json: { band, day } });
+    setSaved(band);
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2" key={playerId + day}>
+      <span className="text-ink-2 text-sm">How ready did he look?</span>
+      {(["green", "amber", "red"] as const).map((b) => (
+        <button
+          key={b}
+          onClick={() => rate(b)}
+          aria-pressed={saved === b}
+          className={cn("tap inline-flex items-center gap-1 rounded-xl px-3 text-sm font-semibold text-white", BAND_BG[b], saved && saved !== b && "opacity-40")}
+        >
+          <BandIcon band={b} className="h-4 w-4" /> {b === "green" ? "Ready" : b === "amber" ? "Take care" : "Recover"}
+        </button>
+      ))}
+      {saved && <span className="text-ink-2 text-xs" role="status">Saved. Used to calibrate the score.</span>}
     </div>
   );
 }

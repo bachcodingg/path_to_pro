@@ -10,22 +10,24 @@
 | LLM output valid on first try | >= 95% (200 runs) | LLM not used (rule-based run) | not measured |
 | LLM valid after retry or fallback | 100% | 100% (every run produced a plan) | PASS |
 | Planner consistency (20 runs) | >= 80% identical | 100% | PASS |
-| Solver time | < 2 s player-week, < 60 s squad | max 0.21 s / 1.7 s | PASS |
-| Red check-in to staff notification | < 5 min | agent decision 0 ms (end-to-end measured in API tests) | PASS |
+| Solver time | < 2 s player-week, < 60 s squad | max 0.72 s / 4.4 s | PASS |
+| Red check-in to staff notification | < 5 min | agent decision 1 ms (end-to-end measured in API tests) | PASS |
 | Expert rating of 10 plans | >= 3.5 / 5 | pending: needs 2+ reviewers | not measured |
 | SUS score | >= 70 | pending: usability tests in week 10 | not measured |
-| Readiness weight sensitivity | < 10% of daily bands change at +/-0.1 | max 15.0% | FAIL |
+| Readiness weight sensitivity | < 10% of daily bands change at +/-0.1 | 15.0% without buffer, 14.3% with buffer, 13.0% with buffer + calibrated weights | FAIL |
+| Readiness colour stability (colour buffer) | fewer day-to-day colour changes, warnings never delayed | 58% -> 44% of days change colour (buffer up 8, down 0) | PASS |
+| Weights calibrated against staff ratings | better agreement, red recall not lower | kappa 0.32 -> 0.34 (held-out 0.32 -> 0.34), red recall 41% -> 41%, n=2072 synthetic ratings | PASS |
 
 ## Season detail
 
 | Injury model | Policy | ACWR>1.5 weeks | Monotony>2 weeks | Mean weekly load | Red readiness days | Injuries (in PHV) |
 | --- | --- | --- | --- | --- | --- | --- |
 | load | baseline | 57 | 0 | 2137 | 13.9% | 40 (11) |
-| load | agents | 22 | 4 | 1728 | 12.4% | 36 (8) |
+| load | agents | 22 | 4 | 1727 | 12.4% | 36 (8) |
 | readiness | baseline | 65 | 0 | 2099 | 13.9% | 46 (11) |
 | readiness | agents | 22 | 3 | 1709 | 12.4% | 40 (9) |
 | random | baseline | 43 | 0 | 2189 | 13.9% | 30 (8) |
-| random | agents | 18 | 4 | 1795 | 12.5% | 28 (6) |
+| random | agents | 18 | 4 | 1794 | 12.6% | 28 (6) |
 
 Executed-week rule checks (planned RPE): load: agents none, baseline {'session_on_exam_day': 275, 'md_minus_1_too_hard': 101}; readiness: agents none, baseline {'session_on_exam_day': 270, 'md_minus_1_too_hard': 103}; random: agents none, baseline {'session_on_exam_day': 277, 'md_minus_1_too_hard': 105}
 

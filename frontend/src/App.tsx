@@ -8,6 +8,7 @@ import { Spinner } from "./shared/ui";
 
 const CoachLayout = lazy(() => import("./coach/CoachLayout").then((m) => ({ default: m.CoachLayout })));
 const AgentLog = lazy(() => import("./coach/AgentLog").then((m) => ({ default: m.AgentLog })));
+const Calibration = lazy(() => import("./coach/Calibration").then((m) => ({ default: m.Calibration })));
 const Heatmap = lazy(() => import("./coach/Heatmap").then((m) => ({ default: m.Heatmap })));
 const Inbox = lazy(() => import("./coach/Inbox").then((m) => ({ default: m.Inbox })));
 const PlayerProfile = lazy(() => import("./coach/PlayerProfile").then((m) => ({ default: m.PlayerProfile })));
@@ -64,6 +65,7 @@ export function App() {
         <Route path="tactics" element={<TacticsBoard />} />
         <Route path="players/:id" element={<PlayerProfile />} />
         <Route path="log" element={<AgentLog />} />
+        <Route path="calibration" element={<Calibration />} />
       </Route>
       <Route
         path="/physio"

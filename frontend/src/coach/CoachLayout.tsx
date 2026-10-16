@@ -1,4 +1,4 @@
-import { ClipboardList, Grid3x3, LogOut, MessageSquareText, Play, Stethoscope, Users } from "lucide-react";
+import { ClipboardList, Gauge, Grid3x3, LogOut, MessageSquareText, Play, Stethoscope, Users } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { api } from "../shared/api";
@@ -11,6 +11,7 @@ const NAV = [
   { to: "/coach/inbox", label: t("nav.inbox"), icon: ClipboardList },
   { to: "/coach/tactics", label: t("nav.tactics"), icon: Users },
   { to: "/coach/log", label: t("nav.log"), icon: MessageSquareText },
+  { to: "/coach/calibration", label: t("nav.calibration"), icon: Gauge },
   { to: "/physio", label: t("nav.physio"), icon: Stethoscope },
 ];
 

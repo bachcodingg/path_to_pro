@@ -12,6 +12,7 @@ import json
 import statistics
 import time
 from collections import Counter, defaultdict
+from dataclasses import asdict, replace
 from pathlib import Path
 
 from agents import planner_agent
@@ -19,7 +20,8 @@ from agents.llm import LLMBackend
 from agents.monitor import assess
 from agents.orchestrator import run_cycle
 from agents.rules import DevGoal
-from analytics.readiness import ReadinessConfig, band_for, combine, hooper_score, hrv_score, hrv_z, sleep_score
+from analytics.calibration import RatedDay, fit_weights
+from analytics.readiness import Band, ReadinessConfig, band_for, combine, hooper_score, hrv_score, hrv_z, sleep_score
 from eval.metrics import mirwald_error, season_metrics
 from eval.scenarios import history as scenario_history
 from eval.scenarios import inp as scenario_inp
@@ -94,19 +96,19 @@ def res_week(res: SeasonResult, d: str) -> int:
 # --------------------------------------------------------------------------- readiness sensitivity
 
 
-def readiness_sensitivity(res: SeasonResult, delta: float = 0.1) -> dict[str, float]:
-    """% of daily bands that change when one weight shifts by +/-delta (others rescaled)."""
-    base_cfg = ReadinessConfig.load()
+def _season_components(res: SeasonResult) -> list[list[dict]]:
+    """Per player, the daily component scores in date order."""
     rows = defaultdict(list)
     for c in res.checkins:
         rows[c["player_id"]].append(c)
-    comps = []
-    for _pid, cs in rows.items():
+    out = []
+    for cs in rows.values():
         hrv_hist: list[float] = []
+        days = []
         for c in cs:
             z = hrv_z(c["ln_rmssd"], hrv_hist)
             hrv_hist.append(c["ln_rmssd"])
-            comps.append(
+            days.append(
                 {
                     "hrv": None if z is None else hrv_score(z),
                     "hooper": None
@@ -115,7 +117,38 @@ def readiness_sensitivity(res: SeasonResult, delta: float = 0.1) -> dict[str, fl
                     "sleep": sleep_score(c["sleep_hours"]),
                 }
             )
-    base_bands = [band_for(combine(c, base_cfg).score, base_cfg) for c in comps]
+        out.append(days)
+    return out
+
+
+def _bands(players: list[list[dict]], cfg: ReadinessConfig) -> list:
+    """Daily bands as the app shows them: the colour buffer carries yesterday's band."""
+    out = []
+    for days in players:
+        prev = None
+        for comp in days:
+            r = combine(comp, cfg)
+            if r is not None:  # no usable input that day: the colour stays as it was
+                prev = band_for(r.score, cfg, prev)
+            out.append(prev)
+    return out
+
+
+def _changes(players: list[list[dict]], cfg: ReadinessConfig) -> float:
+    """% of days whose colour differs from the day before (flicker)."""
+    n = changed = 0
+    for days in players:
+        b = _bands([days], cfg)
+        n += len(b)
+        changed += sum(x != y for x, y in zip(b, b[1:]))
+    return 100 * changed / n
+
+
+def readiness_sensitivity(res: SeasonResult, delta: float = 0.1, config: ReadinessConfig | None = None) -> dict[str, float]:
+    """% of daily bands that change when one weight shifts by +/-delta (others rescaled)."""
+    base_cfg = config or ReadinessConfig.load()
+    players = _season_components(res)
+    base_bands = _bands(players, base_cfg)
     out = {}
     for key, sign in itertools.product(base_cfg.weights, (+1, -1)):
         w = dict(base_cfg.weights)
@@ -124,10 +157,42 @@ def readiness_sensitivity(res: SeasonResult, delta: float = 0.1) -> dict[str, fl
         rest = sum(base_cfg.weights[k] for k in others)
         for k in others:
             w[k] = base_cfg.weights[k] * (1 - w[key]) / rest
-        cfg = ReadinessConfig(weights=w)
-        bands = [band_for(combine(c, cfg).score, cfg) for c in comps]
+        bands = _bands(players, base_cfg.with_weights(w))
         out[f"{key}{'+' if sign > 0 else '-'}{delta}"] = 100 * sum(a != b for a, b in zip(bands, base_bands)) / len(bands)
     return out
+
+
+def readiness_report(res: SeasonResult) -> dict:
+    """Colour buffer and weight calibration against the simulated staff ratings."""
+    cfg = ReadinessConfig.load()
+    no_buffer = replace(cfg, hysteresis_up=0.0, hysteresis_down=0.0)
+    players = _season_components(res)
+    rated = [
+        RatedDay(c["player_id"], {"hrv": c["comp_hrv"], "hooper": c["comp_hooper"], "sleep": c["comp_sleep"]}, Band(c["staff_rating"]))
+        for c in res.checkins
+        if c["staff_rating"]
+    ]
+    cal = fit_weights(rated, cfg)
+    calibrated = cfg.with_weights(cal.weights)
+    return {
+        "buffer": {"up": cfg.hysteresis_up, "down": cfg.hysteresis_down},
+        "sensitivity_no_buffer": max(readiness_sensitivity(res, config=no_buffer).values()),
+        "sensitivity_buffer": max(readiness_sensitivity(res, config=cfg).values()),
+        "sensitivity_calibrated": max(readiness_sensitivity(res, config=calibrated).values()),
+        "changes_no_buffer_pct": _changes(players, no_buffer),
+        "changes_buffer_pct": _changes(players, cfg),
+        "red_days_no_buffer_pct": 100 * sum(b == Band.RED for b in _bands(players, no_buffer)) / sum(map(len, players)),
+        "red_days_buffer_pct": 100 * sum(b == Band.RED for b in _bands(players, cfg)) / sum(map(len, players)),
+        "calibration": {
+            "n": len(rated),
+            "weights_before": dict(cfg.weights),
+            "weights_after": cal.weights,
+            "before": asdict(cal.before),
+            "after": asdict(cal.after),
+            "cv_kappa_before": cal.cv_before,
+            "cv_kappa_after": cal.cv_after,
+        },
+    }
 
 
 # --------------------------------------------------------------------------- consistency + LLM validity
@@ -204,6 +269,7 @@ def run(quick: bool = False, llm: LLMBackend | None = None, out_dir: Path | None
     base_load = seasons["load"][0]
     results["mirwald_error"] = mirwald_error(base_load)
     results["readiness_sensitivity_pct"] = readiness_sensitivity(base_load)
+    results["readiness_colours"] = readiness_report(base_load)
     scen = run_scenarios()
     results["safety_scenarios"] = {
         "passed": sum(s.passed for s in scen),

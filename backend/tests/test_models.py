@@ -14,7 +14,7 @@ PLAN_ENTITIES = {
 }  # fmt: skip
 
 
-EXTRA = {"player_guardians", "user_accounts", "player_notes", "task_completions", "daily_status", "app_settings"}
+EXTRA = {"player_guardians", "user_accounts", "player_notes", "task_completions", "daily_status", "app_settings", "staff_ratings"}
 
 
 def test_all_22_plan_entities_exist():

@@ -33,16 +33,46 @@ class ReadinessConfig:
     green_min: float = 70.0
     amber_min: float = 50.0
     sleep_target_hours: float = 9.0
+    # Buffer (hysteresis): yesterday's colour is kept unless today's score is past the
+    # boundary by this many points. Separate margins for getting better and getting worse.
+    hysteresis_up: float = 0.0
+    hysteresis_down: float = 0.0
 
     @classmethod
     def load(cls, path: Path = DEFAULT_CONFIG) -> ReadinessConfig:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        hyst = data.get("hysteresis", {})
         return cls(
             weights=data["weights"],
             green_min=data["bands"]["green_min"],
             amber_min=data["bands"]["amber_min"],
             sleep_target_hours=data["sleep_target_hours"],
+            hysteresis_up=hyst.get("up", 0.0),
+            hysteresis_down=hyst.get("down", 0.0),
         )
+
+    def with_weights(self, weights: Mapping[str, float]) -> ReadinessConfig:
+        from dataclasses import replace
+
+        return replace(self, weights=dict(weights))
+
+
+_active: ReadinessConfig | None = None
+
+
+def active_config() -> ReadinessConfig:
+    """The club's current config: the YAML file, unless calibrated weights were applied."""
+    global _active
+    if _active is None:
+        _active = ReadinessConfig.load()
+    return _active
+
+
+def set_active_weights(weights: Mapping[str, float] | None) -> ReadinessConfig:
+    """Apply calibrated weights (None = back to the YAML defaults)."""
+    global _active
+    _active = ReadinessConfig.load() if weights is None else ReadinessConfig.load().with_weights(weights)
+    return _active
 
 
 def _clamp(x: float, lo: float = 0.0, hi: float = 100.0) -> float:
@@ -90,17 +120,37 @@ class Readiness:
     weights_used: Mapping[str, float]
 
 
-def band_for(score: float, config: ReadinessConfig) -> Band:
-    if score >= config.green_min:
-        return Band.GREEN
-    if score >= config.amber_min:
-        return Band.AMBER
-    return Band.RED
+_RANK = {Band.RED: 0, Band.AMBER: 1, Band.GREEN: 2}
+
+
+def band_for(score: float, config: ReadinessConfig, previous: Band | None = None) -> Band:
+    """Band for a score. With `previous` (yesterday's band), the hysteresis margins apply:
+    a better band needs score - up_margin past the boundary, a worse band needs
+    score + down_margin below it; otherwise yesterday's band is kept."""
+
+    def raw(x: float) -> Band:
+        if x >= config.green_min:
+            return Band.GREEN
+        if x >= config.amber_min:
+            return Band.AMBER
+        return Band.RED
+
+    if previous is None:
+        return raw(score)
+    previous = Band(previous)
+    worse = raw(score + config.hysteresis_down)
+    if _RANK[worse] < _RANK[previous]:
+        return worse
+    better = raw(score - config.hysteresis_up)
+    if _RANK[better] > _RANK[previous]:
+        return better
+    return previous
 
 
 def combine(
     components: Mapping[str, float | None],
     config: ReadinessConfig | None = None,
+    previous_band: Band | None = None,
 ) -> Readiness | None:
     """Weighted readiness. Missing (None) inputs are dropped and the rest rescaled.
 
@@ -113,7 +163,8 @@ def combine(
         return None
     weights = {k: config.weights[k] / total_w for k in present}
     score = sum(weights[k] * present[k] for k in present)
-    return Readiness(score=score, band=band_for(score, config), components=present, weights_used=weights)
+    band = band_for(score, config, previous_band)
+    return Readiness(score=score, band=band, components=present, weights_used=weights)
 
 
 def readiness(
@@ -123,6 +174,7 @@ def readiness(
     ln_rmssd: float | None = None,
     hrv_baseline: Sequence[float] = (),
     config: ReadinessConfig | None = None,
+    previous_band: Band | None = None,
 ) -> Readiness | None:
     """Convenience wrapper from raw inputs to a Readiness result."""
     config = config or ReadinessConfig()
@@ -137,4 +189,5 @@ def readiness(
             "sleep": None if sleep_hours is None else sleep_score(sleep_hours, config.sleep_target_hours),
         },
         config,
+        previous_band,
     )

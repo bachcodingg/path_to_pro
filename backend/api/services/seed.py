@@ -18,6 +18,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from agents.monitor import assess
+from analytics.readiness import set_active_weights
 from api.clock import set_today
 from api.security import hash_password
 from api.services import agent_runner
@@ -37,6 +38,7 @@ from domain.models import (
     SleepRecord,
     Squad,
     StaffMember,
+    StaffRating,
     TestResult,
     UserAccount,
     WellnessCheckin,
@@ -49,6 +51,7 @@ log = logging.getLogger(__name__)
 
 DEMO_PASSWORD = "demo1234"
 TODAY_WEEK, TODAY_WEEKDAY = 12, 3  # Thursday of week 12
+STATUS_DAYS = 56  # Monitor history computed at seed time (heatmap uses 14, calibration all)
 FIRST_NAMES = [
     "Leo", "Noah", "Elias", "Finn", "Jonas", "Luca", "Ben", "Paul", "Felix", "Emil", "Anton", "Theo", "Jakob",
     "Max", "Leon", "Henry", "Oskar", "Matteo", "David", "Samuel", "Julian", "Moritz", "Nico", "Tim", "Jan",
@@ -198,10 +201,19 @@ def seed(db: Session, n_players: int = 25, story: bool = True) -> dict:
 
     story_ids = _story(db, players, yesterday) if story else {}
 
-    # Monitor history for the heatmap (14 days), then the nightly agents through this week
+    # Synthetic staff ratings (coach and physio) for the last STATUS_DAYS, for calibration
+    first_status = today - timedelta(days=STATUS_DAYS)
+    for c in res.checkins:
+        d = date.fromisoformat(c["date"])
+        if c["staff_rating"] and first_status <= d <= yesterday:
+            rater = coach if d.toordinal() % 2 else physio
+            db.add(StaffRating(player_id=players[c["player_id"]].id, staff_id=rater.id, day=d, band=c["staff_rating"]))
+
+    # Monitor history (heatmap, calibration), then the nightly agents through this week
+    set_active_weights(None)
     week_start = today - timedelta(days=TODAY_WEEKDAY)
     for p in players.values():
-        for k in range(14, 0, -1):
+        for k in range(STATUS_DAYS, 0, -1):
             d = today - timedelta(days=k)
             if d < week_start - timedelta(days=1):
                 agent_runner.save_status(db, p, d, assess(agent_runner.load_history(db, p, d)))

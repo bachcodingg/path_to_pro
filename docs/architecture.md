@@ -41,6 +41,13 @@ runs everything (PostgreSQL, API, web) and seeds the synthetic demo season.
 4. **Development Coach** runs after a test day: weakest bio-banded KPIs become 4-week
    goals (coach approves); drill suggestions are auto-applied.
 
+**Readiness colours.** The band uses a safety-first buffer (hysteresis): a better
+colour needs the score 8 points past the boundary, a worse colour applies at once.
+Staff record their own judgement ("How ready does he look?") in the heatmap; the
+Calibration page fits the weights that agree best with staff (weighted kappa, player-
+grouped cross-validation), only accepting weights that catch at least as many staff-red
+days, and a coach applies them (`analytics/calibration.py`, `api/services/calibration.py`).
+
 Every run writes an `AgentRun` (inputs, flags, constraints, solver result, decision)
 and `AuditLog` rows; the coach's "Match commentary" renders them in plain language.
 

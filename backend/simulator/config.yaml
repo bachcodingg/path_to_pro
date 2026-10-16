@@ -46,6 +46,13 @@ hrv:
   fatigue_coef: 0.15          # lnRMSSD drop per 1000 AU of residual fatigue
   sleep_coef: 0.05            # lnRMSSD drop per hour of sleep below 7.5 h
 
+staff_ratings:               # synthetic coach/physio judgements for weight calibration
+  share_of_days: 0.3
+  fatigue_coef: 30.0          # per 1000 AU of residual load
+  sleep_debt_coef: 9.0        # per hour below 8 h
+  exam_penalty: 10.0
+  noise_sd: 8.0
+
 wellness:
   checkin_compliance: 0.9
   red_mood_daily_prob: 0.002

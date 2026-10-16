@@ -18,12 +18,23 @@ not left to the LLM. Each claim below names the mechanism and the evidence.
 | Data rights | Consent per data type (guardian below 16), export, delete | API tests for consent, export, delete |
 | Security | Field-level encryption, RBAC + scope checks, audit log on every health read | API tests (RBAC, audit); `test_health_fields_are_encrypted_at_rest` |
 | Transparency | Every change has a "Why?" card (data chips + approver) and an audit-log entry | E2E test: tired player sees the card with the coach's name |
+| Readiness colours don't flicker, and warnings are never delayed | Safety-first colour buffer: a better colour needs the score 8 points past the boundary, a worse colour applies at once | Day-to-day colour changes 58% -> 44% of days; `tests/test_calibration.py` |
+| Weight changes can't hide red days | Calibration only accepts weights whose red recall vs staff ratings is at least the current weights'; a coach reviews and applies; every change audited | `tests/test_calibration.py`, API test `test_staff_rating_and_calibration` |
 
 ## Known limitations
 
-- **Readiness weights** (0.40/0.35/0.25) are team defaults, not from a study. A ±0.1
-  shift changes 15% of daily bands, above the plan's 10% robustness target. Options:
-  hysteresis on band changes, or calibrating the weights against staff ratings.
+- **Readiness weights** (0.40/0.35/0.25) are team defaults, not from a study. Staff can now
+  rate players and calibrate the weights in the app (Calibration page). On the synthetic
+  season, the colour buffer plus calibrated weights lowers the ±0.1 sensitivity from 15.0%
+  to 13.0%, still above the plan's 10% target. The cause is that the components sit at
+  different levels (HRV is centred at 50 by the plan's formula, a normal night's sleep
+  scores about 80), so moving weight between them shifts every score. Tested options that
+  pass the target: re-centring the HRV score so a normal day scores like the other inputs
+  (65-70 instead of 50), optionally with a 3-day rolling lnRMSSD average (Plews et al.).
+  These give 8-10% sensitivity but cut red days from about 14% to 2-7%, so they change what
+  "red" means and should be decided with real staff ratings, not synthetic ones.
+- **Calibration data** in the demo is synthetic (simulated staff judgements). Real gains
+  depend on real ratings; the app needs at least 60 rated days before suggesting weights.
 - **ACWR** is a weak injury predictor; it is one flag among several, and injury
   results from the simulator are secondary (synthetic injury model, three variants).
 - **Test norms** in `backend/config/norms.yaml` are placeholders and must be replaced

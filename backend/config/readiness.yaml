@@ -8,3 +8,9 @@ bands:
   green_min: 70
   amber_min: 50
 sleep_target_hours: 9.0
+# Buffer before a colour changes (points past the band boundary). Safety-first:
+# a worse colour applies at once (down: 0); a better colour needs the score to be
+# clearly past the boundary (up: 8), so players don't flicker between colours.
+hysteresis:
+  up: 8
+  down: 0

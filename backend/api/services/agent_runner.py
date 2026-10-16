@@ -126,7 +126,20 @@ def load_history(db: Session, player: Player, day: date) -> PlayerHistory:
         missed_checkins_in_row=missed,
         measurements=meas,
         preseason_daily_load=PRESEASON_DAILY_LOAD if len(daily) < 28 else None,
+        previous_band=_previous_band(db, player, day),
     )
+
+
+def _previous_band(db: Session, player: Player, day: date):
+    from analytics.readiness import Band
+
+    prev = db.scalars(
+        select(DailyStatus)
+        .where(DailyStatus.player_id == player.id, DailyStatus.day < day)
+        .order_by(DailyStatus.day.desc())
+        .limit(1)
+    ).first()
+    return Band(prev.band) if prev and prev.band and (day - prev.day).days <= 3 else None
 
 
 def match_days(db: Session, player: Player, start: date, n: int = 7) -> dict[date, Match]:
@@ -251,6 +264,7 @@ def save_status(db: Session, player: Player, day: date, a) -> DailyStatus:
     st.maturity_offset = None if a.growth is None else round(a.growth.maturity_offset, 2)
     st.flags = [{"kind": f.kind.value, "detail": f.detail} for f in a.flags]
     st.chips = list(a.chips)
+    st.components = {} if a.readiness is None else {k: round(v, 2) for k, v in a.readiness.components.items()}
     return st
 
 

@@ -33,10 +33,13 @@ def nightly_job() -> None:
 
 
 def _load_today() -> None:
+    from api.services.calibration import load_saved
+
     with SessionLocal() as db:
         row = db.get(AppSetting, "today")
         if row and settings.demo_today is None:
             clock.set_today(date.fromisoformat(row.value))
+        load_saved(db)  # calibrated readiness weights, if a coach applied them
 
 
 @asynccontextmanager
