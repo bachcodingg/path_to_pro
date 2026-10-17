@@ -56,6 +56,13 @@ FIRST_NAMES = [
     "Leo", "Noah", "Elias", "Finn", "Jonas", "Luca", "Ben", "Paul", "Felix", "Emil", "Anton", "Theo", "Jakob",
     "Max", "Leon", "Henry", "Oskar", "Matteo", "David", "Samuel", "Julian", "Moritz", "Nico", "Tim", "Jan",
 ]  # fmt: skip
+# A realistic squad spread: 2 goalkeepers, 5 centre-backs, 4 full-backs, 6 midfielders, 4 wingers, 4 strikers
+POSITIONS = [
+    "goalkeeper", "centre_back", "full_back", "midfielder", "winger", "striker", "centre_back", "midfielder",
+    "full_back", "midfielder", "winger", "striker", "centre_back", "midfielder", "striker", "goalkeeper",
+    "full_back", "midfielder", "winger", "centre_back", "striker", "midfielder", "full_back", "winger", "centre_back",
+]  # fmt: skip
+AMATEUR_EMAIL = "amateur@demo.pathtopro"
 TEMPLATE_RPE = {SessionType.TECHNICAL: 5, SessionType.STRENGTH: 6, SessionType.TACTICAL: 6, SessionType.SPEED: 6}
 TEMPLATE_MIN = {SessionType.TECHNICAL: 75, SessionType.STRENGTH: 60, SessionType.TACTICAL: 80, SessionType.SPEED: 50}
 
@@ -114,6 +121,7 @@ def seed(db: Session, n_players: int = 25, story: bool = True) -> dict:
             sex="male",
             exam_dates=exam_dates,
             escalation_contact_id=physio.id,
+            position=POSITIONS[i % len(POSITIONS)],
         )
         db.add(pl)
         db.flush()
@@ -234,6 +242,7 @@ def seed(db: Session, n_players: int = 25, story: bool = True) -> dict:
         db.flush()
         if prop is not None and i % 6 != 0:
             agent_runner.decide_proposal(db, prop, coach, "approve", note="seeded")
+    _amateur(db, pw, today, week_start)
     db.merge(AppSetting(key="today", value=today.isoformat()))
     db.commit()
     set_today(today)
@@ -244,7 +253,69 @@ def seed(db: Session, n_players: int = 25, story: bool = True) -> dict:
         "pending_proposals": len(pending),
         "story": story_ids,
         "password": DEMO_PASSWORD,
+        "amateur_email": AMATEUR_EMAIL,
     }
+
+
+def _amateur(db: Session, pw: str, today: date, week_start: date) -> None:
+    """A self-guided demo player one benchmark away from levelling up.
+
+    Maya (17) plays for her local club (training Tue and Thu, matches on Saturday), is on
+    level 2 and meets 3 of the 6 level-3 benchmarks. Logging a wall-pass test of 18 or
+    more completes the checklist and levels her up.
+    """
+    from pathway import service as pathway
+
+    player, prof = pathway.create_player(
+        db,
+        name="Maya R.",
+        email=AMATEUR_EMAIL,
+        birth_date=today - timedelta(days=round(17.4 * 365.25)),
+        sex="female",
+        position="striker",
+        level=2,
+        goal="first_team",
+        equipment="home",
+        team_days=[1, 3],
+        match_day=5,
+        today=today,
+    )
+    prof.level_since = today - timedelta(days=60)
+    pathway.sync_fixtures(db, player, prof, today - timedelta(days=35))
+    db.add(UserAccount(email=AMATEUR_EMAIL, password_hash=pw, role=Role.PLAYER, player_id=player.id))
+    tested = today - timedelta(days=12)
+    for test, value in {
+        "sprint_30m": 5.05, "yoyo_ir1": 600, "standing_long_jump": 172, "juggling": 65, "wall_pass_30s": 16, "weak_foot_10": 4,
+    }.items():  # fmt: skip
+        db.add(TestResult(player_id=player.id, day=tested, test=test, value=value))
+    # Four weeks of logged training: club nights, a solo session, Saturday matches
+    for k in range(28, 0, -1):
+        d = today - timedelta(days=k)
+        wd = d.weekday()
+        if wd in (1, 3):
+            rpe, minutes = 6, 90
+        elif wd == 5:
+            rpe, minutes = 8, 70
+        elif wd == 6 and k % 14 < 7:
+            rpe, minutes = 5, 45
+        else:
+            continue
+        db.add(SessionLoad(player_id=player.id, day=d, rpe=rpe, minutes=minutes, load_au=rpe * minutes))
+    for k in range(10, 0, -1):
+        d = today - timedelta(days=k)
+        db.add(SleepRecord(player_id=player.id, night_of=d, hours=8.1 + (k % 3) * 0.3, source="manual"))
+        db.add(
+            WellnessCheckin(
+                player_id=player.id, day=d, sleep_quality=2, fatigue=3, stress=2, soreness=3, submitted_at=_at(d, 8), duration_s=20
+            )
+        )
+    db.flush()
+    agent_runner.run_player(db, player, week_start - timedelta(days=1), "weekly")
+    d = week_start
+    while d < today:
+        agent_runner.run_player(db, player, d, "nightly")
+        d += timedelta(days=1)
+    db.flush()
 
 
 def _story(db: Session, players: dict[str, Player], yesterday: date) -> dict:

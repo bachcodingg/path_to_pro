@@ -1,0 +1,132 @@
+# Self-guided pathway for amateur and non-academy players (13+).
+#
+# Five levels. A player moves up one level at a time when they
+#   1. meet the next level's benchmark in at least `tests_needed` of the six tests, and
+#   2. trained consistently: logged at least `consistency` of the level's weekly sessions
+#      over the last 4 weeks.
+# Levels never go down automatically: a bad test day is shown as "keep working".
+#
+# PLACEHOLDER thresholds for a demo. They are set for an adult male player and adjusted
+# by age and sex below; validate them against club test data before real use.
+tests_needed: 4
+consistency: 0.75
+
+levels:
+  1:
+    name: Starter
+    who: "You play for fun or have just joined a team. Building the habit comes first."
+    weekly_load: 1200
+    min_sessions: 3
+    gym_per_week: 1
+    targets: "Train 3 times a week, learn the basic gym movements, and juggle 20 times."
+  2:
+    name: Grassroots
+    who: "You train with a club every week and play matches."
+    weekly_load: 1600
+    min_sessions: 3
+    gym_per_week: 1
+    targets: "Add a solo session for your weak spots and practise your weaker foot every week."
+  3:
+    name: Competitive amateur
+    who: "You're a regular starter in a competitive youth or amateur league."
+    weekly_load: 2000
+    min_sessions: 4
+    gym_per_week: 2
+    targets: "Two gym sessions a week, a speed block, and repeated-sprint fitness."
+  4:
+    name: Elite amateur
+    who: "You play at regional or select-team level."
+    weekly_load: 2350
+    min_sessions: 5
+    gym_per_week: 2
+    targets: "Train like an academy player: periodised weeks around your match and progressive strength."
+  5:
+    name: Trial-ready
+    who: "Your numbers match academy and semi-pro trialists. Time to get seen."
+    weekly_load: 2600
+    min_sessions: 5
+    gym_per_week: 2
+    targets: "Keep your benchmarks, film your matches, and ask your coach about trials and showcases."
+
+goals:
+  next_level: "Reach the next level"
+  first_team: "Make my club's first team"
+  trial: "Get an academy or semi-pro trial"
+  fitness: "Get fitter and stay injury-free"
+
+tests:
+  sprint_30m:
+    label: 30 m sprint
+    unit: s
+    lower_is_better: true
+    kind: physical
+    kpi: sprint_30m
+    how: "From a standing start, a friend times you over 30 m with a phone stopwatch. Best of 3, rest 2 minutes between runs."
+    thresholds: {2: 5.00, 3: 4.70, 4: 4.45, 5: 4.25}
+    age_adjust: {13: 0.55, 14: 0.40, 15: 0.25, 16: 0.12, 17: 0.05}
+    female_adjust: 0.40
+  yoyo_ir1:
+    label: Yo-Yo intermittent recovery test 1
+    unit: m
+    lower_is_better: false
+    kind: physical
+    kpi: yoyo_ir1
+    how: "Use a free Yo-Yo IR1 audio app and two cones 20 m apart. Your score is the distance when you miss the beep twice."
+    thresholds: {2: 600, 3: 1000, 4: 1440, 5: 1800}
+    age_adjust: {13: -360, 14: -280, 15: -200, 16: -120, 17: -40}
+    female_adjust: -400
+  standing_long_jump:
+    label: Standing long jump
+    unit: cm
+    lower_is_better: false
+    kind: physical
+    kpi: cmj
+    how: "Feet together behind a line, swing the arms and jump as far as you can. Measure to the back of the nearest heel. Best of 3."
+    thresholds: {2: 190, 3: 210, 4: 228, 5: 245}
+    age_adjust: {13: -35, 14: -25, 15: -15, 16: -8, 17: -3}
+    female_adjust: -30
+  juggling:
+    label: Juggling
+    unit: touches
+    lower_is_better: false
+    kind: technical
+    kpi: technique
+    how: "Keep the ball up with feet, thighs and head. Best of 3 tries."
+    thresholds: {2: 20, 3: 50, 4: 100, 5: 200}
+  wall_pass_30s:
+    label: Wall passes in 30 s
+    unit: passes
+    lower_is_better: false
+    kind: technical
+    kpi: technique
+    how: "Stand 3 m from a wall. Two-touch passes (control, pass), alternating feet. Count passes in 30 s."
+    thresholds: {2: 14, 3: 18, 4: 22, 5: 26}
+  weak_foot_10:
+    label: Weak-foot passing
+    unit: of 10
+    lower_is_better: false
+    kind: technical
+    kpi: technique
+    how: "Ten passes with your weaker foot through a 2 m gate (two cones) from 15 m. Count the hits."
+    thresholds: {2: 4, 3: 6, 4: 7, 5: 8}
+
+# Solo work matched to the player's weakest test (picked for technical days).
+solo_drills:
+  juggling:
+    - {name: "Juggling ladder", minutes: 10, how: "Weak foot only to 10, strong foot to 20, then both feet. Restart from zero on a drop."}
+    - {name: "Thigh-foot-head juggling", minutes: 10, how: "Cycle foot, thigh, head. Keep the ball below head height to stay in control."}
+  wall_pass_30s:
+    - {name: "Wall pass sprints", minutes: 12, how: "6 x 30 s two-touch wall passes, alternating feet, 30 s rest. Beat your count each set."}
+    - {name: "One-touch wall passes", minutes: 10, how: "From 3 m, one-touch with alternating feet. Move closer when you lose rhythm."}
+  weak_foot_10:
+    - {name: "Weak-foot gate passing", minutes: 12, how: "50 passes through a 2 m gate from 10-15 m with your weaker foot only."}
+    - {name: "Weak-foot first touch", minutes: 10, how: "Wall pass with the strong foot, control and return with the weak foot. 4 x 2 min."}
+  sprint_30m:
+    - {name: "Acceleration starts", minutes: 15, how: "6 x 10 m from a falling start, walk back. Then 4 x 30 m at 95%, 2 min rest."}
+  yoyo_ir1:
+    - {name: "15-15 intervals", minutes: 18, how: "15 s run, 15 s walk, 2 x 8 min with 3 min rest. Run at a pace you can hold for every rep."}
+  standing_long_jump:
+    - {name: "Jump technique", minutes: 10, how: "3 x 5 broad jumps, stick each landing for 2 s. Full rest. Not during a growth spurt."}
+  general:
+    - {name: "Ball mastery circuit", minutes: 15, how: "Sole rolls, inside-outside touches, drag-backs and turns: 30 s each, both feet."}
+    - {name: "Dribble and finish", minutes: 15, how: "Dribble a slalom of 6 cones, then shoot at a target. Alternate feet."}

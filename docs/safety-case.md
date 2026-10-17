@@ -41,3 +41,27 @@ not left to the LLM. Each claim below names the mechanism and the evidence.
   with published academy norms before real use.
 - The **Mirwald** maturity offset has a standard error of about 0.5 years.
 - All demo data is **synthetic**; no real player data is stored.
+- The **sensitivity** failures are concentrated on borderline days: 91% of the bands that
+  flip under a +/-0.1 weight shift were within 5 points of a colour boundary (the
+  evaluation now reports this), and a +/-0.05 shift changes 7.5% of bands.
+
+## Self-guided players and gym programmes
+
+- **Same hard rules.** Self-guided players are planned by the same solver (rest day, easy
+  day before matches, growth-zone limits, ACWR cap, exam evenings off). Club training
+  nights are a strong soft rule, so a red day or an exam still wins.
+- **No coach, so only easier changes are automatic.** Re-plans have an RPE ceiling from
+  the current plan, so applying them without approval can never add load. Each one shows
+  as a why-card.
+- **Safety flags without staff.** Pain or a red mood shows in-app advice to stop, tell a
+  trusted adult and see a doctor or physio; the agents do not plan around it.
+- **Consent under 16.** Sign-up needs a parent's email; the parent links with a one-time
+  invite code and grants consent per data type. Before that, no check-ins, training logs
+  or test results are stored.
+- **Gym safety.** No jumps or heavy loads in the growth-spurt window; heavy lifts only
+  after the growth spurt and from 16; recovery-only gym on red days; no eccentric work two
+  days before a match. Covered by `tests/test_gym.py`.
+- **Coach instructions** become weighted constraints, never overrides of the hard rules;
+  notes mentioning pain or injury are refused and pointed to the physio.
+- **Limits:** benchmarks and doses are placeholders; sign-up has no email verification or
+  rate limiting yet.

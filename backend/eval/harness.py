@@ -28,6 +28,7 @@ from eval.scenarios import inp as scenario_inp
 from eval.scenarios import run_all as run_scenarios
 from planner.model import MD_MINUS_1_MAX_RPE
 from simulator.agent_policy import AgentPolicy
+from simulator.policies import BaselinePolicy
 from simulator.season import SeasonResult, SeasonSimulator, load_config
 
 VARIANTS = ("load", "readiness", "random")
@@ -162,6 +163,32 @@ def readiness_sensitivity(res: SeasonResult, delta: float = 0.1, config: Readine
     return out
 
 
+def borderline_share(res: SeasonResult, delta: float = 0.1, margin: float = 5.0) -> float:
+    """Of the daily bands that flip under the worst +/-delta weight shift (no buffer),
+    the % whose score was within `margin` points of a band boundary: flips of days that
+    were borderline anyway, not of clearly green or clearly red days."""
+    cfg = replace(ReadinessConfig.load(), hysteresis_up=0.0, hysteresis_down=0.0)
+    sens = readiness_sensitivity(res, delta, cfg)
+    worst = max(sens, key=sens.get)
+    key, sign = worst[:-len(f"+{delta}")], (1 if f"+{delta}" in worst else -1)
+    w = dict(cfg.weights)
+    w[key] = max(0.0, w[key] + sign * delta)
+    rest = sum(cfg.weights[k] for k in w if k != key)
+    for k in w:
+        if k != key:
+            w[k] = cfg.weights[k] * (1 - w[key]) / rest
+    shifted = cfg.with_weights(w)
+    flips = near = 0
+    for days in _season_components(res):
+        for comp in days:
+            a, b = combine(comp, cfg), combine(comp, shifted)
+            if a is None or b is None or band_for(a.score, cfg) == band_for(b.score, shifted):
+                continue
+            flips += 1
+            near += min(abs(a.score - cfg.green_min), abs(a.score - cfg.amber_min)) <= margin
+    return 100 * near / flips if flips else 0.0
+
+
 def readiness_report(res: SeasonResult) -> dict:
     """Colour buffer and weight calibration against the simulated staff ratings."""
     cfg = ReadinessConfig.load()
@@ -179,6 +206,8 @@ def readiness_report(res: SeasonResult) -> dict:
         "sensitivity_no_buffer": max(readiness_sensitivity(res, config=no_buffer).values()),
         "sensitivity_buffer": max(readiness_sensitivity(res, config=cfg).values()),
         "sensitivity_calibrated": max(readiness_sensitivity(res, config=calibrated).values()),
+        "sensitivity_half_step": max(readiness_sensitivity(res, delta=0.05, config=cfg).values()),
+        "flips_borderline_pct": borderline_share(res),
         "changes_no_buffer_pct": _changes(players, no_buffer),
         "changes_buffer_pct": _changes(players, cfg),
         "red_days_no_buffer_pct": 100 * sum(b == Band.RED for b in _bands(players, no_buffer)) / sum(map(len, players)),
@@ -226,6 +255,32 @@ def red_checkin_latency(n: int = 20) -> float:
     return worst
 
 
+# --------------------------------------------------------------------------- equal-load baseline
+
+
+def equal_load_baseline(cfg: dict, variant: str, target_mean: float, base_mean: float) -> tuple[SeasonResult, float]:
+    """The fixed template with session minutes scaled so its mean weekly load matches the
+    agents'. Answers: are there fewer spikes because the agents plan better, or only
+    because they plan less? Matches stay as they are, so the scale is found in two runs
+    (a linear fit through the full-length and the first scaled season)."""
+    load = cfg["load"]
+    lo, hi = load["session_minutes"]
+
+    def season(f: float) -> tuple[SeasonResult, float]:
+        pol = BaselinePolicy(load["session_rpe_mean"], load["session_rpe_sd"], (round(lo * f), round(hi * f)))
+        res = SeasonSimulator(copy.deepcopy(cfg), policy=pol, injury_variant=variant).run()
+        return res, season_metrics(res)["weekly_load_mean"]
+
+    f0 = target_mean / base_mean
+    res, got = season(f0)
+    if abs(got - target_mean) > 0.02 * target_mean and f0 != 1:
+        slope = (base_mean - got) / (1 - f0)
+        f1 = f0 + (target_mean - got) / slope
+        res, got = season(f1)
+        f0 = f1
+    return res, f0
+
+
 # --------------------------------------------------------------------------- main
 
 
@@ -242,6 +297,8 @@ def run(quick: bool = False, llm: LLMBackend | None = None, out_dir: Path | None
         agent = SeasonSimulator(copy.deepcopy(cfg), policy=policy, injury_variant=variant).run()
         seasons[variant] = (base, agent, policy)
         mb, ma = season_metrics(base), season_metrics(agent)
+        eq, eq_scale = equal_load_baseline(cfg, variant, ma["weekly_load_mean"], mb["weekly_load_mean"])
+        me = season_metrics(eq)
         st = [o["solve_seconds"] for o in policy.outcomes]
         weekly = defaultdict(float)
         for o in policy.outcomes:
@@ -251,6 +308,10 @@ def run(quick: bool = False, llm: LLMBackend | None = None, out_dir: Path | None
             "baseline": mb,
             "agents": ma,
             "spike_reduction_pct": _reduction(mb["acwr_spike_weeks"], ma["acwr_spike_weeks"]),
+            "baseline_equal_load": me,
+            "equal_load_minutes_scale": eq_scale,
+            "spike_reduction_equal_load_pct": _reduction(me["acwr_spike_weeks"], ma["acwr_spike_weeks"]),
+            "executed_violations_equal_load": dict(executed_violations(eq)),
             "monotony_reduction_pct": _reduction(mb["monotony_weeks"], ma["monotony_weeks"]),
             "dev_delivery_pct": development_delivery(agent, policy),
             "plan_hard_violations": sum(o["hard_violations"] for o in policy.outcomes),

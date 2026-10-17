@@ -15,19 +15,23 @@ from analytics.norms import NormTable
 from api import clock
 from api.db import get_db
 from api.deps import CurrentUser, age_on, audit, has_consent, require
-from api.services import agent_runner, views
-from domain.enums import ConsentDataType, ProposalStatus, Role, SessionType
+from api.services import agent_runner, gym_view, views
+from domain.enums import ConsentDataType, Position, ProposalStatus, Role, SessionType
 from domain.models import (
+    AmateurProfile,
     Anthropometrics,
     Drill,
     IDPGoal,
     Player,
     Proposal,
+    SessionLoad,
     SleepRecord,
     TaskCompletion,
     TestResult,
     WellnessCheckin,
 )
+from pathway import levels
+from pathway import service as pathway
 
 router = APIRouter(prefix="/api/me", tags=["player"])
 NORMS = NormTable.load()
@@ -107,8 +111,18 @@ def _tasks_for(band: str | None, flags: set[str]) -> list[str]:
     return out
 
 
+SAFETY_ADVICE = {
+    "pain_report": "You reported pain. Don't train through it today. Tell a parent or your club coach, and see a doctor or physio if it's still there tomorrow or gets worse.",
+    "red_mood": "Thanks for being honest. Talk to someone you trust today: a parent, a coach or a friend. If you ever feel unsafe, call your local emergency number.",
+    "missed_checkins": "We haven't heard from you for a few days and your battery is low. Take it easy and check in when you can.",
+}
+
+
 def today_view(p: Player, user: CurrentUser, db: Session) -> dict:
     today = clock.today()
+    prof = pathway.profile(db, p)
+    if prof is not None:
+        pathway.ensure_week(db, p, views.week_start(today), today)
     st = views.status(db, p.id, today)
     shown = st or views.latest_status(db, p.id, today)
     plan = agent_runner.plan_days(db, p, today, 1)[0]
@@ -118,7 +132,29 @@ def today_view(p: Player, user: CurrentUser, db: Session) -> dict:
     }
     days = views.checkin_days(db, p.id)
     audit(db, user, "read", "daily_status", p.id, view="today")
+    extra: dict = {"gym": gym_view.programme(db, p, plan, today), "pathway": None, "safety": [], "logged": []}
+    if prof is not None:
+        a = pathway.assessment(db, p, prof, today)
+        extra["pathway"] = {
+            "level": a["level"],
+            "name": a["name"],
+            "next": a["next"],
+            "consistency": a["consistency"],
+            "focus": [levels.tests()[f]["label"] for f in a["focus"]],
+        }
+        extra["content"] = pathway.session_content(plan.kind.value, today.weekday() in prof.team_days, a["focus"])
+        if st is not None:
+            extra["safety"] = [SAFETY_ADVICE[f["kind"]] for f in st.flags if f["kind"] in SAFETY_ADVICE]
+        extra["logged"] = [
+            {"minutes": sl.minutes, "rpe": sl.rpe, "load": sl.load_au}
+            for sl in db.scalars(select(SessionLoad).where(SessionLoad.player_id == p.id, SessionLoad.day == today))
+        ]
+        extra["consent"] = {
+            "wellness": has_consent(db, p, ConsentDataType.WELLNESS, today),
+            "test_results": has_consent(db, p, ConsentDataType.TEST_RESULTS, today),
+        }
     return {
+        **extra,
         "date": today.isoformat(),
         "name": p.display_name,
         "checked_in": today in days,
@@ -164,11 +200,20 @@ def toggle_task(task: str, user: CurrentUser = Depends(require(Role.PLAYER)), db
 def week(offset: int = 0, user: CurrentUser = Depends(require(Role.PLAYER)), db: Session = Depends(get_db)) -> dict:
     p = _me(user, db)
     start = views.week_start(clock.today()) + timedelta(weeks=offset)
+    prof = pathway.profile(db, p)
+    if prof is not None:
+        pathway.ensure_week(db, p, start, clock.today())
     this = views.week_days(db, p, start)
     last = views.week_days(db, p, start - timedelta(weeks=1))
     actual = views.daily_loads(db, p.id, start - timedelta(weeks=1), start + timedelta(days=6))
     for d in this + last:
         d["actual_load"] = actual.get(date.fromisoformat(d["date"]))
+    if prof is not None:
+        focus = pathway.assessment(db, p, prof, clock.today())["focus"]
+        for d in this:
+            team = date.fromisoformat(d["date"]).weekday() in prof.team_days
+            d["team_day"] = team
+            d["content"] = pathway.session_content(d["kind"], team, focus)
     audit(db, user, "read", "weekly_plan", p.id)
     db.commit()
     return {"start": start.isoformat(), "today": clock.today().isoformat(), "days": this, "last_week": last}
@@ -365,3 +410,183 @@ def roadmap_view(db: Session, p: Player, today: date) -> dict:
         "streak": views.streak(days, today),
         "session_types": [t.value for t in SessionType],
     }
+
+
+# --------------------------------------------------------------------------- Gym
+
+
+@router.get("/gym")
+def gym(offset: int = 0, user: CurrentUser = Depends(require(Role.PLAYER)), db: Session = Depends(get_db)) -> dict:
+    """This week's gym sessions: the shared part for every player plus the position block."""
+    p = _me(user, db)
+    today = clock.today()
+    start = views.week_start(today) + timedelta(weeks=max(-1, min(1, offset)))
+    pathway.ensure_week(db, p, start, today)
+    out = gym_view.week(db, p, start, today)
+    audit(db, user, "read", "weekly_plan", p.id, view="gym")
+    db.commit()
+    return out
+
+
+class PositionBody(BaseModel):
+    position: Position
+
+
+@router.put("/position")
+def set_position(body: PositionBody, user: CurrentUser = Depends(require(Role.PLAYER)), db: Session = Depends(get_db)) -> dict:
+    """Self-guided players set their own position (academy positions are set by staff)."""
+    p = _me(user, db)
+    if not pathway.is_amateur(p):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Your coach sets your position")
+    p.position = body.position.value
+    audit(db, user, "update", "player", p.id, position=p.position)
+    db.commit()
+    return {"position": p.position}
+
+
+# --------------------------------------------------------------------------- Self-guided pathway
+
+
+def _amateur(user: CurrentUser, db: Session) -> tuple[Player, AmateurProfile]:
+    p = _me(user, db)
+    prof = pathway.profile(db, p)
+    if prof is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "For self-guided players: your academy plans your development")
+    return p, prof
+
+
+def pathway_view(db: Session, p: Player, prof: AmateurProfile, today: date, a: dict | None = None) -> dict:
+    a = a or pathway.assessment(db, p, prof, today)
+    age = age_on(p.birth_date, today)
+    pending = [g.invite_code for g in p.guardians if g.invite_code]
+    return {
+        "profile": {
+            "level": prof.level,
+            "level_since": prof.level_since.isoformat(),
+            "goal": prof.goal,
+            "goal_label": levels.config()["goals"].get(prof.goal, prof.goal),
+            "equipment": prof.equipment,
+            "team_days": prof.team_days,
+            "match_day": prof.match_day,
+            "position": p.position,
+        },
+        "assessment": a,
+        "ladder": levels.ladder(age, p.sex),
+        "goals": levels.config()["goals"],
+        "can_store_tests": has_consent(db, p, ConsentDataType.TEST_RESULTS, today),
+        "guardian_invite": pending[0] if pending else None,
+        "history": [
+            {"test": t.test, "date": t.day.isoformat(), "value": t.value}
+            for t in db.scalars(select(TestResult).where(TestResult.player_id == p.id).order_by(TestResult.day))
+            if t.test in levels.tests()
+        ],
+        "note": "Benchmarks are placeholder values for a demo, adjusted for age and sex. They are not validated norms.",
+    }
+
+
+@router.get("/pathway")
+def get_pathway(user: CurrentUser = Depends(require(Role.PLAYER)), db: Session = Depends(get_db)) -> dict:
+    p, prof = _amateur(user, db)
+    out = pathway_view(db, p, prof, clock.today())
+    audit(db, user, "read", "test_results", p.id, view="pathway")
+    db.commit()
+    return out
+
+
+class PathwayProfile(BaseModel):
+    goal: Literal["next_level", "first_team", "trial", "fitness"] | None = None
+    equipment: Literal["none", "home", "gym"] | None = None
+    team_days: list[int] | None = Field(default=None, max_length=5)
+    match_day: int | None = Field(default=None, ge=-1, le=6, description="-1 = no regular match")
+    position: Position | None = None
+
+
+@router.put("/pathway/profile")
+def update_pathway(body: PathwayProfile, user: CurrentUser = Depends(require(Role.PLAYER)), db: Session = Depends(get_db)) -> dict:
+    p, prof = _amateur(user, db)
+    today = clock.today()
+    schedule = False
+    if body.goal:
+        prof.goal = body.goal
+    if body.equipment:
+        prof.equipment = body.equipment
+    if body.position:
+        p.position = body.position.value
+    if body.team_days is not None:
+        if any(not 0 <= d <= 6 for d in body.team_days):
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "team_days are weekdays 0-6")
+        prof.team_days, schedule = sorted(set(body.team_days)), True
+    if body.match_day is not None:
+        prof.match_day, schedule = (None if body.match_day < 0 else body.match_day), True
+    db.flush()
+    if schedule:
+        pathway.sync_fixtures(db, p, prof, today)
+        db.flush()
+        pathway.replan_from(db, p, today, "settings")
+    audit(db, user, "update", "amateur_profile", p.id)
+    db.commit()
+    return pathway_view(db, p, prof, today)
+
+
+TEST_RANGE = {
+    "sprint_30m": (3.5, 9.0),
+    "yoyo_ir1": (40, 4000),
+    "standing_long_jump": (80, 350),
+    "juggling": (0, 10000),
+    "wall_pass_30s": (0, 60),
+    "weak_foot_10": (0, 10),
+}
+
+
+class TestEntry(BaseModel):
+    __test__ = False  # not a pytest class
+    test: str
+    value: float
+
+
+@router.post("/pathway/tests")
+def add_test(body: TestEntry, user: CurrentUser = Depends(require(Role.PLAYER)), db: Session = Depends(get_db)) -> dict:
+    p, prof = _amateur(user, db)
+    today = clock.today()
+    if body.test not in TEST_RANGE:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Unknown test")
+    lo, hi = TEST_RANGE[body.test]
+    if not lo <= body.value <= hi:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"Value must be between {lo} and {hi}")
+    if not has_consent(db, p, ConsentDataType.TEST_RESULTS, today):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Test results need consent from your parent")
+    db.add(TestResult(player_id=p.id, day=today, test=body.test, value=body.value))
+    db.flush()
+    a = pathway.evaluate(db, p, prof, today)
+    audit(db, user, "create", "test_results", p.id, test=body.test)
+    if a.get("levelled_up"):
+        pathway.replan_from(db, p, today + timedelta(days=1), "level_up")
+    db.commit()
+    return {**pathway_view(db, p, prof, today, a), "levelled_up": bool(a.get("levelled_up"))}
+
+
+class LoggedSession(BaseModel):
+    kind: SessionType
+    minutes: int = Field(ge=5, le=180)
+    rpe: int = Field(ge=1, le=10)
+    day: date | None = None
+
+
+@router.post("/log")
+def log_session(body: LoggedSession, user: CurrentUser = Depends(require(Role.PLAYER)), db: Session = Depends(get_db)) -> dict:
+    """Self-guided players log what they actually did (session RPE x minutes = load)."""
+    p, prof = _amateur(user, db)
+    today = clock.today()
+    day = body.day or today
+    if day > today or day < today - timedelta(days=7):
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Log sessions from the last 7 days")
+    if body.kind == SessionType.REST:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Nothing to log on a rest day")
+    if not has_consent(db, p, ConsentDataType.WELLNESS, today):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Logging training needs consent from your parent")
+    db.add(SessionLoad(player_id=p.id, day=day, rpe=body.rpe, minutes=body.minutes, load_au=body.rpe * body.minutes))
+    db.flush()
+    a = pathway.evaluate(db, p, prof, today)
+    audit(db, user, "create", "session_load", p.id)
+    db.commit()
+    return {"today": today_view(p, user, db), "levelled_up": bool(a.get("levelled_up"))}

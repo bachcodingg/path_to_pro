@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { homeFor, useAuth } from "./shared/auth";
 import { Login } from "./shared/Login";
+import { Register, RegisterGuardian } from "./shared/Register";
 import type { Role } from "./shared/types";
 import { Spinner } from "./shared/ui";
 
@@ -16,6 +17,8 @@ const TacticsBoard = lazy(() => import("./coach/TacticsBoard").then((m) => ({ de
 const GuardianHome = lazy(() => import("./guardian/GuardianHome").then((m) => ({ default: m.GuardianHome })));
 const PhysioHome = lazy(() => import("./physio/PhysioHome").then((m) => ({ default: m.PhysioHome })));
 const CheckIn = lazy(() => import("./player/CheckIn").then((m) => ({ default: m.CheckIn })));
+const Gym = lazy(() => import("./player/Gym").then((m) => ({ default: m.Gym })));
+const Pathway = lazy(() => import("./player/Pathway").then((m) => ({ default: m.Pathway })));
 const Growth = lazy(() => import("./player/Growth").then((m) => ({ default: m.Growth })));
 const MyWeek = lazy(() => import("./player/MyWeek").then((m) => ({ default: m.MyWeek })));
 const PlayerCard = lazy(() => import("./player/PlayerCard").then((m) => ({ default: m.PlayerCard })));
@@ -37,6 +40,8 @@ export function App() {
     <Suspense fallback={<Spinner />}>
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/register/guardian" element={<RegisterGuardian />} />
       <Route
         path="/player"
         element={
@@ -48,6 +53,8 @@ export function App() {
         <Route index element={<TodayScreen />} />
         <Route path="checkin" element={<CheckIn />} />
         <Route path="week" element={<MyWeek />} />
+        <Route path="gym" element={<Gym />} />
+        <Route path="levels" element={<Pathway />} />
         <Route path="growth" element={<Growth />} />
         <Route path="card" element={<PlayerCard />} />
         <Route path="road" element={<RoadToPro />} />

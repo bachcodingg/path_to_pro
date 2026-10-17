@@ -24,11 +24,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from fastapi.testclient import TestClient  # noqa: E402
 
+from analytics.readiness import ReadinessConfig  # noqa: E402
 from api.db import SessionLocal, init_db  # noqa: E402
 from api.main import app  # noqa: E402
 from api.services.seed import DEMO_PASSWORD, seed  # noqa: E402
 
-PLAYERS = ["p15@demo.pathtopro", "p03@demo.pathtopro", "p07@demo.pathtopro"]
+PLAYERS = ["p15@demo.pathtopro", "p03@demo.pathtopro", "p07@demo.pathtopro", "amateur@demo.pathtopro"]
 STAFF = ["coach@demo.pathtopro", "physio@demo.pathtopro"]
 GUARDIANS = ["guardian02@demo.pathtopro"]
 
@@ -39,7 +40,26 @@ def main(out: Path) -> None:
         info = seed(db)
     import datetime as _dt
 
-    snap: dict = {"meta": {"today": info["today"], "story": info["story"], "password": DEMO_PASSWORD, "generated": _dt.datetime.now(_dt.UTC).isoformat()}, "users": {}, "staff": {}}
+    rc = ReadinessConfig.load()  # the demo's check-in maths reads these, so it can't drift from the server
+    readiness = {
+        "weights": dict(rc.weights),
+        "green_min": rc.green_min,
+        "amber_min": rc.amber_min,
+        "sleep_target_hours": rc.sleep_target_hours,
+        "hysteresis_up": rc.hysteresis_up,
+        "hysteresis_down": rc.hysteresis_down,
+    }
+    snap: dict = {
+        "meta": {
+            "today": info["today"],
+            "story": info["story"],
+            "password": DEMO_PASSWORD,
+            "generated": _dt.datetime.now(_dt.UTC).isoformat(),
+            "readiness": readiness,
+        },
+        "users": {},
+        "staff": {},
+    }
     with TestClient(app) as c:
 
         def login(email: str) -> dict:
@@ -54,21 +74,19 @@ def main(out: Path) -> None:
 
         for email in PLAYERS:
             h = login(email)
-            snap["users"][email] = {
-                "me": get(h, "/api/auth/me"),
-                "responses": {
-                    p: get(h, p)
-                    for p in [
-                        "/api/me/today",
-                        "/api/me/week?offset=-1",
-                        "/api/me/week?offset=0",
-                        "/api/me/week?offset=1",
-                        "/api/me/growth",
-                        "/api/me/card",
-                        "/api/me/roadmap",
-                    ]
-                },
-            }
+            me = get(h, "/api/auth/me")
+            paths = [
+                "/api/me/today",
+                "/api/me/week?offset=-1",
+                "/api/me/week?offset=0",
+                "/api/me/week?offset=1",
+                "/api/me/gym?offset=-1",
+                "/api/me/gym?offset=0",
+                "/api/me/gym?offset=1",
+                "/api/me/growth",
+            ]
+            paths += ["/api/me/pathway"] if me["pathway"] == "amateur" else ["/api/me/card", "/api/me/roadmap"]
+            snap["users"][email] = {"me": me, "responses": {p: get(h, p) for p in paths}}
         for email in STAFF:
             snap["users"][email] = {"me": get(login(email), "/api/auth/me"), "responses": {}}
         h = login("coach@demo.pathtopro")

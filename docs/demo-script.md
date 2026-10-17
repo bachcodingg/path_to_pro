@@ -1,4 +1,4 @@
-# Demo script (5 minutes)
+# Demo script (6 minutes)
 
 Setup: `docker compose up --build`, open http://localhost:8080. The seeder resets the
 synthetic season and sets "today" to Thursday of week 12. All passwords: `demo1234`.
@@ -18,13 +18,23 @@ synthetic season and sets "today" to Thursday of week 12. All passwords: `demo12
 
 3. **Development flow (1 min)** - Leon's card: attributes as bio-banded percentiles; tap
    jump power for the test history and the linked drills. Road to Pro shows the test-day
-   checkpoints and the 4-week goal. (Coach inbox also has "New development goal" cards.)
+   checkpoints and the 4-week goal. The **Gym** tab shows his position's session: the
+   shared injury-prevention work plus his position block, with growth-zone limits on top.
+   Coach view: on a player's scouting report, type "keep him light until tomorrow, no gym
+   this week", press Preview, then Apply.
 
-4. **Evidence (1 min)** - `docs/evaluation/report.md`: 0 hard-rule violations (baseline:
-   ~375), 58-66% fewer ACWR spike weeks, 91% of goal sessions delivered, 50/50 safety
-   scenarios, solver ≤ 0.21 s per player-week. SUS pending usability tests.
+4. **Beyond the academy (1 min)** - sign in as **Self-guided player** (`amateur@demo.pathtopro`):
+   Maya, 17, plays for her local club. Today shows level 2 "Grassroots" and her week
+   built around club training (Tue, Thu) and Saturday matches. Open **Levels**, pick "Wall
+   passes in 30 s", log 19: she meets 4 of 6 benchmarks and moves up to level 3. Anyone
+   can sign up at `/register`; under-16s get a parent invite code.
 
-5. **Safety (30 s)** - sign in as any player, check in with mood "Not good". Sign in as
+5. **Evidence (1 min)** - `docs/evaluation/report.md`: 0 hard-rule violations (baseline:
+   ~375), 58-66% fewer ACWR spike weeks, and still 60-66% fewer against the template scaled
+   to the same total load, 91% of goal sessions delivered, 50/50 safety scenarios. SUS
+   pending usability tests.
+
+6. **Safety (30 s)** - sign in as any player, check in with mood "Not good". Sign in as
    **Physio** (`physio@demo.pathtopro`): the red check-in is in the queue within a second,
    with no agent reply to the player beyond "a staff member will talk to you".
 

@@ -57,6 +57,9 @@ class PlannerInput(BaseModel):
     target_load_factor: float = 1.0
     # Re-plans may only make days easier: per-day RPE ceiling from the current plan (0 = stays rest).
     rpe_ceiling: list[int] | None = None
+    # Self-guided players: their club's training nights. The planner puts a football
+    # session there (strong soft rule: a red day or an exam can still turn it easy or off).
+    team_days: list[Weekday] = []
 
     def target_load(self, llm_factor: float = 1.0) -> int:
         planned = self.club_weekly_load * self.days / 7

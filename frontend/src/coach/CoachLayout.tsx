@@ -6,7 +6,7 @@ import { useAuth } from "../shared/auth";
 import { t } from "../shared/i18n";
 import { Button, cn } from "../shared/ui";
 
-const NAV = [
+const nav = () => [
   { to: "/coach", label: t("nav.heatmap"), icon: Grid3x3, end: true },
   { to: "/coach/inbox", label: t("nav.inbox"), icon: ClipboardList },
   { to: "/coach/tactics", label: t("nav.tactics"), icon: Users },
@@ -18,6 +18,7 @@ const NAV = [
 // Desktop-first staff shell; light by default.
 export function CoachLayout() {
   const { user, logout } = useAuth();
+  const NAV = nav(); // built per render so labels follow the current language
   const [running, setRunning] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 

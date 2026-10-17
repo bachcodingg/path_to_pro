@@ -61,6 +61,9 @@ export function PlayerCard() {
             <AttrRow key={a.kpi} a={a} active={open === a.kpi} onClick={() => setOpen(open === a.kpi ? null : a.kpi)} />
           ))}
         </div>
+        <p className="text-ink-2 mt-2 text-xs">
+          Percentiles use placeholder reference values for this demo, not validated academy norms. Treat them as a rough guide.
+        </p>
       </section>
 
       {selected && (

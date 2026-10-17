@@ -22,6 +22,9 @@ interface Report {
   after: Agreement;
   cv_before: number | null;
   cv_after: number | null;
+  cv_noise: number | null;
+  recommended: boolean;
+  min_gain: number;
   hysteresis: { up: number; down: number };
 }
 
@@ -35,11 +38,11 @@ export function Calibration() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
-  async function apply(weights: Weights | null) {
+  async function apply(weights: Weights | null, force = false) {
     setBusy(true);
     setMsg(null);
     try {
-      setData(await api<Report>("/api/coach/calibration/apply", { method: "POST", json: { weights } }));
+      setData(await api<Report>("/api/coach/calibration/apply", { method: "POST", json: { weights, force } }));
       setMsg(weights ? "New weights applied. They are used for every score from now on." : "Back to the default weights.");
     } catch (e) {
       setMsg(e instanceof ApiError ? e.message : "Failed");
@@ -109,6 +112,22 @@ export function Calibration() {
             </tbody>
           </table>
         </Card>
+        {data.enough_data && !same && (
+          <Card className={cn("mt-2", data.recommended ? "border-ready-green/50" : "border-ready-amber/50")} role="status">
+            {data.recommended ? (
+              <p>
+                <span className="font-semibold">Recommended.</span> On players the weights were not fitted on, agreement improves by{" "}
+                {k2((data.cv_after ?? 0) - (data.cv_before ?? 0))}, more than twice the fold-to-fold noise (±{k2(data.cv_noise)}).
+              </p>
+            ) : (
+              <p>
+                <span className="font-semibold">Not recommended yet.</span> The held-out gain ({k2((data.cv_after ?? 0) - (data.cv_before ?? 0))}) is
+                not clearly above the noise (±{k2(data.cv_noise)}, minimum {data.min_gain}). The suggestion may only fit these
+                ratings by chance: keep rating players and check again.
+              </p>
+            )}
+          </Card>
+        )}
         <p className="text-ink-2 mt-2 text-xs">
           Colour buffer: a better colour needs the score {data.hysteresis.up} points past the boundary; a worse colour applies
           {data.hysteresis.down === 0 ? " immediately" : ` after ${data.hysteresis.down} points`}, so warnings are never delayed.
@@ -117,9 +136,14 @@ export function Calibration() {
 
       {user?.role === "coach" && (
         <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={() => apply(data.suggested)} disabled={busy || same || !data.enough_data} loading={busy}>
+          <Button onClick={() => apply(data.suggested)} disabled={busy || same || !data.enough_data || !data.recommended} loading={busy}>
             Apply suggested weights
           </Button>
+          {data.enough_data && !same && !data.recommended && (
+            <Button variant="ghost" onClick={() => apply(data.suggested, true)} disabled={busy}>
+              Apply anyway
+            </Button>
+          )}
           <Button variant="secondary" onClick={() => apply(null)} disabled={busy}>
             Reset to defaults
           </Button>

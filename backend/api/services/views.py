@@ -89,6 +89,7 @@ def status_json(st: DailyStatus | None) -> dict | None:
         "maturity_offset": st.maturity_offset,
         "flags": st.flags,
         "chips": st.chips,
+        "components": st.components or {},
     }
 
 
@@ -131,6 +132,7 @@ def _card_title(p: Proposal) -> str:
         "match_minutes": "Your match minutes are limited",
         "new_goal": "New development goal",
         "drill_suggestion": "New drills for you",
+        "coach_instruction": "Your coach adjusted your week",
     }.get(p.kind, "Plan updated")
 
 

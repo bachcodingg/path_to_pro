@@ -18,8 +18,8 @@ from api import clock
 from api.db import get_db
 from api.deps import CurrentUser, age_on, audit, player_in_scope, require, staff_of
 from api.routers.player import player_card, roadmap_view
-from api.services import agent_runner, calibration, views
-from domain.enums import AgentName, ProposalStatus, Role
+from api.services import agent_runner, calibration, gym_view, views
+from domain.enums import AgentName, Position, ProposalStatus, Role, SessionType
 from domain.models import (
     AgentRun,
     Anthropometrics,
@@ -259,10 +259,13 @@ def profile(player_id: str, user: CurrentUser = Depends(require(*STAFF)), db: Se
         {"date": n.day.isoformat(), "text": n.text, "author": db.get(StaffMember, n.author_id).name}
         for n in db.scalars(select(PlayerNote).where(PlayerNote.player_id == p.id).order_by(PlayerNote.day.desc()))
     ]
+    gym = gym_view.week(db, p, views.week_start(today), today)
     audit(db, user, "read", "player_profile", p.id)
     db.commit()
     return {
-        "player": {"id": p.id, "name": p.display_name, "age": round(age_on(p.birth_date, today), 1)},
+        "player": {"id": p.id, "name": p.display_name, "age": round(age_on(p.birth_date, today), 1), "position": p.position},
+        "positions": gym["positions"],
+        "gym": gym["sessions"][0]["programme"] if gym["sessions"] else gym["optional"],
         "status": views.status_json(views.latest_status(db, p.id, today)),
         "series": series,
         "growth": growth,
@@ -300,6 +303,11 @@ def _commentary(run: AgentRun, player: Player | None) -> str:
     flags = ", ".join(f["detail"] for f in run.flags or []) or "no flags"
     if run.agent == AgentName.MONITOR:
         return f"Monitor checked {who}: {flags}. No change needed."
+    if run.trigger == "coach_instruction":
+        return (
+            f"Coach instruction for {who}: \"{(run.inputs or {}).get('instruction', '')}\". "
+            f"Planner rebuilt the week: solver {out.get('status')}, load {out.get('weekly_load')} AU."
+        )
     if run.agent == AgentName.COORDINATOR and out.get("decision") == "escalate":
         return f"Safety flag for {who} ({flags}). Escalated to staff; agents took no action."
     if run.agent == AgentName.DEVELOPMENT_COACH:
@@ -435,11 +443,23 @@ def calibration_report(user: CurrentUser = Depends(require(*STAFF)), db: Session
 
 class Weights(BaseModel):
     weights: dict[str, float] | None = Field(default=None, description="null resets to the default weights")
+    force: bool = Field(default=False, description="apply although the held-out gain is within the noise")
 
 
 @router.post("/calibration/apply")
 def calibration_apply(body: Weights, user: CurrentUser = Depends(require(Role.COACH)), db: Session = Depends(get_db)) -> dict:
-    """A coach reviews the suggestion and applies it (or resets). Takes effect for new scores."""
+    """A coach reviews the suggestion and applies it (or resets). Takes effect for new scores.
+
+    The suggested weights are refused unless they beat the current ones on held-out
+    players by more than the noise (or the coach explicitly forces it)."""
+    if body.weights is not None and not body.force:
+        rep = calibration.report(db, staff_of(user, db).squad_id)
+        if body.weights == rep["suggested"] and not rep["recommended"]:
+            raise HTTPException(
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
+                "The suggested weights don't beat the current ones on players they weren't fitted on by more than "
+                "the noise. Collect more ratings first.",
+            )
     try:
         calibration.apply(db, body.weights)
     except ValueError as e:
@@ -447,3 +467,140 @@ def calibration_apply(body: Weights, user: CurrentUser = Depends(require(Role.CO
     audit(db, user, "update", "readiness_weights", None, weights=body.weights)
     db.commit()
     return calibration.report(db, staff_of(user, db).squad_id)
+
+
+# --------------------------------------------------------------------------- position + coach instructions
+
+
+class PositionBody(BaseModel):
+    position: Position
+
+
+@router.put("/players/{player_id}/position")
+def set_position(
+    player_id: str, body: PositionBody, user: CurrentUser = Depends(require(*STAFF)), db: Session = Depends(get_db)
+) -> dict:
+    """The position picks the position block of the player's gym programme."""
+    p = player_in_scope(player_id, user, db)
+    p.position = body.position.value
+    audit(db, user, "update", "player", p.id, position=p.position)
+    db.commit()
+    today = clock.today()
+    gym = gym_view.week(db, p, views.week_start(today), today)
+    return {"position": p.position, "gym": gym["sessions"][0]["programme"] if gym["sessions"] else gym["optional"]}
+
+
+class Instruction(BaseModel):
+    text: str = Field(min_length=3, max_length=300)
+    apply: bool = False
+
+
+@router.post("/players/{player_id}/instruction")
+def instruction(
+    player_id: str, body: Instruction, user: CurrentUser = Depends(require(Role.COACH)), db: Session = Depends(get_db)
+) -> dict:
+    """A coach's note in plain words becomes planner constraints for the rest of the week.
+
+    Without `apply` it is a preview (current vs proposed week). With `apply` the new week
+    is activated, logged as an agent run and shown to the player as a why-card.
+    """
+    from agents.instruction import InstructionRefused, parse
+    from agents.llm import default_backend
+    from agents.monitor import assess
+    from agents.rules import DevGoal, default_constraints
+    from planner.model import hard_violations, plan_week
+
+    p = player_in_scope(player_id, user, db)
+    today = clock.today()
+    start, n = today, agent_runner.days_left_in_week(today)
+    current = agent_runner.plan_days(db, p, start, n)
+    counts: dict[SessionType, int] = {}
+    for d in current:
+        counts[d.kind] = counts.get(d.kind, 0) + 1
+    try:
+        parsed = parse(body.text, start, n, default_backend(), counts)
+    except InstructionRefused as e:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(e)) from e
+
+    a = assess(agent_runner.load_history(db, p, today))
+    inp = agent_runner.planner_input(db, p, start, n).model_copy(
+        update={
+            "acwr": a.acwr,
+            "chronic_daily_load": a.chronic_daily_load or 300.0,
+            "acute_daily_load": a.acute_daily_load if a.chronic_daily_load else None,
+            "in_phv_window": bool(a.growth and a.growth.in_phv_window),
+        }
+    )
+    from planner.schema import MinSessions
+
+    if not any(isinstance(c, MinSessions) for c in parsed.constraints.soft) and parsed.constraints.load_factor <= 1.0:
+        # The coach only asked for less: no day may get harder than it is now.
+        inp = inp.model_copy(update={"rpe_ceiling": [d.rpe for d in current]})
+    goals = [DevGoal(g.kpi, g.sessions_per_week) for g in agent_runner.active_goals(db, p, start)]
+    base = default_constraints(a.planning_flags, goals, inp)
+    cs = parsed.constraints.model_copy(update={"soft": (parsed.constraints.soft + base.soft)[:12]})
+    result = plan_week(inp, cs)
+    out = {
+        "constraints": parsed.summary,
+        "source": parsed.source,
+        "status": result.status,
+        "dropped": result.dropped,
+        "hard_violations": hard_violations(result, inp),
+        "current": [views.day_json(d) for d in current],
+        "proposed": [views.day_json(d) for d in result.days],
+        "applied": False,
+    }
+    if not body.apply:
+        db.commit()
+        return out
+
+    from domain.models import Approval
+
+    staff = staff_of(user, db)
+    run = AgentRun(
+        agent=AgentName.PLANNER,
+        trigger="coach_instruction",
+        player_id=p.id,
+        inputs={"instruction": body.text, "day": today.isoformat()},
+        flags=[{"kind": f.kind.value, "detail": f.detail} for f in a.flags],
+        constraints=cs.model_dump(mode="json"),
+        output={"status": result.status, "weekly_load": result.weekly_load, "decision": "coach_instruction", "dropped": result.dropped},
+        used_fallback=parsed.source == "rules",
+        llm_valid_first_try=None if parsed.source == "rules" else parsed.source == "llm",
+    )
+    db.add(run)
+    db.flush()
+    plan = agent_runner._plan_from(
+        result.days,
+        p,
+        run,
+        "draft",
+        solver_status=result.status,
+        explanation_player=(
+            f'Your coach adjusted your week: "{body.text.strip()}". '
+            "The safety rules (rest day, easy day before matches, growth-zone limits) still apply. "
+            "Ask your coach if you have questions."
+        ),
+        reason_coach=f"Coach instruction: {body.text.strip()}"[:300],
+    )
+    db.add(plan)
+    agent_runner.activate(db, plan, p)
+    changed = [d.date.isoformat() for d, c in zip(result.days, current) if (d.kind, d.rpe) != (c.kind, c.rpe)]
+    prop = Proposal(
+        agent_run_id=run.id,
+        player_id=p.id,
+        kind="coach_instruction",
+        payload={"changed_days": changed, "instruction": body.text},
+        proposed_plan_id=plan.id,
+        reason=f"Coach instruction: {body.text.strip()}"[:300],
+        data_chips=parsed.summary[:4],
+        policy_rule="coach instruction: applied by the coach",
+        status=ProposalStatus.APPROVED,
+    )
+    db.add(prop)
+    db.flush()
+    db.add(Approval(proposal_id=prop.id, approver_id=staff.id, action="approve", note=body.text[:500]))
+    db.add(PlayerNote(player_id=p.id, author_id=staff.id, day=today, text=f"Plan instruction: {body.text.strip()}"))
+    audit(db, user, "approve", "proposal", prop.id, player=p.id, instruction=True)
+    db.commit()
+    return {**out, "applied": True}

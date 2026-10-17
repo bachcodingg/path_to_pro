@@ -30,7 +30,7 @@ export default defineConfig({
     },
   ],
   projects: [
-    { name: "phone", use: { ...devices["Pixel 7"] }, testMatch: /player\.spec/ },
+    { name: "phone", use: { ...devices["Pixel 7"] }, testMatch: /(player|pathway)\.spec/ },
     { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } }, testMatch: /staff\.spec/ },
   ],
 });

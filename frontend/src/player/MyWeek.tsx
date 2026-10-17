@@ -2,6 +2,7 @@
 // Toggle (or drag the handle) to compare with last week; long-press a day for details.
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { PitchLines } from "../shared/Pitch";
 import type { PlanDay, Week } from "../shared/types";
 import { useApi } from "../shared/useApi";
@@ -95,7 +96,7 @@ export function MyWeek() {
                 )
               )}
               <text x={x + 8.5} y={146} textAnchor="middle" fontSize={4.6} fill="rgba(255,255,255,0.85)">
-                {SHORT[d.kind]}
+                {d.team_day && (d.kind === "technical" || d.kind === "tactical") ? "Club" : SHORT[d.kind]}
               </text>
             </g>
           );
@@ -140,6 +141,24 @@ export function MyWeek() {
               <li>Planned load: {detail.load} AU</li>
               {detail.actual_load != null && <li className={cn(detail.actual_load > detail.load * 1.2 && "text-ready-amber")}>Actual load: {Math.round(detail.actual_load)} AU</li>}
             </ul>
+          )}
+          {detail.content && (
+            <div className="mt-3">
+              <p className="font-semibold">{detail.content.title}</p>
+              <ul className="text-ink-2 mt-1 space-y-1 text-sm">
+                {detail.content.items.map((it) => (
+                  <li key={it.name}>
+                    <span className="text-ink font-semibold">{it.name}</span>
+                    {it.minutes != null && ` · ${it.minutes} min`}: {it.how}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {detail.kind === "strength" && (
+            <Link to="/player/gym" className="text-pitch-300 mt-3 inline-block text-sm font-semibold underline">
+              See the gym exercises
+            </Link>
           )}
         </Card>
       )}

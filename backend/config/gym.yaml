@@ -1,0 +1,150 @@
+# Gym exercise library for youth and amateur footballers.
+#
+# Every gym session = a shared part (warm-up, injury prevention, core, mobility) that every
+# player does, plus a power, strength and position block chosen for the player's position.
+# Exercises are picked from each slot's candidate list: the first one the player may do
+# (equipment, age, growth stage, readiness) wins; candidates rotate week to week for variety.
+#
+# Fields:
+#   equipment  bodyweight | band | dumbbell | barbell | box | med_ball | partner | bench
+#   kind       prep | power | strength | prevention | core | mobility (sets the dose table)
+#   heavy      true = external load near max; only for post-growth-spurt players 16+
+#   plyometric true = jumps/bounds; never in the growth-spurt window or on a red day
+#   unit       what the reps count (reps, s, m, each side)
+# Doses follow common youth strength guidance (technique first, progressive load after
+# the growth spurt). They are defaults for a coach to adjust, not a medical prescription.
+
+positions:
+  goalkeeper:
+    label: Goalkeeper
+    focus: "Explosive sideways push-off for diving, a strong trunk for landing, and shoulders that cope with catching and falling."
+    power: [gk-lateral-bound, gk-lateral-skater, gk-med-ball-side]
+    position: [gk-lateral-lunge, gk-ytw, gk-med-ball-side, gk-pushup-plus]
+  centre_back:
+    label: Centre-back
+    focus: "Strength for duels, a high jump for headers, a strong neck and safe one-leg landings."
+    power: [cb-cmj, cb-squat-jump, cb-med-ball-chest]
+    position: [cb-neck-iso, cb-landing, cb-pushup, cb-db-row]
+  full_back:
+    label: Full-back
+    focus: "Repeated sprints up and down the wing, robust hamstrings, and quick changes of direction."
+    power: [fb-pogo, fb-lateral-hop, fb-med-ball-side]
+    position: [fb-lateral-lunge, fb-sl-hip-thrust, fb-decel-drop, fb-calf]
+  midfielder:
+    label: Midfielder
+    focus: "Single-leg strength and an anti-rotation core for constant turning, and strength that holds up for 90 minutes."
+    power: [cm-split-jump, cm-med-ball-rot, cm-skater]
+    position: [cm-step-up, cm-pallof, cm-sl-rdl, cm-farmer]
+  winger:
+    label: Winger
+    focus: "Acceleration and top speed, hamstrings and calves that tolerate sprinting, and sharp cuts in 1v1s."
+    power: [w-pogo, w-a-skip, w-broad-jump]
+    position: [w-hip-march, w-hamstring-iso, w-calf, w-lateral-lunge]
+  striker:
+    label: Striker
+    focus: "An explosive first step and jump, hip power for shooting, and upper-body strength to hold the ball up."
+    power: [st-jump-squat, st-med-ball-scoop, st-broad-jump]
+    position: [st-hip-thrust, st-landmine-press, st-plank-row, st-med-ball-rot]
+
+shared:
+  prep: [act-band-walk, act-wgs]
+  lower: [trap-bar-deadlift, goblet-squat, split-squat]
+  hinge: [rdl, sl-rdl-bw]
+  upper: [pull-up, inverted-row, pushup]
+  prevention: [nordic, copenhagen, sl-balance]
+  core: [pallof, side-plank, dead-bug]
+  mobility: [hip-90-90, couch-stretch]
+
+exercises:
+  # ---- shared: warm-up
+  - {id: act-band-walk, name: "Mini-band side walks", kind: prep, equipment: band, unit: each side, cue: "Push the knees out, keep the hips level.",
+     alternative: act-glute-bridge}
+  - {id: act-glute-bridge, name: "Glute bridge", kind: prep, equipment: bodyweight, unit: reps, cue: "Squeeze the glutes at the top, ribs down."}
+  - {id: act-wgs, name: "World's greatest stretch", kind: prep, equipment: bodyweight, unit: each side, cue: "Slow, reach long, breathe out at the end of each rep."}
+  # ---- shared: strength
+  - {id: trap-bar-deadlift, name: "Trap-bar deadlift", kind: strength, equipment: barbell, heavy: true, min_age: 16, unit: reps,
+     cue: "Flat back, push the floor away, stop with 2 reps in reserve."}
+  - {id: goblet-squat, name: "Goblet squat", kind: strength, equipment: dumbbell, unit: reps, cue: "Chest tall, knees track over toes, full depth you control."}
+  - {id: split-squat, name: "Split squat (bodyweight)", kind: strength, equipment: bodyweight, unit: each side, cue: "Back knee lightly touches the floor, front heel stays down."}
+  - {id: rdl, name: "Romanian deadlift (dumbbells)", kind: strength, equipment: dumbbell, unit: reps, cue: "Hips back, soft knees, feel the hamstrings stretch."}
+  - {id: sl-rdl-bw, name: "Single-leg RDL (bodyweight)", kind: strength, equipment: bodyweight, unit: each side, cue: "Hips square to the floor, reach long."}
+  - {id: pull-up, name: "Pull-ups (band-assisted if needed)", kind: strength, equipment: bar, unit: reps, cue: "Full hang to chin over the bar, no swinging."}
+  - {id: inverted-row, name: "Inverted row", kind: strength, equipment: bar, unit: reps, cue: "Body in one line, pull the chest to the bar."}
+  - {id: pushup, name: "Push-ups", kind: strength, equipment: bodyweight, unit: reps, cue: "Plank position the whole time, chest to a fist's height off the floor."}
+  # ---- shared: injury prevention (FIFA 11+ style)
+  - {id: nordic, name: "Nordic hamstring curl", kind: prevention, equipment: partner, unit: reps, eccentric: true,
+     cue: "Lower as slowly as you can, catch yourself with your hands, use the hands to push back up.",
+     alternative: hamstring-bridge-iso}
+  - {id: hamstring-bridge-iso, name: "Hamstring bridge hold (heels on a bench)", kind: prevention, equipment: bodyweight, unit: s,
+     cue: "Hips high, heels drive down. Builds hamstrings without next-day soreness."}
+  - {id: copenhagen, name: "Copenhagen adductor (short lever)", kind: prevention, equipment: bench, unit: each side,
+     cue: "Knee on the bench, lift the hips in line. Short lever = knee support.", alternative: adductor-squeeze}
+  - {id: adductor-squeeze, name: "Adductor squeeze (ball between knees)", kind: prevention, equipment: bodyweight, unit: s,
+     cue: "Squeeze at about 70% effort, hold, release slowly."}
+  - {id: sl-balance, name: "Single-leg balance with ball taps", kind: prevention, equipment: bodyweight, unit: each side,
+     cue: "Knee soft and over the toes, keep the hips level."}
+  # ---- shared: core and mobility
+  - {id: pallof, name: "Pallof press", kind: core, equipment: band, unit: each side, cue: "Don't let the band twist you; press out, hold 2 s.",
+     alternative: side-plank}
+  - {id: side-plank, name: "Side plank", kind: core, equipment: bodyweight, unit: s, cue: "Straight line from head to feet, hips up."}
+  - {id: dead-bug, name: "Dead bug", kind: core, equipment: bodyweight, unit: each side, cue: "Lower back stays on the floor, move slowly."}
+  - {id: hip-90-90, name: "Hip 90/90 switches", kind: mobility, equipment: bodyweight, unit: each side, cue: "Sit tall, rotate from the hips."}
+  - {id: couch-stretch, name: "Couch stretch (hip flexors)", kind: mobility, equipment: bodyweight, unit: s, cue: "Squeeze the glute of the back leg, don't arch the back."}
+
+  # ---- goalkeeper
+  - {id: gk-lateral-bound, name: "Lateral bound and stick", kind: power, equipment: bodyweight, plyometric: true, min_age: 14, unit: each side,
+     cue: "Push off sideways, land on one leg and hold for 2 s."}
+  - {id: gk-lateral-skater, name: "Skater hops (low)", kind: power, equipment: bodyweight, plyometric: true, unit: each side, cue: "Small, quick, quiet landings."}
+  - {id: gk-med-ball-side, name: "Med-ball side throw to wall", kind: power, equipment: med_ball, unit: each side, cue: "Turn from the hips, throw hard, catch and reset."}
+  - {id: gk-lateral-lunge, name: "Lateral lunge", kind: strength, equipment: bodyweight, unit: each side, cue: "Sit back into the hip, the other leg stays straight."}
+  - {id: gk-ytw, name: "Y-T-W shoulder raises", kind: prevention, equipment: bodyweight, unit: reps, cue: "Thumbs up, squeeze the shoulder blades, slow."}
+  - {id: gk-pushup-plus, name: "Push-up plus", kind: strength, equipment: bodyweight, unit: reps, cue: "At the top, push the floor further away to round the upper back."}
+  # ---- centre-back
+  - {id: cb-cmj, name: "Countermovement jump and stick", kind: power, equipment: bodyweight, plyometric: true, unit: reps,
+     cue: "Fast dip, jump as high as you can, land softly on both feet."}
+  - {id: cb-squat-jump, name: "Squat jump (low height)", kind: power, equipment: bodyweight, plyometric: true, unit: reps, cue: "Pause at the bottom, explode up."}
+  - {id: cb-med-ball-chest, name: "Med-ball chest pass to wall", kind: power, equipment: med_ball, unit: reps, cue: "Step and push, as fast as you can."}
+  - {id: cb-neck-iso, name: "Neck isometrics (hand resistance)", kind: prevention, equipment: bodyweight, unit: s,
+     cue: "Front, back and both sides: press the head into your hand at 50% effort, no movement."}
+  - {id: cb-landing, name: "Single-leg landing (drop and stick)", kind: prevention, equipment: bodyweight, unit: each side,
+     cue: "Land like after a header: knee over toes, hold 3 s."}
+  - {id: cb-pushup, name: "Push-ups (feet raised)", kind: strength, equipment: bodyweight, unit: reps, cue: "Plank position the whole time, full range."}
+  - {id: cb-db-row, name: "One-arm dumbbell row", kind: strength, equipment: dumbbell, unit: each side, cue: "Pull the elbow to the hip, no twisting."}
+  # ---- full-back
+  - {id: fb-pogo, name: "Pogo hops", kind: power, equipment: bodyweight, plyometric: true, unit: reps, cue: "Stiff ankles, bounce off the balls of the feet."}
+  - {id: fb-lateral-hop, name: "Lateral line hops", kind: power, equipment: bodyweight, plyometric: true, unit: s, cue: "Quick and light over a line, both feet."}
+  - {id: fb-med-ball-side, name: "Med-ball side throw", kind: power, equipment: med_ball, unit: each side, cue: "Rotate from the hips, follow through."}
+  - {id: fb-lateral-lunge, name: "Lateral lunge", kind: strength, equipment: bodyweight, unit: each side, cue: "Push back hard to the middle."}
+  - {id: fb-sl-hip-thrust, name: "Single-leg hip thrust", kind: strength, equipment: bench, unit: each side, cue: "Drive through the heel, hips level."}
+  - {id: fb-decel-drop, name: "Deceleration drops", kind: prevention, equipment: bodyweight, unit: reps,
+     cue: "Jog 3 steps, stop in a low split stance in two steps, hold."}
+  - {id: fb-calf, name: "Single-leg calf raise", kind: prevention, equipment: bodyweight, unit: each side, cue: "Full range, 2 s down."}
+  # ---- midfielder
+  - {id: cm-split-jump, name: "Split-stance jump and stick", kind: power, equipment: bodyweight, plyometric: true, unit: each side,
+     cue: "Jump straight up, land in the same split stance."}
+  - {id: cm-med-ball-rot, name: "Rotational med-ball throw", kind: power, equipment: med_ball, unit: each side, cue: "Load the back hip, throw through the target."}
+  - {id: cm-skater, name: "Skater hops (low)", kind: power, equipment: bodyweight, plyometric: true, unit: each side, cue: "Small, quick, quiet landings."}
+  - {id: cm-step-up, name: "Step-up (knee height)", kind: strength, equipment: box, unit: each side, cue: "Drive through the top foot, don't push off the bottom one."}
+  - {id: cm-pallof, name: "Pallof press with rotation hold", kind: core, equipment: band, unit: each side, cue: "Hips and shoulders face forward the whole time."}
+  - {id: cm-sl-rdl, name: "Single-leg RDL (dumbbell)", kind: strength, equipment: dumbbell, unit: each side, cue: "Hips square, reach the weight to mid-shin."}
+  - {id: cm-farmer, name: "Farmer's carry", kind: core, equipment: dumbbell, unit: m, cue: "Walk tall, no leaning."}
+  # ---- winger
+  - {id: w-pogo, name: "Pogo hops", kind: power, equipment: bodyweight, plyometric: true, unit: reps, cue: "Stiff ankles, minimal ground contact."}
+  - {id: w-a-skip, name: "A-skips", kind: power, equipment: bodyweight, unit: m, cue: "Knee up, toe up, strike the ground under the hip."}
+  - {id: w-broad-jump, name: "Broad jump and stick", kind: power, equipment: bodyweight, plyometric: true, min_age: 14, unit: reps,
+     cue: "Swing the arms, jump far, land and hold."}
+  - {id: w-hip-march, name: "Banded hip-flexor march", kind: strength, equipment: band, unit: each side, cue: "Drive the knee up fast against the band, stand tall."}
+  - {id: w-hamstring-iso, name: "Isometric hamstring push (heel into floor)", kind: prevention, equipment: bodyweight, unit: s,
+     cue: "Lying, heel on a step, knee slightly bent: push down hard for 5 s."}
+  - {id: w-calf, name: "Single-leg calf raise", kind: prevention, equipment: bodyweight, unit: each side, cue: "Full range, 2 s down."}
+  - {id: w-lateral-lunge, name: "Lateral lunge to push-off", kind: strength, equipment: bodyweight, unit: each side, cue: "Sit back, push off fast back to the middle."}
+  # ---- striker
+  - {id: st-jump-squat, name: "Jump squat (bodyweight)", kind: power, equipment: bodyweight, plyometric: true, unit: reps, cue: "Quick dip, jump, soft landing."}
+  - {id: st-med-ball-scoop, name: "Med-ball scoop toss", kind: power, equipment: med_ball, unit: reps, cue: "Hips back, throw up and forward with the hips."}
+  - {id: st-broad-jump, name: "Broad jump and stick", kind: power, equipment: bodyweight, plyometric: true, min_age: 14, unit: reps,
+     cue: "Swing the arms, jump far, land and hold."}
+  - {id: st-hip-thrust, name: "Hip thrust", kind: strength, equipment: bench, unit: reps, cue: "Chin tucked, ribs down, full hip lock-out."}
+  - {id: st-landmine-press, name: "Half-kneeling one-arm press", kind: strength, equipment: dumbbell, unit: each side,
+     cue: "Squeeze the glute of the down knee, press without leaning."}
+  - {id: st-plank-row, name: "Plank with alternating reach", kind: core, equipment: bodyweight, unit: each side, cue: "Hips don't rock: you're shielding the ball."}
+  - {id: st-med-ball-rot, name: "Rotational med-ball throw", kind: power, equipment: med_ball, unit: each side, cue: "Load the back hip like a shot."}

@@ -37,6 +37,8 @@ class Settings:
     static_dir: str | None = os.environ.get("PATHTOPRO_STATIC_DIR")
     # Load the synthetic demo season when the database is empty (demo deployments).
     autoseed: bool = os.environ.get("PATHTOPRO_AUTOSEED", "off") == "on"
+    # Self sign-up for the self-guided pathway (players 13+, parents by invite code).
+    registration: bool = os.environ.get("PATHTOPRO_REGISTRATION", "on") == "on"
 
     def __post_init__(self):
         if self.env == "production" and self.jwt_secret == "dev-only-change-me-this-is-not-a-secret-key":

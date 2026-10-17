@@ -69,6 +69,9 @@ MAX_SAME_TYPE = 2
 W_FOOTBALL = 3  # academy weeks are built around technical and tactical work
 MIN_FOOTBALL_SESSIONS = 2
 MD_PLUS_1_MAX_RPE = 3
+W_TEAM_DAY = 8  # per club training night without a football session (self-guided players)
+W_TEAM_RPE = 2  # per RPE point a club session is planned below TEAM_MIN_RPE (the club sets the intensity)
+TEAM_MIN_RPE = 5
 
 
 def weekly_cap(inp: PlannerInput) -> int | None:
@@ -185,6 +188,16 @@ class _Model:
                 over = m.NewIntVar(0, 10, f"md1_{d}")
                 m.Add(over >= self.rpe[d + 1] - MD_PLUS_1_MAX_RPE)
                 penalties.append(W_MD_PLUS_1 * over)
+
+        for d in inp.team_days:
+            if d < n and d not in matches:
+                penalties.append(
+                    W_TEAM_DAY * (1 - self.x[d, SessionType.TECHNICAL] - self.x[d, SessionType.TACTICAL])
+                )
+                if d + 1 not in matches:  # the day before a match stays easy (H3)
+                    low = m.NewIntVar(0, 10, f"team_low_{d}")
+                    m.Add(low >= TEAM_MIN_RPE - self.rpe[d])
+                    penalties.append(W_TEAM_RPE * low)
 
         if inp.preferred_days:
             off = [d for d in D if d not in inp.preferred_days and d not in matches]

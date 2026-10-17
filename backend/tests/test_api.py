@@ -210,3 +210,56 @@ def test_staff_rating_and_calibration(demo):
     assert client.post("/api/coach/calibration/apply", headers=physio, json={"weights": new}).status_code == 403
     player = login(client, "p03@demo.pathtopro")
     assert client.post(f"/api/coach/players/{pid}/rating", headers=player, json={"band": "red"}).status_code == 403
+
+
+def test_calibration_reports_noise_and_guards_apply(demo):
+    client, _ = demo
+    coach = login(client, "coach@demo.pathtopro")
+    rep = client.get("/api/coach/calibration", headers=coach).json()
+    assert {"recommended", "cv_noise", "cv_gain_folds", "min_gain"} <= set(rep)
+    if not rep["recommended"] and rep["suggested"] != rep["current"]:
+        r = client.post("/api/coach/calibration/apply", headers=coach, json={"weights": rep["suggested"]})
+        assert r.status_code == 422 and "noise" in r.json()["detail"]
+        forced = client.post("/api/coach/calibration/apply", headers=coach, json={"weights": rep["suggested"], "force": True})
+        assert forced.status_code == 200
+        client.post("/api/coach/calibration/apply", headers=coach, json={"weights": None})
+
+
+def test_coach_instruction_preview_and_apply(demo):
+    client, _ = demo
+    coach = login(client, "coach@demo.pathtopro")
+    pid = next(p["id"] for p in client.get("/api/coach/heatmap", headers=coach).json()["players"])
+    url = f"/api/coach/players/{pid}/instruction"
+    refused = client.post(url, headers=coach, json={"text": "his knee is painful"})
+    assert refused.status_code == 422 and "physio" in refused.json()["detail"]
+    assert client.post(url, headers=coach, json={"text": "great lad"}).status_code == 422
+
+    prev = client.post(url, headers=coach, json={"text": "keep him light until tomorrow, no gym this week"})
+    assert prev.status_code == 200, prev.text
+    body = prev.json()
+    assert body["source"] == "rules" and not body["applied"] and not body["hard_violations"]
+    assert any("effort at most 4" in c for c in body["constraints"]) and "No strength sessions" in body["constraints"]
+    assert all(d["kind"] != "strength" for d in body["proposed"])
+    assert all(d["rpe"] <= 4 or d["kind"] == "match" for d in body["proposed"][:2])
+    # asking only for less never makes a day harder
+    assert all(new["rpe"] <= old["rpe"] for new, old in zip(body["proposed"], body["current"]))
+
+    applied = client.post(url, headers=coach, json={"text": "keep him light until tomorrow, no gym this week", "apply": True})
+    assert applied.status_code == 200 and applied.json()["applied"]
+    prof = client.get(f"/api/coach/players/{pid}", headers=coach).json()
+    assert any(c["kind"] == "coach_instruction" for c in prof["changes"])
+    assert any("Plan instruction" in n["text"] for n in prof["notes"])
+    assert prof["player"]["position"] and prof["gym"]["blocks"]
+    log = client.get(f"/api/coach/agent-log?player={pid}", headers=coach).json()
+    assert any(r["trigger"] == "coach_instruction" for r in log)
+    physio = login(client, "physio@demo.pathtopro")
+    assert client.post(url, headers=physio, json={"text": "rest on friday"}).status_code == 403
+
+
+def test_coach_sets_position(demo):
+    client, _ = demo
+    coach = login(client, "coach@demo.pathtopro")
+    pid = client.get("/api/coach/heatmap", headers=coach).json()["players"][0]["id"]
+    r = client.put(f"/api/coach/players/{pid}/position", headers=coach, json={"position": "goalkeeper"})
+    assert r.status_code == 200 and r.json()["gym"]["position"] == "goalkeeper"
+    assert client.put(f"/api/coach/players/{pid}/position", headers=coach, json={"position": "libero"}).status_code == 422

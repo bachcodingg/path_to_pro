@@ -2,13 +2,17 @@
 import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Bar, Brush, CartesianGrid, ComposedChart, Legend, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { api } from "../shared/api";
-import type { Card as CardData, PlanDay, Roadmap, Status } from "../shared/types";
+import { api, ApiError } from "../shared/api";
+import { useAuth } from "../shared/auth";
+import { GymProgrammeView } from "../shared/GymProgramme";
+import type { Card as CardData, GymProgramme, PlanDay, Position, Roadmap, Status } from "../shared/types";
 import { useApi } from "../shared/useApi";
 import { BandBadge, Button, Card, Chip, ErrorNote, SectionTitle, Spinner, cn, fmtDay, intensityClass } from "../shared/ui";
 
 interface Profile {
-  player: { id: string; name: string; age: number };
+  player: { id: string; name: string; age: number; position: Position };
+  positions: { id: Position; label: string; focus: string }[];
+  gym: GymProgramme | null;
   status: Status | null;
   series: { date: string; load: number; readiness: number | null; acwr: number | null }[];
   growth: { date: string; height_cm: number }[];
@@ -48,7 +52,27 @@ export function PlayerProfile() {
         <BandBadge band={s?.band ?? null} score={s?.score} />
         {s?.in_phv_window && <Chip tone="amber">Growth zone ({s.maturity_offset?.toFixed(1)} y)</Chip>}
         {s?.acwr != null && <Chip tone={s.acwr > 1.5 ? "red" : "neutral"}>ACWR {s.acwr.toFixed(2)}</Chip>}
+        <label className="flex items-center gap-2 text-sm">
+          <span className="text-ink-2">Position</span>
+          <select
+            aria-label="Position"
+            className="bg-surface border-line h-9 rounded-lg border px-2 font-semibold"
+            value={data.player.position}
+            onChange={async (e) => {
+              await api(`/api/coach/players/${id}/position`, { method: "PUT", json: { position: e.target.value } });
+              void reload();
+            }}
+          >
+            {data.positions.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
+
+      <InstructionBox playerId={id!} name={data.player.name.split(" ")[0]} onApplied={reload} />
 
       <Card className="h-80 p-2">
         <ResponsiveContainer width="100%" height="100%">
@@ -96,6 +120,15 @@ export function PlayerProfile() {
             ))}
           </Card>
         </section>
+        {data.gym && (
+          <section>
+            <SectionTitle>Gym this week: {data.gym.title}</SectionTitle>
+            <Card className="max-h-96 overflow-y-auto">
+              <p className="text-ink-2 mb-2 text-sm">{data.gym.focus}</p>
+              <GymProgrammeView p={data.gym} compact />
+            </Card>
+          </section>
+        )}
         <section>
           <SectionTitle>Agent changes</SectionTitle>
           <Card className="divide-[color:var(--line)] max-h-72 divide-y overflow-y-auto p-0">
@@ -146,5 +179,110 @@ export function PlayerProfile() {
         </section>
       </div>
     </div>
+  );
+}
+
+interface InstructionResult {
+  constraints: string[];
+  source: string;
+  status: string;
+  dropped: string[];
+  current: PlanDay[];
+  proposed: PlanDay[];
+  applied: boolean;
+}
+
+// Plain-words coach instruction -> planner constraints, previewed before it is applied.
+function InstructionBox({ playerId, name, onApplied }: { playerId: string; name: string; onApplied: () => void }) {
+  const { user } = useAuth();
+  const [text, setText] = useState("");
+  const [preview, setPreview] = useState<InstructionResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  if (user?.role !== "coach") return null;
+
+  async function send(apply: boolean, e?: FormEvent) {
+    e?.preventDefault();
+    if (!text.trim()) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const out = await api<InstructionResult>(`/api/coach/players/${playerId}/instruction`, { method: "POST", json: { text, apply } });
+      setPreview(out);
+      if (out.applied) {
+        setText("");
+        onApplied();
+      }
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed");
+      setPreview(null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card>
+      <form onSubmit={(e) => send(false, e)} className="flex flex-wrap gap-2">
+        <label className="min-w-0 flex-1">
+          <span className="text-sm font-semibold">Tell the planner in your own words</span>
+          <input
+            value={text}
+            onChange={(e) => {
+              setText(e.target.value);
+              setPreview(null);
+            }}
+            placeholder={`e.g. "Keep ${name} light until Thursday, no gym this week"`}
+            aria-label="Coach instruction"
+            maxLength={300}
+            className="bg-surface-2 border-line mt-1 h-11 w-full rounded-xl border px-3"
+          />
+        </label>
+        <Button type="submit" variant="secondary" className="self-end" loading={busy && !preview}>
+          Preview
+        </Button>
+      </form>
+      {error && (
+        <p role="alert" className="text-ready-red mt-2 text-sm font-medium">
+          {error}
+        </p>
+      )}
+      {preview && (
+        <div className="mt-3 space-y-2" aria-label="Instruction preview">
+          <div className="flex flex-wrap gap-1.5">
+            {preview.constraints.map((c) => (
+              <Chip key={c}>{c}</Chip>
+            ))}
+            <Chip tone="green">{preview.source === "rules" ? "rule parser" : "Claude"}</Chip>
+          </div>
+          {(["current", "proposed"] as const).map((k) => (
+            <div key={k} className="grid grid-cols-[5rem_1fr] items-center gap-2">
+              <span className="text-ink-2 text-xs font-semibold uppercase">{k === "current" ? "Now" : "New"}</span>
+              <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${preview[k].length}, minmax(0, 1fr))` }}>
+                {preview[k].map((d) => (
+                  <div key={d.date} className={cn("rounded-lg p-1 text-center text-[11px]", intensityClass(d.kind, d.rpe))}>
+                    <div className="font-bold">{fmtDay(d.date)}</div>
+                    <div className="truncate">{d.label}</div>
+                    <div>{d.kind === "rest" ? "–" : d.rpe}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          {preview.dropped.length > 0 && (
+            <p className="text-ink-2 text-xs">Not possible within the safety rules: {preview.dropped.join("; ")}</p>
+          )}
+          {preview.applied ? (
+            <p role="status" className="text-ready-green text-sm font-semibold">
+              Applied. {name} sees the new week with your note.
+            </p>
+          ) : (
+            <Button variant="approve" onClick={() => send(true)} loading={busy}>
+              Apply to {name}'s week
+            </Button>
+          )}
+        </div>
+      )}
+    </Card>
   );
 }

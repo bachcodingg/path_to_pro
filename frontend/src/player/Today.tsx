@@ -1,10 +1,10 @@
 // "Match day sheet": readiness battery, today's session, recovery tasks, "Why?" cards.
-import { CheckCircle2, ChevronDown, Circle, Flame, HeartHandshake } from "lucide-react";
-import { useState } from "react";
+import { CheckCircle2, ChevronDown, ChevronRight, Circle, Dumbbell, Flame, HeartHandshake, ShieldAlert, TrendingUp } from "lucide-react";
+import { useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { api } from "../shared/api";
 import { t } from "../shared/i18n";
-import type { Today, WhyCard } from "../shared/types";
+import type { SessionKind, Today, WhyCard } from "../shared/types";
 import { useApi } from "../shared/useApi";
 import { BAND_BG, BAND_TEXT, BandIcon, Button, Card, Chip, ErrorNote, SectionTitle, Spinner, cn, intensityClass } from "../shared/ui";
 
@@ -44,7 +44,21 @@ export function TodayScreen() {
         </Card>
       )}
 
-      {!data.checked_in && (
+      {data.safety?.map((msg) => (
+        <Card key={msg} className="border-ready-red/50 flex gap-3" role="alert">
+          <ShieldAlert className="text-ready-red h-6 w-6 shrink-0" aria-hidden />
+          <p>{msg}</p>
+        </Card>
+      ))}
+
+      {data.consent && !data.consent.wellness ? (
+        <Link to="/player/levels">
+          <Card className="border-ready-amber/50">
+            <p className="font-bold">Check-ins are waiting for a parent</p>
+            <p className="text-ink-2 text-sm">You're under 16: a parent links with your invite code first. Tap to see the code.</p>
+          </Card>
+        </Link>
+      ) : !data.checked_in && (
         <Link to="/player/checkin">
           <Card className="bg-pitch-700 border-pitch-500 text-white">
             <p className="text-lg font-bold">{t("checkin.title")}</p>
@@ -53,7 +67,12 @@ export function TodayScreen() {
         </Link>
       )}
 
-      <Battery score={r?.score ?? null} band={r?.band ?? null} stale={!data.readiness_is_today} />
+      <Battery
+        score={r?.score ?? null}
+        band={r?.band ?? null}
+        stale={!data.readiness_is_today}
+        hrv={r?.components ? "hrv" in r.components : true}
+      />
 
       {data.flags.length > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -78,7 +97,57 @@ export function TodayScreen() {
             </p>
           </div>
         </Card>
+        {data.content && (
+          <Card className="mt-2">
+            <p className="font-bold">{data.content.title}</p>
+            <ul className="mt-1 space-y-2">
+              {data.content.items.map((it) => (
+                <li key={it.name} className="text-sm">
+                  <span className="font-semibold">{it.name}</span>
+                  {it.minutes != null && <span className="text-ink-2"> · {it.minutes} min</span>}
+                  <span className="text-ink-2 block">{it.how}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+        {data.gym && (
+          <Link to="/player/gym" className="mt-2 block">
+            <Card className="flex items-center gap-3">
+              <Dumbbell className="text-pitch-300 h-6 w-6 shrink-0" aria-hidden />
+              <div className="flex-1">
+                <p className="font-bold">{data.gym.title}</p>
+                <p className="text-ink-2 text-sm">
+                  {data.gym.minutes} min · {data.gym.blocks.reduce((n, b) => n + b.items.length, 0)} exercises · {data.gym.stage_label}
+                </p>
+              </div>
+              <ChevronRight className="text-ink-2 h-5 w-5" aria-hidden />
+            </Card>
+          </Link>
+        )}
       </section>
+
+      {data.pathway && (
+        <Link to="/player/levels" className="block">
+          <Card className="flex items-center gap-3">
+            <TrendingUp className="text-pitch-300 h-6 w-6 shrink-0" aria-hidden />
+            <div className="flex-1">
+              <p className="font-bold">
+                Level {data.pathway.level}: {data.pathway.name}
+              </p>
+              <p className="text-ink-2 text-sm">
+                {data.pathway.next
+                  ? `${data.pathway.next.tests_met} of ${data.pathway.next.tests_needed} benchmarks for ${data.pathway.next.name}`
+                  : "Top level reached"}
+                {data.pathway.focus.length > 0 && ` · focus: ${data.pathway.focus.join(", ")}`}
+              </p>
+            </div>
+            <ChevronRight className="text-ink-2 h-5 w-5" aria-hidden />
+          </Card>
+        </Link>
+      )}
+
+      {data.pathway && data.consent?.wellness && <LogSession today={data} onLogged={(t) => setData(t)} />}
 
       <section>
         <SectionTitle>{t("today.tasks")}</SectionTitle>
@@ -115,7 +184,17 @@ export function TodayScreen() {
   );
 }
 
-export function Battery({ score, band, stale }: { score: number | null; band: "green" | "amber" | "red" | null; stale?: boolean }) {
+export function Battery({
+  score,
+  band,
+  stale,
+  hrv = true,
+}: {
+  score: number | null;
+  band: "green" | "amber" | "red" | null;
+  stale?: boolean;
+  hrv?: boolean;
+}) {
   const pct = score == null ? 0 : Math.max(4, Math.min(100, score));
   return (
     <Card aria-label={`Readiness ${score == null ? "unknown" : Math.round(score)} of 100, ${band ? BAND_TEXT[band] : "no data"}`}>
@@ -136,7 +215,7 @@ export function Battery({ score, band, stale }: { score: number | null; band: "g
         </div>
       </div>
       <p className="text-ink-2 mt-2 text-sm">
-        {t("today.battery")} from sleep, heart-rate variability and your check-in.
+        {t("today.battery")} from sleep{hrv ? ", heart-rate variability" : ""} and your check-in.
         {stale && " Showing your last reading: check in to update it."}
       </p>
     </Card>
@@ -168,5 +247,83 @@ function WhyCardView({ card }: { card: WhyCard }) {
         </div>
       )}
     </Card>
+  );
+}
+
+const LOG_KINDS: [SessionKind, string][] = [
+  ["technical", "Club training or ball work"],
+  ["tactical", "Small-sided games or fitness"],
+  ["strength", "Gym"],
+  ["speed", "Speed"],
+  ["recovery", "Recovery"],
+  ["match", "Match"],
+];
+
+// Self-guided players log what they actually did; the planner uses it to keep load safe.
+function LogSession({ today, onLogged }: { today: Today; onLogged: (t: Today) => void }) {
+  const planned = today.session.kind === "rest" ? "technical" : today.session.kind;
+  const [kind, setKind] = useState<SessionKind>(planned);
+  const [minutes, setMinutes] = useState(today.session.minutes || 60);
+  const [rpe, setRpe] = useState(Math.max(1, today.session.rpe || 5));
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setMsg(null);
+    try {
+      const out = await api<{ today: Today; levelled_up: boolean }>("/api/me/log", { method: "POST", json: { kind, minutes, rpe } });
+      onLogged(out.today);
+      setMsg(out.levelled_up ? "Logged, and you levelled up!" : "Logged. Your plan uses this to keep your load safe.");
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : "Could not log");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const logged = today.logged ?? [];
+  return (
+    <section>
+      <SectionTitle>Log what you did</SectionTitle>
+      <Card>
+        {logged.length > 0 && (
+          <p className="text-ink-2 mb-2 text-sm">Today: {logged.map((l) => `${l.minutes} min at effort ${l.rpe}`).join(", ")}</p>
+        )}
+        <form onSubmit={submit} className="space-y-3">
+          <label className="block">
+            <span className="text-sm font-semibold">Session</span>
+            <select
+              className="bg-surface-2 border-line mt-1 h-11 w-full rounded-xl border px-3"
+              value={kind}
+              onChange={(e) => setKind(e.target.value as SessionKind)}
+            >
+              {LOG_KINDS.map(([k, l]) => (
+                <option key={k} value={k}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-sm font-semibold">Minutes: {minutes}</span>
+            <input type="range" min={5} max={150} step={5} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))} className="accent-pitch-400 h-11 w-full" />
+          </label>
+          <label className="block">
+            <span className="text-sm font-semibold">How hard was it? {rpe}/10</span>
+            <input type="range" min={1} max={10} value={rpe} onChange={(e) => setRpe(Number(e.target.value))} className="accent-pitch-400 h-11 w-full" />
+          </label>
+          <Button type="submit" className="w-full" loading={busy}>
+            Log session
+          </Button>
+          {msg && (
+            <p role="status" className="text-sm font-semibold">
+              {msg}
+            </p>
+          )}
+        </form>
+      </Card>
+    </section>
   );
 }

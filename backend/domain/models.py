@@ -92,6 +92,8 @@ class Player(Base):
     sex: Mapped[str] = mapped_column(String(10))
     preferred_days: Mapped[list[int]] = mapped_column(JSON, default=list)
     exam_dates: Mapped[list[str]] = mapped_column(JSON, default=list)  # ISO dates: no session those evenings
+    position: Mapped[str] = mapped_column(String(20), default="midfielder", server_default="midfielder")  # enums.Position
+    pathway: Mapped[str] = mapped_column(String(20), default="academy", server_default="academy")  # enums.Pathway
     # Named adult who receives red check-ins and pain reports (no agent counselling).
     escalation_contact_id: Mapped[str | None] = mapped_column(ForeignKey("staff_members.id"))
     squad: Mapped[Squad] = relationship(back_populates="players")
@@ -103,6 +105,8 @@ class Guardian(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
     name: Mapped[str] = mapped_column(String(100))
     email: Mapped[str] = mapped_column(String(200), unique=True)
+    # One-time code a self-registered player under 16 hands to a parent to link accounts.
+    invite_code: Mapped[str | None] = mapped_column(String(20), unique=True, index=True)
     players: Mapped[list[Player]] = relationship(secondary=player_guardians, back_populates="guardians")
 
 
@@ -427,3 +431,21 @@ class StaffRating(Base):
     band: Mapped[str] = mapped_column(EncryptedStr, info=HEALTH)  # green | amber | red
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
     __table_args__ = (UniqueConstraint("player_id", "staff_id", "day"),)
+
+
+class AmateurProfile(Base):
+    """Self-guided (non-academy) player: level on the pathway and their own club week.
+
+    The player's club fixtures and training nights are stored as Match / Session rows on
+    the player's own squad, so the planner and the views treat them like academy fixtures.
+    """
+
+    __tablename__ = "amateur_profiles"
+    player_id: Mapped[str] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), primary_key=True)
+    level: Mapped[int] = mapped_column(Integer, default=1)  # config/pathway.yaml
+    level_since: Mapped[date] = mapped_column(Date)
+    goal: Mapped[str] = mapped_column(String(30), default="next_level")
+    equipment: Mapped[str] = mapped_column(String(10), default="none")  # none | home | gym
+    team_days: Mapped[list[int]] = mapped_column(JSON, default=list)  # weekdays, 0 = Monday
+    match_day: Mapped[int | None] = mapped_column(Integer)  # weekday, None = no regular match
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)

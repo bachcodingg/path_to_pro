@@ -20,6 +20,7 @@ def _status(ok: bool | None) -> str:
 def markdown(r: dict) -> str:
     v = {k: r[k] for k in VARIANTS}
     spike = [v[k]["spike_reduction_pct"] for k in VARIANTS]
+    spike_eq = [v[k].get("spike_reduction_equal_load_pct") for k in VARIANTS]
     mono = [v[k]["monotony_reduction_pct"] for k in VARIANTS]
     dev = [v[k]["dev_delivery_pct"] for k in VARIANTS]
     hard = sum(v[k]["plan_hard_violations"] for k in VARIANTS)
@@ -36,6 +37,18 @@ def markdown(r: dict) -> str:
             ">= 50% fewer than baseline",
             ", ".join(f"{k}: {_fmt(x, 0, '%')}" for k, x in zip(VARIANTS, spike)),
             all(x is not None and x >= 50 for x in spike),
+        ),
+        (
+            "Same, against a baseline with the agents' total load",
+            "fewer spikes at equal load (not just less training)",
+            ", ".join(
+                f"{k}: {v[k]['baseline_equal_load']['acwr_spike_weeks']} -> {v[k]['agents']['acwr_spike_weeks']} "
+                f"({_fmt(x, 0, '%')} fewer)"
+                for k, x in zip(VARIANTS, spike_eq)
+            )
+            if all(x is not None for x in spike_eq)
+            else "n/a",
+            None if any(x is None for x in spike_eq) else all(x > 0 for x in spike_eq),
         ),
         (
             "Weeks with monotony > 2",
@@ -86,6 +99,13 @@ def markdown(r: dict) -> str:
             rd["sensitivity_calibrated"] < 10,
         ),
         (
+            "Which days flip when a weight shifts",
+            "flips are borderline days, not clear ones",
+            f"{rd['flips_borderline_pct']:.0f}% of flipped days were within 5 points of a colour boundary; "
+            f"a smaller +/-0.05 shift changes {rd['sensitivity_half_step']:.1f}% of bands",
+            rd["flips_borderline_pct"] >= 80,
+        ),
+        (
             "Readiness colour stability (colour buffer)",
             "fewer day-to-day colour changes, warnings never delayed",
             f"{rd['changes_no_buffer_pct']:.0f}% -> {rd['changes_buffer_pct']:.0f}% of days change colour "
@@ -116,10 +136,13 @@ def markdown(r: dict) -> str:
         "| --- | --- | --- | --- | --- | --- | --- |",
     ]
     for k in VARIANTS:
-        for pol in ("baseline", "agents"):
+        for pol in ("baseline", "baseline_equal_load", "agents"):
+            if pol not in v[k]:
+                continue
             m = v[k][pol]
+            name = "baseline, agents' load" if pol == "baseline_equal_load" else pol
             out.append(
-                f"| {k} | {pol} | {m['acwr_spike_weeks']} | {m['monotony_weeks']} | {m['weekly_load_mean']:.0f} | "
+                f"| {k} | {name} | {m['acwr_spike_weeks']} | {m['monotony_weeks']} | {m['weekly_load_mean']:.0f} | "
                 f"{m['readiness_red_pct']:.1f}% | {m['injuries']} ({m['injuries_in_phv']}) |"
             )
     out += [
@@ -132,6 +155,10 @@ def markdown(r: dict) -> str:
         "",
         f"Mirwald estimate error within +/-2.5 y of PHV: bias {r['mirwald_error']['bias']:+.2f} y, "
         f"MAE {r['mirwald_error']['mae']:.2f} y.",
+        "",
+        "Equal-load baseline: the same fixed template with session minutes scaled "
+        + ", ".join(f"{k} x{v[k]['equal_load_minutes_scale']:.2f}" for k in VARIANTS if "equal_load_minutes_scale" in v[k])
+        + " so its mean weekly load matches the agents'. Spikes it still has come from how load is spread, not how much.",
         "",
         "Injuries are a secondary result: the injury model is synthetic, so process metrics are primary.",
     ]

@@ -14,7 +14,7 @@ PLAN_ENTITIES = {
 }  # fmt: skip
 
 
-EXTRA = {"player_guardians", "user_accounts", "player_notes", "task_completions", "daily_status", "app_settings", "staff_ratings"}
+EXTRA = {"player_guardians", "user_accounts", "player_notes", "task_completions", "daily_status", "app_settings", "staff_ratings", "amateur_profiles"}
 
 
 def test_all_22_plan_entities_exist():
@@ -68,3 +68,21 @@ def test_create_schema_and_round_trip():
         got = db.scalars(select(WeeklyPlan)).one()
         assert got.items[0].kind == SessionType.RECOVERY
         assert db.scalars(select(Player)).one().guardians[0].name == "Guardian 01"
+
+
+def test_old_database_gets_new_columns():
+    """A database created before positions/pathways existed is upgraded in place."""
+    from sqlalchemy import inspect, text
+
+    from api.db import add_missing_columns
+
+    engine = create_engine("sqlite://")
+    with engine.begin() as conn:
+        conn.execute(text("create table players (id varchar(36) primary key, display_name varchar(100))"))
+        conn.execute(text("insert into players values ('a', 'Old Player')"))
+        conn.execute(text("create table guardians (id varchar(36) primary key, name varchar(100), email varchar(200))"))
+    added = add_missing_columns(engine)
+    assert {"players.position", "players.pathway", "guardians.invite_code"} <= set(added)
+    with engine.connect() as conn:
+        assert conn.execute(text("select position, pathway from players")).one() == ("midfielder", "academy")
+    assert any(i["name"] == "ix_guardians_invite_code" for i in inspect(engine).get_indexes("guardians"))

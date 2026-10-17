@@ -27,6 +27,7 @@ KPI_SESSION: dict[str, SessionType] = {
     "sprint_30m": SessionType.SPEED,
     "cmj": SessionType.STRENGTH,
     "yoyo_ir1": SessionType.TACTICAL,
+    "technique": SessionType.TECHNICAL,  # self-guided pathway: ball-skill benchmarks
 }
 
 KPI_LABEL = {
@@ -34,6 +35,7 @@ KPI_LABEL = {
     "sprint_30m": "30 m sprint",
     "cmj": "jump power",
     "yoyo_ir1": "endurance",
+    "technique": "ball skills",
 }
 
 

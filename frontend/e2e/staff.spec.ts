@@ -92,3 +92,15 @@ test("coach rates a player and reviews the readiness calibration", async ({ page
   await expect(page.getByText("Staff red days the score also calls red")).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/coach-calibration.png`, fullPage: true });
 });
+
+test("coach turns a plain-words note into a plan change", async ({ page }) => {
+  test.skip(!!process.env.E2E_DEMO, "the planner runs on the server");
+  await login(page, "coach@demo.pathtopro");
+  await page.getByRole("link", { name: "Elias O." }).click();
+  await page.getByLabel("Coach instruction").fill("keep him light until tomorrow, no gym this week");
+  await page.getByRole("button", { name: "Preview" }).click();
+  await expect(page.getByText("No strength sessions")).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/coach-instruction.png` });
+  await page.getByRole("button", { name: /Apply to Elias's week/ }).click();
+  await expect(page.getByText(/Applied\. Elias sees the new week/)).toBeVisible();
+});

@@ -11,11 +11,12 @@ import { Button, Card, cn } from "../shared/ui";
 
 type HooperKey = "sleep_quality" | "fatigue" | "stress" | "soreness";
 
+// Title keys are translated at render time, so a language switch applies immediately.
 const QUESTIONS: { key: HooperKey; title: string; low: string; high: string }[] = [
-  { key: "sleep_quality", title: t("checkin.sleep_quality"), low: "Great", high: "Awful" },
-  { key: "fatigue", title: t("checkin.fatigue"), low: "Fresh", high: "Exhausted" },
-  { key: "stress", title: t("checkin.stress"), low: "Relaxed", high: "Very stressed" },
-  { key: "soreness", title: t("checkin.soreness"), low: "Not sore", high: "Very sore" },
+  { key: "sleep_quality", title: "checkin.sleep_quality", low: "Great", high: "Awful" },
+  { key: "fatigue", title: "checkin.fatigue", low: "Fresh", high: "Exhausted" },
+  { key: "stress", title: "checkin.stress", low: "Relaxed", high: "Very stressed" },
+  { key: "soreness", title: "checkin.soreness", low: "Not sore", high: "Very sore" },
 ];
 const FACES = ["😄", "🙂", "😌", "😐", "😕", "😣", "😫"];
 const STEPS = QUESTIONS.length + 1;
@@ -80,7 +81,7 @@ export function CheckIn() {
           {q ? (
             <Card className="space-y-5">
               <h2 className="text-xl font-bold" id={`q-${q.key}`}>
-                {q.title}
+                {t(q.title)}
               </h2>
               <div className="text-center text-6xl" aria-hidden>
                 {FACES[answers[q.key] - 1]}

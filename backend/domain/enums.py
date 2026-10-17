@@ -44,3 +44,19 @@ class AgentName(str, Enum):
     PLANNER = "planner"
     DEVELOPMENT_COACH = "development_coach"
     COORDINATOR = "coordinator"
+
+
+class Position(str, Enum):
+    """Playing position; the gym programme adds a position block on top of the shared one."""
+
+    GOALKEEPER = "goalkeeper"
+    CENTRE_BACK = "centre_back"
+    FULL_BACK = "full_back"
+    MIDFIELDER = "midfielder"
+    WINGER = "winger"
+    STRIKER = "striker"
+
+
+class Pathway(str, Enum):
+    ACADEMY = "academy"  # club staff plan and approve
+    AMATEUR = "amateur"  # self-guided: levels, benchmarks, own club schedule

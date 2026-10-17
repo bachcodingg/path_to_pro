@@ -7,8 +7,17 @@ import { ApiError } from "./api";
 
 type Json = any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
+interface ReadinessMeta {
+  weights: Record<"hrv" | "hooper" | "sleep", number>;
+  green_min: number;
+  amber_min: number;
+  sleep_target_hours: number;
+  hysteresis_up: number;
+  hysteresis_down: number;
+}
+
 interface Snapshot {
-  meta: { today: string; story: Record<string, string>; password: string; generated?: string };
+  meta: { today: string; story: Record<string, string>; password: string; generated?: string; readiness?: ReadinessMeta };
   users: Record<string, { me: Json; responses: Record<string, Json> }>;
   staff: Record<string, Json>;
 }
@@ -68,28 +77,90 @@ function fail(status: number, msg: string): never {
 
 // --------------------------------------------------------------------------- readiness (mirrors analytics/readiness.py)
 
-const WEIGHTS = { hooper: 0.35, sleep: 0.25 }; // no HRV for a manual check-in: rescaled
-const GREEN = 70,
-  AMBER = 50,
-  BUFFER_UP = 8;
+// Weights, bands and buffer come from the snapshot (exported from config/readiness.yaml by
+// demo_snapshot.py), so the demo can't drift from the server. Fallback = the defaults.
+const DEFAULT_READINESS: ReadinessMeta = {
+  weights: { hrv: 0.4, hooper: 0.35, sleep: 0.25 },
+  green_min: 70,
+  amber_min: 50,
+  sleep_target_hours: 9,
+  hysteresis_up: 8,
+  hysteresis_down: 0,
+};
 const RANK: Record<string, number> = { red: 0, amber: 1, green: 2 };
+type BandName = "green" | "amber" | "red";
 
-function rawBand(score: number): "green" | "amber" | "red" {
-  return score >= GREEN ? "green" : score >= AMBER ? "amber" : "red";
+function rawBand(score: number, c: ReadinessMeta): BandName {
+  return score >= c.green_min ? "green" : score >= c.amber_min ? "amber" : "red";
 }
-function bandWithBuffer(score: number, previous: string | null): "green" | "amber" | "red" {
-  const now = rawBand(score);
-  if (!previous || RANK[now] <= RANK[previous]) return now; // worse: applies at once
-  return RANK[rawBand(score - BUFFER_UP)] > RANK[previous] ? rawBand(score - BUFFER_UP) : (previous as "green" | "amber" | "red");
+function bandWithBuffer(score: number, previous: string | null, c: ReadinessMeta): BandName {
+  if (!previous) return rawBand(score, c);
+  const worse = rawBand(score + c.hysteresis_down, c);
+  if (RANK[worse] < RANK[previous]) return worse; // a worse colour applies at once
+  const better = rawBand(score - c.hysteresis_up, c);
+  return RANK[better] > RANK[previous] ? better : (previous as BandName);
 }
 
-function checkinReadiness(body: Json, previous: string | null) {
+/** Check-in score in the browser. The server would use today's HRV; the demo reuses the
+ *  last HRV component it recorded (an estimate), or leaves HRV out and rescales. */
+function checkinReadiness(body: Json, previous: string | null, lastHrv: number | undefined, c: ReadinessMeta) {
   const h = body.sleep_quality + body.fatigue + body.stress + body.soreness;
-  const hooper = ((28 - h) / 24) * 100;
-  const sleep = Math.min((body.sleep_hours ?? 8) / 9, 1) * 100;
-  const total = WEIGHTS.hooper + WEIGHTS.sleep;
-  const score = (WEIGHTS.hooper * hooper + WEIGHTS.sleep * sleep) / total;
-  return { score: Math.round(score * 10) / 10, band: bandWithBuffer(score, previous) };
+  const parts: Record<string, number> = {
+    hooper: ((28 - h) / 24) * 100,
+    sleep: Math.min((body.sleep_hours ?? 8) / c.sleep_target_hours, 1) * 100,
+  };
+  if (lastHrv != null) parts.hrv = lastHrv;
+  const total = Object.keys(parts).reduce((s, k) => s + c.weights[k as keyof ReadinessMeta["weights"]], 0);
+  const score = Object.entries(parts).reduce((s, [k, v]) => s + c.weights[k as keyof ReadinessMeta["weights"]] * v, 0) / total;
+  return {
+    score: Math.round(score * 10) / 10,
+    band: bandWithBuffer(score, previous, c),
+    components: Object.fromEntries(Object.entries(parts).map(([k, v]) => [k, Math.round(v * 100) / 100])),
+  };
+}
+
+// --------------------------------------------------------------------------- self-guided pathway (mirrors pathway/levels.py)
+
+function meets(row: Json, value: number | null, target: number | null): boolean {
+  if (value == null || target == null) return false;
+  return row.lower_is_better ? value <= target : value >= target;
+}
+
+/** Recompute the checklist after a new test result; level up one step when complete. */
+function reassess(pw: Json): boolean {
+  const a = pw.assessment;
+  const next = a.next && pw.ladder.find((l: Json) => l.level === a.next.level);
+  for (const r of a.tests) {
+    r.target = (next ?? pw.ladder.find((l: Json) => l.level === a.level)).benchmarks[r.test];
+    r.met = meets(r, r.value, r.target);
+    r.gap = r.value == null ? 1 : r.met ? 0 : Math.abs(r.value - r.target) / Math.abs(r.target);
+  }
+  const met = a.tests.filter((r: Json) => r.met).length;
+  if (a.next) a.next.tests_met = met;
+  a.focus = [...a.tests].filter((r: Json) => !r.met).sort((x: Json, y: Json) => y.gap - x.gap).slice(0, 2).map((r: Json) => r.test);
+  a.ready_to_level_up = !!a.next && met >= a.next.tests_needed && a.consistency.ok;
+  if (!a.ready_to_level_up) return false;
+  const lvl = pw.ladder.find((l: Json) => l.level === a.next.level);
+  Object.assign(a, { level: lvl.level, name: lvl.name, who: lvl.who, targets: lvl.targets });
+  pw.profile.level = lvl.level;
+  const after = pw.ladder.find((l: Json) => l.level === lvl.level + 1);
+  a.next = after ? { level: after.level, name: after.name, tests_needed: a.next.tests_needed, tests_met: 0 } : null;
+  reassess(pw);
+  return true;
+}
+
+function syncTodayPathway(user: { responses: Record<string, Json> }) {
+  const pw = user.responses["/api/me/pathway"];
+  const today = user.responses["/api/me/today"];
+  if (!pw || !today?.pathway) return;
+  const a = pw.assessment;
+  today.pathway = {
+    level: a.level,
+    name: a.name,
+    next: a.next,
+    consistency: a.consistency,
+    focus: a.focus.map((f: string) => a.tests.find((t: Json) => t.test === f)?.label),
+  };
 }
 
 // --------------------------------------------------------------------------- helpers
@@ -137,6 +208,7 @@ async function route(path: string, method: string, body?: Json): Promise<Json> {
     if (!user || body?.password !== s.meta.password) fail(401, "Wrong email or password");
     return { token: TOKEN_PREFIX + email, user: user.me };
   }
+  if (p.startsWith("/api/auth/register")) fail(403, "Sign-up needs the live server: this demo runs offline in your browser");
 
   const email = currentEmail();
   const user = email ? s.users[email] : undefined;
@@ -149,22 +221,55 @@ async function route(path: string, method: string, body?: Json): Promise<Json> {
     if (role !== "player") fail(403, "Not allowed for your role");
     const r = user.responses;
     if (method === "GET") {
-      if (p === "/api/me/week") {
+      if (p === "/api/me/week" || p === "/api/me/gym") {
         const off = Math.max(-1, Math.min(1, Number(q.get("offset") ?? 0)));
-        return r[`/api/me/week?offset=${off}`];
+        return r[`${p}?offset=${off}`] ?? fail(404, "Not available in the demo");
       }
       return r[p] ?? fail(404, "Not available in the demo");
     }
     const today = r["/api/me/today"];
+    const pw = r["/api/me/pathway"];
+    if (p === "/api/me/pathway/tests" && pw) {
+      const row = pw.assessment.tests.find((t: Json) => t.test === body.test) ?? fail(422, "Unknown test");
+      const value = Number(body.value);
+      if (!(value >= 0)) fail(422, "Enter a valid result");
+      const better = row.value == null || (row.lower_is_better ? value < row.value : value > row.value);
+      if (better) row.value = value;
+      pw.history.push({ test: body.test, date: s.meta.today, value });
+      const levelled = reassess(pw);
+      syncTodayPathway(user);
+      return { ...pw, levelled_up: levelled };
+    }
+    if (p === "/api/me/pathway/profile" && pw) {
+      for (const k of ["goal", "equipment", "team_days", "position"]) if (body[k] != null) pw.profile[k] = body[k];
+      if (body.match_day != null) pw.profile.match_day = body.match_day < 0 ? null : body.match_day;
+      if (body.goal) pw.profile.goal_label = pw.goals[body.goal];
+      return pw;
+    }
+    if (p === "/api/me/log" && pw) {
+      today.logged = [...(today.logged ?? []), { minutes: body.minutes, rpe: body.rpe, load: body.minutes * body.rpe }];
+      const c = pw.assessment.consistency;
+      c.logged += 1;
+      c.ok = c.logged >= c.needed;
+      const levelled = reassess(pw);
+      syncTodayPathway(user);
+      return { today, levelled_up: levelled };
+    }
+    if (p === "/api/me/position") fail(403, "Changing position needs the live server");
     if (p === "/api/me/checkin") {
       const prev = today.readiness?.band ?? null;
-      const { score, band } = checkinReadiness(body, prev);
+      const { score, band, components } = checkinReadiness(
+        body,
+        prev,
+        today.readiness?.components?.hrv,
+        s.meta.readiness ?? DEFAULT_READINESS,
+      );
       const escalated = body.mood === "red" || !!body.pain;
       Object.assign(today, {
         checked_in: true,
         readiness_is_today: true,
         streak: today.checked_in ? today.streak : today.streak + 1,
-        readiness: { ...(today.readiness ?? {}), date: s.meta.today, score, band },
+        readiness: { ...(today.readiness ?? {}), date: s.meta.today, score, band, components },
       });
       if (escalated) {
         const kind = body.mood === "red" ? "red_mood" : "pain_report";
@@ -268,6 +373,14 @@ async function route(path: string, method: string, body?: Json): Promise<Json> {
       return cal;
     }
     if (p === "/api/coach/run-nightly") return { players: st["/api/coach/heatmap"].players.length };
+    if (/^\/api\/coach\/players\/[^/]+\/instruction$/.test(p))
+      fail(403, "Turning a note into a plan runs the planner: it needs the live server, not this offline demo");
+    const pos = p.match(/^\/api\/coach\/players\/([^/]+)\/position$/);
+    if (pos) {
+      const prof = st[`/api/coach/players/${pos[1]}`];
+      if (prof) prof.player.position = body.position;
+      return { position: body.position, gym: prof?.gym ?? null };
+    }
     const ack = p.match(/^\/api\/physio\/escalations\/([^/]+)\/ack$/);
     if (ack) {
       st["/api/physio/queue"] = st["/api/physio/queue"].filter((e: Json) => e.id !== ack[1]);

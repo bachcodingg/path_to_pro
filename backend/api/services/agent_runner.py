@@ -41,6 +41,7 @@ from domain.models import (
 from domain.models import (
     Session as TeamSession,
 )
+from pathway import service as pathway_service
 from planner.model import hard_violations
 from planner.schema import SESSION_MINUTES, PlanDay, PlannerInput, PlanResult
 
@@ -65,6 +66,14 @@ def load_history(db: Session, player: Player, day: date) -> PlayerHistory:
     first = min(loads) if loads else day
     days = [first + timedelta(days=i) for i in range((day - first).days + 1)]
     daily = [loads.get(d, 0.0) for d in days]
+    preseason = PRESEASON_DAILY_LOAD
+    prof = pathway_service.profile(db, player)
+    if prof is not None:
+        # Self-guided players log their own sessions. With nothing logged for two weeks
+        # their fitness is unknown, so start from the level's normal week (not from zero).
+        preseason = pathway_service.preseason_load(prof)
+        if not any(d > day - timedelta(days=14) for d in loads):
+            daily = []
 
     sleep, hrv, hooper, mood, pain, meas = [], [], None, False, False, None
     if has_consent(db, player, ConsentDataType.SLEEP, day):
@@ -102,7 +111,7 @@ def load_history(db: Session, player: Player, day: date) -> PlayerHistory:
             hooper = (today.sleep_quality, today.fatigue, today.stress, today.soreness)
             mood, pain = today.mood_red, today.pain_reported
         d = day
-        while d not in recent and d > day - timedelta(days=14):
+        while d not in recent and d > day - timedelta(days=14) and prof is None:  # no staff to alert
             missed += 1
             d -= timedelta(days=1)
     if has_consent(db, player, ConsentDataType.ANTHROPOMETRICS, day):
@@ -125,7 +134,7 @@ def load_history(db: Session, player: Player, day: date) -> PlayerHistory:
         pain_reported=pain,
         missed_checkins_in_row=missed,
         measurements=meas,
-        preseason_daily_load=PRESEASON_DAILY_LOAD if len(daily) < 28 else None,
+        preseason_daily_load=preseason if len(daily) < 28 else None,
         previous_band=_previous_band(db, player, day),
     )
 
@@ -231,6 +240,10 @@ def has_active_plan(db: Session, player: Player, start: date) -> bool:
 def planner_input(db: Session, player: Player, start: date, n: int = 7) -> PlannerInput:
     matches = match_days(db, player, start, n)
     exams = {date.fromisoformat(x) for x in (player.exam_dates or [])}
+    extra = {}
+    prof = pathway_service.profile(db, player)
+    if prof is not None:
+        extra = pathway_service.planner_overrides(prof, start, n)
     return PlannerInput(
         player_id=player.id,
         start=start,
@@ -239,7 +252,20 @@ def planner_input(db: Session, player: Player, start: date, n: int = 7) -> Plann
         exam_days=sorted((d - start).days for d in exams if 0 <= (d - start).days < n),
         preferred_days=player.preferred_days or [],
         min_training_sessions=max(1, round(3 * n / 7)),
-    )
+    ).model_copy(update=extra)
+
+
+def plan_covers(db: Session, player: Player, start: date, end: date) -> bool:
+    """Every day in [start, end) has an active plan item."""
+    days = {
+        it.day
+        for it in db.scalars(
+            select(PlanItem)
+            .join(WeeklyPlan)
+            .where(WeeklyPlan.player_id == player.id, WeeklyPlan.status == "active", PlanItem.day >= start, PlanItem.day < end)
+        )
+    }
+    return all(start + timedelta(days=i) in days for i in range((end - start).days))
 
 
 REPLAN_FLAGS = {"short_sleep", "low_hrv", "readiness_red", "load_spike"}
@@ -365,6 +391,9 @@ def run_player(db: Session, player: Player, day: date, trigger: str, llm: LLMBac
 
     inp = planner_input(db, player, start, n)
     goals = [DevGoal(g.kpi, g.sessions_per_week) for g in active_goals(db, player, start)]
+    self_guided = pathway_service.profile(db, player)
+    if self_guided is not None:
+        goals = pathway_service.goals(db, player, self_guided, day)
     current = None
     if planned:
         current = plan_days(db, player, start, n)
@@ -434,6 +463,11 @@ def run_player(db: Session, player: Player, day: date, trigger: str, llm: LLMBac
                 policy_rule=cycle.ruling.rule,
                 status=_proposal_status(cycle.ruling.decision),
             )
+            if self_guided is not None and prop.status == ProposalStatus.PENDING:
+                # No coach to ask. A re-plan can only lower load (RPE ceiling), so it is
+                # applied and explained to the player on the Today screen.
+                prop.status = ProposalStatus.AUTO_APPLIED
+                prop.policy_rule = "self-guided player: re-plans only make the week easier, applied automatically"
             db.add(prop)
             if prop.status == ProposalStatus.AUTO_APPLIED:
                 activate(db, plan, player)

@@ -8,7 +8,7 @@ from dataclasses import asdict
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from analytics.calibration import KEYS, MIN_SAMPLES, MIN_WEIGHT, RatedDay, fit_weights
+from analytics.calibration import KEYS, MIN_CV_GAIN, MIN_SAMPLES, MIN_WEIGHT, RatedDay, fit_weights
 from analytics.readiness import Band, active_config, set_active_weights
 from domain.models import AppSetting, DailyStatus, Player, StaffRating
 
@@ -42,6 +42,10 @@ def report(db: Session, squad_id: str | None) -> dict:
         "after": asdict(cal.after),
         "cv_before": cal.cv_before,
         "cv_after": cal.cv_after,
+        "cv_noise": cal.cv_noise,
+        "cv_gain_folds": list(cal.cv_gain_folds),
+        "recommended": cal.recommended,
+        "min_gain": MIN_CV_GAIN,
         "hysteresis": {"up": cfg.hysteresis_up, "down": cfg.hysteresis_down},
     }
 

@@ -218,3 +218,37 @@ def test_cycle_sends_session_swap_to_coach():
     assert r.proposal is not None
     assert r.ruling.decision == Decision.COACH_APPROVAL
     assert r.outcome.hard_violations == []
+
+
+def test_instruction_rule_parser():
+    from datetime import date
+
+    from agents.instruction import InstructionRefused, parse, parse_rules
+    from planner.schema import MaxRpeOnDay, MaxSessions, MinSessions, RestOnDay
+
+    mon = date(2026, 10, 19)
+    c = parse_rules("Keep Leon light until Wednesday", mon, 7)
+    assert [x.day for x in c if isinstance(x, MaxRpeOnDay)] == [0, 1, 2] and all(x.weight >= 8 for x in c)
+    c = parse_rules("rest on friday and saturday", mon, 7)
+    assert sorted(x.day for x in c if isinstance(x, RestOnDay)) == [4, 5]
+    c = parse_rules("no gym this week, extra speed work", mon, 7)
+    assert any(isinstance(x, MaxSessions) and x.count == 0 and x.session.value == "strength" for x in c)
+    assert any(isinstance(x, MinSessions) and x.session.value == "speed" for x in c)
+    c = parse_rules("max effort 5 tomorrow", date(2026, 10, 22), 4)  # Thursday plan, 4 days left
+    assert [(x.day, x.rpe) for x in c if isinstance(x, MaxRpeOnDay)] == [(1, 5)]
+    try:
+        parse("he has a hamstring injury", mon, 7)
+        raise AssertionError("should refuse")
+    except InstructionRefused:
+        pass
+
+
+def test_instruction_clauses_keep_their_own_days():
+    from datetime import date
+
+    from agents.instruction import parse_rules
+    from planner.schema import MaxRpeOnDay, MaxSessions
+
+    c = parse_rules("keep him light until tomorrow, no gym this week", date(2026, 11, 26), 4)
+    assert [x.day for x in c if isinstance(x, MaxRpeOnDay)] == [0, 1]
+    assert any(isinstance(x, MaxSessions) for x in c)

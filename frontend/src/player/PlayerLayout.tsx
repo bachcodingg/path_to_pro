@@ -1,20 +1,30 @@
-import { CalendarDays, Home, LogOut, Map, Ruler, Shield } from "lucide-react";
+import { CalendarDays, Dumbbell, Home, LogOut, Map, Ruler, Shield, TrendingUp } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../shared/auth";
 import { t } from "../shared/i18n";
 import { cn } from "../shared/ui";
 
-const NAV = [
-  { to: "/player", label: t("nav.today"), icon: Home, end: true },
-  { to: "/player/week", label: t("nav.week"), icon: CalendarDays },
-  { to: "/player/growth", label: t("nav.growth"), icon: Ruler },
-  { to: "/player/card", label: t("nav.card"), icon: Shield },
-  { to: "/player/road", label: t("nav.road"), icon: Map },
-];
+// Built inside the component so labels follow the current language.
+function navFor(selfGuided: boolean) {
+  const common = [
+    { to: "/player", label: t("nav.today"), icon: Home, end: true },
+    { to: "/player/week", label: t("nav.week"), icon: CalendarDays },
+    { to: "/player/gym", label: t("nav.gym"), icon: Dumbbell },
+  ];
+  return selfGuided
+    ? [...common, { to: "/player/levels", label: t("nav.levels"), icon: TrendingUp }, { to: "/player/growth", label: t("nav.growth"), icon: Ruler }]
+    : [
+        ...common,
+        { to: "/player/growth", label: t("nav.growth"), icon: Ruler },
+        { to: "/player/card", label: t("nav.card"), icon: Shield },
+        { to: "/player/road", label: t("nav.road"), icon: Map },
+      ];
+}
 
 // Mobile-first PWA shell; dark by default (players use it in the evening).
 export function PlayerLayout() {
   const { user, logout } = useAuth();
+  const NAV = navFor(user?.pathway === "amateur");
   return (
     <div className="dark bg-surface-2 text-ink min-h-full">
       <div className="mx-auto flex min-h-screen max-w-md flex-col">
@@ -35,7 +45,7 @@ export function PlayerLayout() {
           className="bg-surface border-line fixed inset-x-0 bottom-0 border-t pb-[env(safe-area-inset-bottom)]"
           aria-label="Player navigation"
         >
-          <ul className="mx-auto grid max-w-md grid-cols-5">
+          <ul className={cn("mx-auto grid max-w-md", NAV.length === 6 ? "grid-cols-6" : "grid-cols-5")}>
             {NAV.map(({ to, label, icon: Icon, end }) => (
               <li key={to}>
                 <NavLink
@@ -43,7 +53,7 @@ export function PlayerLayout() {
                   end={end}
                   className={({ isActive }) =>
                     cn(
-                      "tap flex flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-semibold",
+                      "tap flex flex-col items-center justify-center gap-0.5 py-2 text-center text-[10.5px] leading-tight font-semibold",
                       isActive ? "text-pitch-300" : "text-ink-2",
                     )
                   }

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { ApiError } from "./api";
 import { homeFor, useAuth } from "./auth";
 import { Button, Card } from "./ui";
@@ -7,6 +7,7 @@ import { Button, Card } from "./ui";
 const DEMO = [
   { label: "Player (tired, growth zone)", email: "p15@demo.pathtopro" },
   { label: "Player", email: "p03@demo.pathtopro" },
+  { label: "Self-guided player", email: "amateur@demo.pathtopro" },
   { label: "Coach", email: "coach@demo.pathtopro" },
   { label: "Physio", email: "physio@demo.pathtopro" },
   { label: "Guardian", email: "guardian02@demo.pathtopro" },
@@ -88,6 +89,12 @@ export function Login() {
             </div>
           </div>
         </Card>
+        <p className="text-pitch-200 mt-4 text-center text-sm">
+          Not in an academy?{" "}
+          <Link to="/register" className="font-semibold text-white underline">
+            Create a free plan
+          </Link>
+        </p>
       </div>
     </main>
   );

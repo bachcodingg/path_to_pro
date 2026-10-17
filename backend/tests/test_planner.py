@@ -142,3 +142,23 @@ def test_md_plus_1_is_easy(matches):
     for d, _ in itertools.groupby(matches):
         if d + 1 < 7 and d + 1 not in matches:
             assert r.days[d + 1].rpe <= 3
+
+
+def test_team_days_get_football_sessions():
+    from datetime import date
+
+    from domain.enums import SessionType
+    from planner.model import hard_violations, plan_week
+    from planner.schema import PlannerInput
+
+    inp = PlannerInput(
+        player_id="am", start=date(2026, 10, 19), match_days=[5], team_days=[1, 3], club_weekly_load=1600,
+        chronic_daily_load=220, min_training_sessions=3,
+    )
+    r = plan_week(inp)
+    assert not hard_violations(r, inp)
+    assert all(r.days[d].kind in (SessionType.TECHNICAL, SessionType.TACTICAL) for d in (1, 3))
+    # an exam on a club night still wins (H6)
+    inp2 = inp.model_copy(update={"exam_days": [3]})
+    r2 = plan_week(inp2)
+    assert r2.days[3].kind == SessionType.REST

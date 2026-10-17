@@ -2,12 +2,17 @@ export type Role = "player" | "guardian" | "coach" | "physio" | "admin";
 export type Band = "green" | "amber" | "red";
 export type SessionKind = "rest" | "recovery" | "technical" | "tactical" | "strength" | "speed" | "match";
 
+export type Pathway = "academy" | "amateur";
+export type Position = "goalkeeper" | "centre_back" | "full_back" | "midfielder" | "winger" | "striker";
+
 export interface User {
   id: string;
   email: string;
   role: Role;
   name: string;
   player_id: string | null;
+  pathway?: Pathway | null;
+  position?: Position | null;
 }
 
 export interface PlanDay {
@@ -18,6 +23,51 @@ export interface PlanDay {
   minutes: number;
   load: number;
   actual_load?: number | null;
+  team_day?: boolean;
+  content?: SessionContent | null;
+}
+
+export interface SessionContent {
+  title: string;
+  items: { name: string; minutes: number | null; how: string }[];
+}
+
+export interface GymItem {
+  id: string;
+  name: string;
+  block: string;
+  tag: "everyone" | "position";
+  sets: number;
+  amount: string;
+  rest_s: number;
+  cue: string;
+  equipment: string;
+  plyometric: boolean;
+  heavy: boolean;
+}
+
+export interface GymProgramme {
+  position: Position;
+  position_label: string;
+  focus: string;
+  stage: "foundation" | "development" | "performance";
+  stage_label: string;
+  intensity: string;
+  title: string;
+  minutes: number;
+  blocks: { title: string; kind: string; tag: "everyone" | "position"; items: GymItem[] }[];
+  adjustments: string[];
+}
+
+export interface GymWeek {
+  start: string;
+  position: Position;
+  position_label: string;
+  focus: string;
+  equipment: "gym" | "home" | "none";
+  sessions: { session: PlanDay; programme: GymProgramme }[];
+  optional: GymProgramme | null;
+  positions: { id: Position; label: string; focus: string }[];
 }
 
 export interface Flag {
@@ -34,6 +84,7 @@ export interface Status {
   maturity_offset: number | null;
   flags: Flag[];
   chips: string[];
+  components?: Partial<Record<"hrv" | "hooper" | "sleep", number>>;
 }
 
 export interface WhyCard {
@@ -59,6 +110,73 @@ export interface Today {
   tasks: { id: string; label: string; done: boolean }[];
   why: WhyCard[];
   streak: number;
+  gym?: GymProgramme | null;
+  pathway?: TodayPathway | null;
+  content?: SessionContent | null;
+  safety?: string[];
+  logged?: { minutes: number; rpe: number; load: number }[];
+  consent?: { wellness: boolean; test_results: boolean };
+}
+
+export interface TodayPathway {
+  level: number;
+  name: string;
+  next: { level: number; name: string; tests_needed: number; tests_met: number } | null;
+  consistency: { logged: number; needed: number; planned: number; ok: boolean };
+  focus: string[];
+}
+
+export interface BenchmarkRow {
+  test: string;
+  label: string;
+  unit: string;
+  kind: "physical" | "technical";
+  how: string;
+  lower_is_better: boolean;
+  value: number | null;
+  target: number | null;
+  met: boolean;
+  gap: number;
+}
+
+export interface PathwayView {
+  profile: {
+    level: number;
+    level_since: string;
+    goal: string;
+    goal_label: string;
+    equipment: "gym" | "home" | "none";
+    team_days: number[];
+    match_day: number | null;
+    position: Position;
+  };
+  assessment: {
+    level: number;
+    name: string;
+    who: string;
+    targets: string;
+    benchmark_level: number;
+    next: { level: number; name: string; tests_needed: number; tests_met: number } | null;
+    tests: BenchmarkRow[];
+    focus: string[];
+    consistency: { logged: number; needed: number; planned: number; ok: boolean };
+    ready_to_level_up: boolean;
+  };
+  ladder: {
+    level: number;
+    name: string;
+    who: string;
+    targets: string;
+    sessions_per_week: number;
+    gym_per_week: number;
+    benchmarks: Record<string, number | null>;
+  }[];
+  goals: Record<string, string>;
+  can_store_tests: boolean;
+  guardian_invite: string | null;
+  history: { test: string; date: string; value: number }[];
+  note: string;
+  levelled_up?: boolean;
 }
 
 export interface Week {

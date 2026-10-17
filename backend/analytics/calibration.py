@@ -29,6 +29,7 @@ KEYS = ("hrv", "hooper", "sleep")
 STEP = 0.05
 MIN_WEIGHT = 0.10
 MIN_SAMPLES = 60
+MIN_CV_GAIN = 0.01  # held-out kappa must improve by more than this (and twice its noise)
 _RANK = {Band.RED: 0, Band.AMBER: 1, Band.GREEN: 2}
 
 
@@ -55,6 +56,28 @@ class Calibration:
     cv_before: float | None = None  # held-out kappa, current weights
     cv_after: float | None = None  # held-out kappa, refitted weights
     enough_data: bool = True
+    cv_gain_folds: tuple[float, ...] = ()  # per held-out group: kappa(refitted) - kappa(current)
+
+    @property
+    def cv_noise(self) -> float | None:
+        """Standard error of the held-out gain across groups (fold-to-fold spread)."""
+        g = self.cv_gain_folds
+        if len(g) < 2:
+            return None
+        mean = sum(g) / len(g)
+        sd = (sum((x - mean) ** 2 for x in g) / (len(g) - 1)) ** 0.5
+        return sd / len(g) ** 0.5
+
+    @property
+    def recommended(self) -> bool:
+        """Suggest applying only if the held-out gain is clearly above the noise."""
+        if not self.enough_data or self.cv_before is None or self.cv_after is None:
+            return False
+        if self.after.red_recall is not None and self.before.red_recall is not None:
+            if self.after.red_recall < self.before.red_recall:
+                return False
+        noise = self.cv_noise or 0.0
+        return self.cv_after - self.cv_before > max(MIN_CV_GAIN, 2 * noise)
 
 
 def weighted_kappa(a: Sequence[int], b: Sequence[int], k: int = 3) -> float:
@@ -119,24 +142,38 @@ def _fit(samples: Sequence[RatedDay], base: ReadinessConfig) -> tuple[dict[str, 
     return best
 
 
-def cross_validate(samples: Sequence[RatedDay], base: ReadinessConfig, folds: int = 5, seed: int = 7):
-    """Held-out kappa (current weights, refitted weights), grouping folds by player."""
+def cross_validate(samples: Sequence[RatedDay], base: ReadinessConfig, folds: int = 5, seed: int = 7, detail: bool = False):
+    """Held-out kappa (current weights, refitted weights), grouping folds by player.
+
+    With `detail`, also returns each held-out group's gain (refitted minus current kappa).
+    """
     players = sorted({s.player_id for s in samples})
     if len(players) < folds:
-        return None, None
+        return (None, None, ()) if detail else (None, None)
     random.Random(seed).shuffle(players)
     groups = [set(players[i::folds]) for i in range(folds)]
-    true, cur, fit = [], [], []
+    true, cur, fit, gains = [], [], [], []
     for g in groups:
         train = [s for s in samples if s.player_id not in g]
         test = [s for s in samples if s.player_id in g]
         w, _ = _fit(train, base)
-        for s, cfg, out in ((s, c, o) for s in test for c, o in ((base, cur), (base.with_weights(w), fit))):
-            r = combine(s.components, cfg)
-            if r is not None:
-                out.append(_RANK[band_for(r.score, cfg)])
-        true += [_RANK[s.staff_band] for s in test if combine(s.components, base) is not None]
-    return weighted_kappa(true, cur), weighted_kappa(true, fit)
+        f_true, f_cur, f_fit = [], [], []
+        for s in test:
+            r0 = combine(s.components, base)
+            if r0 is None:
+                continue
+            cfg = base.with_weights(w)
+            r1 = combine(s.components, cfg)
+            f_true.append(_RANK[s.staff_band])
+            f_cur.append(_RANK[band_for(r0.score, base)])
+            f_fit.append(_RANK[band_for(r1.score, cfg)] if r1 is not None else f_cur[-1])
+        true += f_true
+        cur += f_cur
+        fit += f_fit
+        if f_true:
+            gains.append(weighted_kappa(f_true, f_fit) - weighted_kappa(f_true, f_cur))
+    out = (weighted_kappa(true, cur), weighted_kappa(true, fit))
+    return (*out, tuple(gains)) if detail else out
 
 
 def fit_weights(samples: Sequence[RatedDay], base: ReadinessConfig | None = None, cv: bool = True) -> Calibration:
@@ -145,5 +182,5 @@ def fit_weights(samples: Sequence[RatedDay], base: ReadinessConfig | None = None
     if len(samples) < MIN_SAMPLES:
         return Calibration(dict(base.weights), before, before, enough_data=False)
     w, after = _fit(samples, base)
-    cv_before, cv_after = cross_validate(samples, base) if cv else (None, None)
-    return Calibration(w, before, after, cv_before, cv_after)
+    cv_before, cv_after, gains = cross_validate(samples, base, detail=True) if cv else (None, None, ())
+    return Calibration(w, before, after, cv_before, cv_after, cv_gain_folds=tuple(gains))
