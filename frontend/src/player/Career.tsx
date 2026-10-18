@@ -2,10 +2,11 @@
 // the pathway chart through the league ladder, and the match diary.
 import { ChevronDown } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api, ApiError } from "../shared/api";
 import { useAuth } from "../shared/auth";
 import { Breakdown, POSITION_LABEL, RatingBadge } from "../shared/Rating";
+import { RatingHistory } from "../shared/RatingHistory";
 import type { AppearanceRow, Career as CareerData } from "../shared/types";
 import { useApi } from "../shared/useApi";
 import { Button, Card, Chip, ErrorNote, SectionTitle, Spinner, cn, fmtDay } from "../shared/ui";
@@ -72,23 +73,10 @@ export function Career() {
         </Card>
       </section>
 
-      {data.trend.length > 1 && (
-        <section>
-          <SectionTitle>Rating trend</SectionTitle>
-          <Card className="h-40 p-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.trend} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}>
-                <CartesianGrid stroke="rgba(255,255,255,0.08)" />
-                <XAxis dataKey="date" tickFormatter={(d) => d.slice(5)} fontSize={11} stroke="#a9c2b3" />
-                <YAxis domain={[5, 9]} fontSize={11} stroke="#a9c2b3" />
-                <ReferenceLine y={7} stroke="#1fa05a" strokeDasharray="4 4" />
-                <Tooltip contentStyle={{ background: "#0f2219", border: "1px solid #24402f" }} />
-                <Line dataKey="rating" stroke="#7ee0a8" strokeWidth={3} dot />
-              </LineChart>
-            </ResponsiveContainer>
-          </Card>
-        </section>
-      )}
+      <section>
+        <SectionTitle>Rating progress</SectionTitle>
+        <RatingHistory data={data.history} />
+      </section>
 
       <section>
         <SectionTitle>Recent matches</SectionTitle>

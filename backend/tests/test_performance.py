@@ -180,3 +180,21 @@ def test_training_pitch(client):
             assert row["days"][i]["kind"] == r["proposed"]["kind"] and row["days"][i]["rpe"] == r["proposed"]["rpe"]
     log = client.get("/api/coach/agent-log?limit=50", headers=coach).json()
     assert any(x["trigger"] == "team_session" for x in log)
+
+
+def test_rating_history_labels_and_trend(client):
+    import re
+
+    car = client.get("/api/me/career", headers=_h(client, "dual@demo.pathtopro")).json()
+    hist = car["history"]
+    pts = hist["points"]
+    assert len(pts) >= 10 and all(re.fullmatch(r"[A-Z][a-z]{2} M\d+", p["label"]) for p in pts)
+    assert [p["date"] for p in pts] == sorted(p["date"] for p in pts)
+    first_month = [p for p in pts if p["label"].startswith(pts[0]["label"][:3])]
+    assert [p["label"] for p in first_month][:2] == [f"{pts[0]['label'][:3]} M1", f"{pts[0]['label'][:3]} M2"]
+    prog = hist["progress"]
+    assert prog["verdict"] == "improving" and prog["slope_per_match"] > 0  # the demo player's form rises
+    assert pts[-1]["trend"] > pts[0]["trend"]
+    coach = _h(client, "coach@demo.pathtopro")
+    pid = next(p["id"] for p in client.get("/api/coach/heatmap", headers=coach).json()["players"])
+    assert "progress" in client.get(f"/api/coach/players/{pid}", headers=coach).json()["ratings"]

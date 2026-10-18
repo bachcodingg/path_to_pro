@@ -126,8 +126,12 @@ test("match ratings with a breakdown, and the second team's coach view", async (
   await expect(page.getByRole("heading", { name: "Match ratings" })).toBeVisible();
   await page.getByRole("link", { name: /PathToPro Academy .* vs/ }).first().click();
   await page.waitForURL(/\/coach\/matches\/[^/]+$/);
-  await expect(page.getByRole("button", { name: "Save and rate" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Line-up" })).toBeVisible();
   await expect(page.getByText(/Player of the match: /)).toBeVisible();
+  await expect(page.getByRole("img", { name: /Starting line-up, \d-\d/ })).toBeVisible();
+  await expect(page.getByText("Substitutes")).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/coach-match-lineup.png`, fullPage: true });
+  await page.getByRole("tab", { name: "Stat sheet" }).click();
   await page.getByRole("button", { name: /Rating breakdown for/ }).first().click();
   await expect(page.getByText(/Pass accuracy|Goals|Tackles|Interceptions|Duels/).first()).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/coach-match-ratings.png`, fullPage: true });

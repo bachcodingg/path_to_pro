@@ -62,6 +62,27 @@ the same endpoint: `PUT /api/coach/matches/{id}/ratings`). Without coach stats, 
 diary gives an estimate (shown in italics). The weights are defaults to tune with staff,
 like the readiness weights.
 
+### Line-up view
+
+Each match opens on a **Line-up** tab: the starting XI on the pitch in the formation read
+from their positions (e.g. 4-3-3, 4-2-4), each player with their rating badge, goals (ball),
+assists (A) and the minute they came off; a star marks the player of the match. Next to it:
+the team rating (average), the substitutes who came on (with their minutes and ratings),
+and the players who didn't play. Tap any player for their rating breakdown. The **Stat
+sheet** tab is where coaches enter or correct the stats.
+
+### Rating progress
+
+Every rated match in date order, labelled by month and match number ("Sep M1", "Sep M2",
+"Oct M1", ...), with:
+
+- dots coloured by rating,
+- the average of the last 5 matches (green line),
+- a straight-line trend over all matches (dashed orange), with "+0.31 per 10 matches",
+  last 5 vs first 5, and a verdict: improving (+0.15 or more per 10 matches), steady or dipping.
+
+Players see it on their Career tab; coaches see it on the player's scouting report.
+
 ## Training pitch (coach)
 
 The squad's week on one board. The coach drags a team session (technical, tactical, gym,

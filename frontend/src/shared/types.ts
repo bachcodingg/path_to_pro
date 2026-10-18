@@ -353,6 +353,7 @@ export interface Career {
   ladder: { season: string; level: number; competition_label: string }[];
   recent: AppearanceRow[];
   trend: { date: string; rating: number }[];
+  history: import("./RatingHistory").RatingHistoryData;
   diary_due: DiaryDue[];
   competitions: { id: string; label: string; level: number; category: string }[];
   note: string;

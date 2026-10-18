@@ -276,6 +276,7 @@ def profile(player_id: str, user: CurrentUser = Depends(require(*STAFF)), db: Se
         "player": {"id": p.id, "name": p.display_name, "age": round(age_on(p.birth_date, today), 1), "position": p.position},
         "positions": gym["positions"],
         "gym": gym["sessions"][0]["programme"] if gym["sessions"] else gym["optional"],
+        "ratings": performance.rating_history(db, p, today),
         "status": views.status_json(views.latest_status(db, p.id, today)),
         "series": series,
         "growth": growth,
@@ -678,7 +679,7 @@ def _team_matches(db: Session, user: CurrentUser) -> list[Match]:
     today = clock.today()
     q = select(Match).where(
         Match.kickoff < datetime.combine(today + timedelta(days=1), datetime.min.time()),
-        Match.kickoff >= datetime.combine(today - timedelta(days=42), datetime.min.time()),
+        Match.kickoff >= datetime.combine(today - timedelta(days=182), datetime.min.time()),
     )
     if staff.squad_id:
         q = q.where(Match.squad_id == staff.squad_id)

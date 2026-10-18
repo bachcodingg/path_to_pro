@@ -11,6 +11,9 @@ test("dual-registered player: shared match minutes, career and match diary", asy
   await expect(page.getByRole("heading", { name: "My career" })).toBeVisible();
   await expect(page.getByText(/dual registration/).first()).toBeVisible();
   await expect(page.getByText("Recent matches")).toBeVisible();
+  const chart = page.getByRole("img", { name: /Match ratings over \d+ matches, improving/ });
+  await expect(chart).toBeVisible();
+  await chart.screenshot({ path: `${SHOTS}/rating-progress.png` });
   await page.screenshot({ path: `${SHOTS}/player-career.png`, fullPage: true });
 
   const diary = page.getByRole("region", { name: "Match diary" });

@@ -5,6 +5,7 @@ import { Bar, Brush, CartesianGrid, ComposedChart, Legend, Line, ReferenceLine, 
 import { api, ApiError } from "../shared/api";
 import { useAuth } from "../shared/auth";
 import { GymProgrammeView } from "../shared/GymProgramme";
+import { RatingHistory, type RatingHistoryData } from "../shared/RatingHistory";
 import type { Card as CardData, GymProgramme, PlanDay, Position, Roadmap, Status } from "../shared/types";
 import { useApi } from "../shared/useApi";
 import { BandBadge, Button, Card, Chip, ErrorNote, SectionTitle, Spinner, cn, fmtDay, intensityClass } from "../shared/ui";
@@ -13,6 +14,7 @@ interface Profile {
   player: { id: string; name: string; age: number; position: Position };
   positions: { id: Position; label: string; focus: string }[];
   gym: GymProgramme | null;
+  ratings: RatingHistoryData;
   status: Status | null;
   series: { date: string; load: number; readiness: number | null; acwr: number | null }[];
   growth: { date: string; height_cm: number }[];
@@ -90,6 +92,11 @@ export function PlayerProfile() {
           </ComposedChart>
         </ResponsiveContainer>
       </Card>
+
+      <section>
+        <SectionTitle>Match ratings over time</SectionTitle>
+        <RatingHistory data={data.ratings} dark={false} />
+      </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section>

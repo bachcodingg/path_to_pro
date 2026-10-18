@@ -227,6 +227,7 @@ def career_view(db: Session, player: Player, today: date) -> dict:
         "ladder": [ladder[k] for k in sorted(ladder)],
         "recent": [appearance_json(db, a) for a in reversed(apps[-10:]) if a.minutes > 0 or a.diary_at],
         "trend": [{"date": a.day.isoformat(), "rating": a.rating} for a in rated[-15:]],
+        "history": rating_history(db, player, today),
         "diary_due": diary_due(db, player, today),
         "competitions": [{"id": k, "label": v["name"], "level": v["level"], "category": v["category"]} for k, v in competitions.all_competitions().items()],
         "note": "Ratings: our own transparent formula on a 3-10 scale (6-7 is an ordinary game). Competition levels are placeholder judgements.",
@@ -236,9 +237,10 @@ def career_view(db: Session, player: Player, today: date) -> dict:
 # --------------------------------------------------------------------------- synthetic demo stats
 
 
-def synthetic_stats(rng: random.Random, position: str, minutes: int, result: str, conceded: int) -> dict:
-    """Plausible match stats for the synthetic demo season (no real data)."""
-    f = minutes / 90
+def synthetic_stats(rng: random.Random, position: str, minutes: int, result: str, conceded: int, form: float = 1.0) -> dict:
+    """Plausible match stats for the synthetic demo season (no real data). `form` > 1
+    means a player in better form: more positive actions, fewer duels lost."""
+    f = minutes / 90 * form
     g = {"goalkeeper": "gk", "centre_back": "def", "full_back": "def", "midfielder": "mid", "winger": "fwd", "striker": "fwd"}[position]
 
     def n(mean: float) -> int:
@@ -251,15 +253,76 @@ def synthetic_stats(rng: random.Random, position: str, minutes: int, result: str
         "shots_on_target": n({"gk": 0, "def": 0.2, "mid": 0.6, "fwd": 1.3}[g]),
         "key_passes": n({"gk": 0.1, "def": 0.5, "mid": 1.4, "fwd": 1.1}[g]),
         "passes": passes,
-        "passes_accurate": round(passes * min(0.97, max(0.55, rng.gauss(0.82, 0.07)))),
+        "passes_accurate": round(passes * min(0.97, max(0.55, rng.gauss(0.82 + 0.15 * (form - 1), 0.07)))),
         "dribbles_won": n({"gk": 0, "def": 0.4, "mid": 1.0, "fwd": 1.6}[g]),
         "tackles_won": n({"gk": 0.1, "def": 2.0, "mid": 1.6, "fwd": 0.6}[g]),
         "interceptions": n({"gk": 0.2, "def": 1.6, "mid": 1.0, "fwd": 0.3}[g]),
         "duels_won": n({"gk": 0.5, "def": 5.0, "mid": 4.5, "fwd": 4.0}[g]),
-        "duels_lost": n({"gk": 0.3, "def": 3.5, "mid": 4.0, "fwd": 4.5}[g]),
+        "duels_lost": n({"gk": 0.3, "def": 3.5, "mid": 4.0, "fwd": 4.5}[g] / form**2),
         "saves": n(3.0) if g == "gk" else 0,
         "goals_conceded": round(conceded * f),
         "yellow": 1 if rng.random() < 0.08 * f else 0,
         "result": result,
     }
     return stats
+
+
+# --------------------------------------------------------------------------- rating history and progress
+
+ROLLING = 5
+
+
+def rating_history(db: Session, player: Player, today: date) -> dict:
+    """Every rated match in order, labelled "Jan M1", "Jan M2" (match number within the
+    month), with a 5-match rolling average and a least-squares trend line."""
+    apps = [
+        a
+        for a in db.scalars(
+            select(Appearance).where(Appearance.player_id == player.id, Appearance.day <= today).order_by(Appearance.day)
+        )
+        if a.rating is not None and a.minutes > 0
+    ]
+    points, per_month = [], {}
+    for i, a in enumerate(apps):
+        key = (a.day.year, a.day.month)
+        per_month[key] = per_month.get(key, 0) + 1
+        m = db.get(Match, a.match_id)
+        window = [x.rating for x in apps[max(0, i - ROLLING + 1) : i + 1]]
+        points.append(
+            {
+                "match_id": a.match_id,
+                "date": a.day.isoformat(),
+                "label": f"{a.day.strftime('%b')} M{per_month[key]}",
+                "opponent": m.opponent if m else "",
+                "team": team_label(db.get(Squad, m.squad_id)) if m else "",
+                "minutes": a.minutes,
+                "goals": a.goals,
+                "assists": a.assists,
+                "rating": a.rating,
+                "rating_band": band(a.rating),
+                "source": a.rating_source,
+                "rolling": round(sum(window) / len(window), 2),
+            }
+        )
+    n = len(points)
+    progress = {"matches": n, "average": None, "slope_per_match": None, "change_10": None, "first_vs_last": None, "verdict": "not enough matches"}
+    if n:
+        progress["average"] = round(sum(p["rating"] for p in points) / n, 2)
+    if n >= 3:
+        xs, ys = range(n), [p["rating"] for p in points]
+        mx, my = (n - 1) / 2, sum(ys) / n
+        sxx = sum((x - mx) ** 2 for x in xs)
+        slope = sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / sxx
+        for x, p in zip(xs, points):
+            p["trend"] = round(my + slope * (x - mx), 2)
+        k = min(ROLLING, n // 2) or 1
+        first, last = sum(ys[:k]) / k, sum(ys[-k:]) / k
+        progress.update(
+            {
+                "slope_per_match": round(slope, 3),
+                "change_10": round(slope * 10, 2),
+                "first_vs_last": round(last - first, 2),
+                "verdict": "improving" if slope * 10 >= 0.15 else "dipping" if slope * 10 <= -0.15 else "steady",
+            }
+        )
+    return {"points": points, "progress": progress}

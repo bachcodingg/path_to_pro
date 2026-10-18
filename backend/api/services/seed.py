@@ -263,7 +263,7 @@ def seed(db: Session, n_players: int = 25, story: bool = True) -> dict:
 
 DUAL_EMAIL = "dual@demo.pathtopro"
 MEN_COACH_EMAIL = "mencoach@demo.pathtopro"
-RATED_WEEKS = 6
+RATED_WEEKS = 26  # the whole season so far: enough matches for rating trends
 
 
 def _teams_and_careers(db: Session, res, players: dict[str, Player], academy: Squad, pw: str, today: date) -> str:
@@ -313,6 +313,12 @@ def _teams_and_careers(db: Session, res, players: dict[str, Player], academy: Sq
     }
     first_rated = today - timedelta(weeks=RATED_WEEKS)
 
+    def form(p: Player, d: date) -> float:
+        """Synthetic form curve: most players improve a little over the season, some dip;
+        the first dual-registered player clearly improves (demo of the progress line)."""
+        slope = 0.08 if p is dual[0] else random.Random(f"form{p.email}").uniform(-0.01, 0.025)
+        return max(0.6, 1 + slope * ((d - first_rated).days / 7 - RATED_WEEKS / 2))
+
     def outcome(d: date, team: str) -> tuple[str, int]:
         r = random.Random(f"{team}{d}")
         return r.choice(["win", "win", "draw", "loss"]), r.choice([0, 0, 1, 1, 2, 3])
@@ -331,12 +337,13 @@ def _teams_and_careers(db: Session, res, players: dict[str, Player], academy: Sq
         if s["kind"] != "match" or d < first_rated or d > yesterday or d not in academy_matches or s["minutes"] <= 0:
             continue
         p = players[s["player_id"]]
-        rng = random.Random(f"{p.id}{d}")
+        rng = random.Random(f"{p.email}{d}")
         minutes = int(s["minutes"])
         result, conceded = outcome(d, "academy")
         a = perf.appearance(db, p, academy_matches[d])
         started = s["player_id"] in starters.get(s["date"], set())
-        perf.apply_stats(a, minutes, started, p.position, perf.synthetic_stats(rng, p.position, minutes, result, conceded))
+        stats = perf.synthetic_stats(rng, p.position, minutes, result, conceded, form(p, d))
+        perf.apply_stats(a, minutes, started, p.position, stats)
         if rng.random() < 0.6 and a.rating is not None:
             a.self_rating = max(1, min(10, round(a.rating + rng.choice([-1, 0, 0, 1]))))
             a.self_rpe, a.diary_at = 7, _at(d, 20)
@@ -347,19 +354,19 @@ def _teams_and_careers(db: Session, res, players: dict[str, Player], academy: Sq
         for d, m in men_matches.items():
             if d < first_rated or d > yesterday:
                 continue
-            rng = random.Random(f"men{p.id}{d}")
+            rng = random.Random(f"men{p.email}{d}")
             if rng.random() < 0.35:
                 continue
             minutes = 30 if (d - timedelta(days=1)) in academy_matches else rng.choice([60, 75, 90])
             result, conceded = outcome(d, "men")
             a = perf.appearance(db, p, m)
-            perf.apply_stats(a, minutes, minutes >= 60, p.position, perf.synthetic_stats(rng, p.position, minutes, result, conceded))
+            perf.apply_stats(a, minutes, minutes >= 60, p.position, perf.synthetic_stats(rng, p.position, minutes, result, conceded, form(p, d)))
             db.add(SessionLoad(player_id=p.id, match_id=m.id, day=d, rpe=7, minutes=minutes, load_au=7 * minutes))
 
     # Past seasons on everyone's football CV
     year = today.year
     for p in players.values():
-        rng = random.Random(f"cv{p.id}")
+        rng = random.Random(f"cv{p.email}")
         for back in (2, 1):
             age = agent_runner.age_on(p.birth_date, date(year - back, 7, 1))
             if age < 12:
