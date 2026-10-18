@@ -160,6 +160,8 @@ class SessionLoad(Base):
     session_id: Mapped[str | None] = mapped_column(ForeignKey("sessions.id"))
     match_id: Mapped[str | None] = mapped_column(ForeignKey("matches.id"))
     day: Mapped[date] = mapped_column(Date, index=True)
+    source: Mapped[str | None] = mapped_column(String(30))  # None = club/manual; apple_watch = device import
+    external_id: Mapped[str | None] = mapped_column(String(120), index=True)  # device workout id: re-imports don't double count
     rpe: Mapped[float] = mapped_column(EncryptedFloat, info=HEALTH)
     minutes: Mapped[float] = mapped_column(Float)
     load_au: Mapped[float] = mapped_column(EncryptedFloat, info=HEALTH)
@@ -198,8 +200,11 @@ class HRVRecord(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
     player_id: Mapped[str] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
     day: Mapped[date] = mapped_column(Date, index=True)
+    # ln of the HRV value in ms. Chest straps and most apps give RMSSD; Apple Watch gives
+    # SDNN. Readiness compares a day with the player's own baseline of the same metric.
     ln_rmssd: Mapped[float] = mapped_column(EncryptedFloat, info=HEALTH)
     source: Mapped[str] = mapped_column(String(30), default="wearable")
+    metric: Mapped[str] = mapped_column(String(10), default="rmssd", server_default="rmssd")  # rmssd | sdnn
 
 
 class Anthropometrics(Base):
@@ -512,3 +517,18 @@ class CareerSeason(Base):
     goals: Mapped[int] = mapped_column(Integer, default=0)
     assists: Mapped[int] = mapped_column(Integer, default=0)
     avg_rating: Mapped[float | None] = mapped_column(Float)
+
+
+class DeviceToken(Base):
+    """A write-only token for a player's own device (e.g. an iPhone Shortcut sending Apple
+    Watch data). Only a hash is stored; the player sees the token once and can revoke it."""
+
+    __tablename__ = "device_tokens"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    player_id: Mapped[str] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    label: Mapped[str] = mapped_column(String(60))
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_summary: Mapped[dict] = mapped_column(JSON, default=dict)
+    revoked: Mapped[bool] = mapped_column(Boolean, default=False)

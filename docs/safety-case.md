@@ -75,3 +75,11 @@ not left to the LLM. Each claim below names the mechanism and the evidence.
   the nearest safe version, and the reason is shown to the coach and the player.
 - Match ratings are performance feedback, not selection decisions; they are labelled as a
   formula with placeholder weights.
+
+## Wearable data (Apple Watch)
+
+- Device codes are write-only, hashed, revocable, one player each.
+- Consent per data type is checked on every import; under-16s need a parent's consent.
+- Export files are parsed with defusedxml (entity expansion and external entities
+  forbidden), size-capped and deleted after reading; only 60 days are read.
+- HRV from different devices (SDNN vs RMSSD) is never mixed in one baseline.

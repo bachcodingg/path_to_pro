@@ -221,6 +221,14 @@ async function route(path: string, method: string, body?: Json): Promise<Json> {
     if (role !== "player") fail(403, "Not allowed for your role");
     const r = user.responses;
     if (method === "GET") {
+      if (p === "/api/me/devices")
+        return {
+          ingest_url: "https://<your-server>/api/ingest/apple-health",
+          tokens: [],
+          consent: { hrv: true, sleep: true, wellness: true },
+          latest: { hrv_day: null, sleep_night: null, sleep_hours: null },
+          window_days: 60,
+        };
       if (p === "/api/me/week" || p === "/api/me/gym") {
         const off = Math.max(-1, Math.min(1, Number(q.get("offset") ?? 0)));
         return r[`${p}?offset=${off}`] ?? fail(404, "Not available in the demo");
@@ -256,6 +264,7 @@ async function route(path: string, method: string, body?: Json): Promise<Json> {
       return { today, levelled_up: levelled };
     }
     if (p === "/api/me/position") fail(403, "Changing position needs the live server");
+    if (p.startsWith("/api/me/devices") || p === "/api/me/health/import") fail(403, "Connecting a watch needs the live server");
     const career = r["/api/me/career"];
     const diary = p.match(/^\/api\/me\/matches\/([^/]+)\/diary$/);
     if (diary && career) {

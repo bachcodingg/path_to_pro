@@ -86,14 +86,17 @@ def load_history(db: Session, player: Player, day: date) -> PlayerHistory:
             )
         ]
     if has_consent(db, player, ConsentDataType.HRV, day):
-        hrv = [
-            h.ln_rmssd
-            for h in db.scalars(
+        rows = list(
+            db.scalars(
                 select(HRVRecord)
                 .where(HRVRecord.player_id == player.id, HRVRecord.day <= day, HRVRecord.day > day - timedelta(days=8))
                 .order_by(HRVRecord.day)
             )
-        ]
+        )
+        # One metric only (RMSSD from a strap, SDNN from Apple Watch): the latest one decides,
+        # and the baseline is built from the same metric, never a mix.
+        metric = (rows[-1].metric or "rmssd") if rows else "rmssd"
+        hrv = [h.ln_rmssd for h in rows if (h.metric or "rmssd") == metric]
     missed = 0
     if has_consent(db, player, ConsentDataType.WELLNESS, day):
         recent = {

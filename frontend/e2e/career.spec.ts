@@ -24,3 +24,15 @@ test("dual-registered player: shared match minutes, career and match diary", asy
   if (before > 1) await expect(diary.getByRole("button", { name: /Fill in/ })).toHaveCount(before - 1);
   else await expect(diary).toHaveCount(0);
 });
+
+test("player connects an Apple Watch", async ({ page }) => {
+  await login(page, "amateur@demo.pathtopro");
+  await page.getByRole("link", { name: "Apple Watch" }).click();
+  await expect(page.getByRole("heading", { name: "Apple Watch" })).toBeVisible();
+  await expect(page.getByText("Or upload your Health data")).toBeVisible();
+  test.skip(!!process.env.E2E_DEMO, "tokens are issued by the server");
+  await page.getByRole("button", { name: "Connect Apple Watch" }).click();
+  await expect(page.getByLabel("Device code", { exact: true })).toContainText("ptp_");
+  await expect(page.getByLabel("URL", { exact: true })).toContainText("/api/ingest/apple-health");
+  await page.screenshot({ path: `${SHOTS}/apple-watch.png`, fullPage: true });
+});

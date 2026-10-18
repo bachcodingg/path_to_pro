@@ -18,6 +18,8 @@ dependencies = [
     "uvicorn[standard]>=0.30",
     "psycopg[binary]>=3.2",
     "matplotlib>=3.8",
+    "python-multipart>=0.0.9",
+    "defusedxml>=0.7.1",
 ]
 
 [project.optional-dependencies]
@@ -38,7 +40,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["analytics*", "agents*", "domain*", "simulator*", "eval*", "planner*", "api*", "gym*", "pathway*", "performance*"]
+include = ["analytics*", "agents*", "domain*", "simulator*", "eval*", "planner*", "api*", "gym*", "pathway*", "performance*", "devices*"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]
