@@ -2,6 +2,8 @@
 // from the players' positions), substitutes who came on, and the unused bench.
 import { Star } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Line, LineChart, ReferenceLine, ResponsiveContainer, YAxis } from "recharts";
 import { Ball, Pitch } from "../shared/Pitch";
 import { Breakdown, POSITION_LABEL, RatingBadge, ratingBand } from "../shared/Rating";
 import type { BreakdownItem, Position, RatingBand } from "../shared/types";
@@ -17,6 +19,7 @@ export interface LineupRow {
   rating_source: "stats" | "diary" | null;
   breakdown: BreakdownItem[];
   self_rating: number | null;
+  recent?: { date: string; rating: number }[];
 }
 
 const HEX: Record<RatingBand, string> = { elite: "#2a6fdb", good: "#1fa05a", fair: "#a3c639", average: "#f0a020", poor: "#e5484d" };
@@ -61,7 +64,47 @@ function short(name: string): string {
   return rest.length ? `${first} ${rest.join(" ")}` : first;
 }
 
-export function MatchLineup({ rows }: { rows: LineupRow[] }) {
+const STAT_LABEL: [string, string][] = [
+  ["goals", "Goals"],
+  ["assists", "Assists"],
+  ["shots_on_target", "Shots on target"],
+  ["key_passes", "Key passes"],
+  ["dribbles_won", "Dribbles won"],
+  ["tackles_won", "Tackles won"],
+  ["interceptions", "Interceptions"],
+  ["clearances", "Clearances"],
+  ["saves", "Saves"],
+  ["goals_conceded", "Goals conceded"],
+  ["yellow", "Yellow cards"],
+  ["red", "Red cards"],
+];
+
+function StatGrid({ r }: { r: LineupRow }) {
+  const s = r.stats;
+  const passes = Number(s.passes ?? 0),
+    acc = Number(s.passes_accurate ?? 0);
+  const duelsW = Number(s.duels_won ?? 0),
+    duelsL = Number(s.duels_lost ?? 0);
+  const cells: [string, string][] = [["Minutes", `${r.minutes}'`]];
+  if (passes) cells.push(["Passes", `${acc}/${passes} (${Math.round((100 * acc) / passes)}%)`]);
+  if (duelsW + duelsL) cells.push(["Duels won", `${duelsW}/${duelsW + duelsL}`]);
+  for (const [k, label] of STAT_LABEL) {
+    const v = Number(s[k] ?? 0);
+    if (v || (k === "goals_conceded" && s[k] !== undefined && (r.position === "goalkeeper" || r.position === "centre_back"))) cells.push([label, String(v)]);
+  }
+  return (
+    <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+      {cells.map(([k, v]) => (
+        <div key={k} className="flex justify-between gap-2">
+          <dt className="text-ink-2">{k}</dt>
+          <dd className="font-semibold tabular-nums">{v}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+export function MatchLineup({ rows, me, linkFor }: { rows: LineupRow[]; me?: string; linkFor?: (playerId: string) => string }) {
   const { placed, subs, unused, formation, potm, teamAvg } = lineup(rows);
   const [selected, setSelected] = useState<string | null>(potm?.player.id ?? null);
   const sel = rows.find((r) => r.player.id === selected);
@@ -96,7 +139,12 @@ export function MatchLineup({ rows }: { rows: LineupRow[] }) {
                 aria-label={`${row.player.name}, ${POSITION_LABEL[row.position]}, rating ${row.rating?.toFixed(1) ?? "none"}`}
                 onKeyDown={(e) => e.key === "Enter" && setSelected(row.player.id)}
               >
-                <circle r={5.2} fill={selected === row.player.id ? "#fff" : "#0f2219"} stroke="#fff" strokeWidth={0.6} />
+                <circle
+                  r={5.2}
+                  fill={selected === row.player.id ? "#fff" : "#0f2219"}
+                  stroke={me === row.player.id ? "#f0c020" : "#fff"}
+                  strokeWidth={me === row.player.id ? 1.4 : 0.6}
+                />
                 <text y={1.8} textAnchor="middle" fontSize={4.6} fontWeight={800} fill={selected === row.player.id ? "#0f2219" : "#fff"}>
                   {row.player.name[0]}
                 </text>
@@ -136,18 +184,41 @@ export function MatchLineup({ rows }: { rows: LineupRow[] }) {
 
       <div className="space-y-4">
         {sel && (
-          <Card aria-label="Selected player rating">
-            <div className="mb-2 flex items-center gap-3">
+          <Card aria-label="Selected player rating" className="space-y-3">
+            <div className="flex items-center gap-3">
               <RatingBadge value={sel.rating} size="lg" estimate={sel.rating_source === "diary"} />
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="font-bold">{sel.player.name}</p>
                 <p className="text-ink-2 text-xs">
-                  {POSITION_LABEL[sel.position]} · {sel.minutes}' {sel.started ? "· started" : "· substitute"}
+                  {POSITION_LABEL[sel.position]} · {sel.started ? "started" : "substitute"}
                   {sel.self_rating != null && ` · own rating ${sel.self_rating}/10`}
                 </p>
               </div>
+              {linkFor && (
+                <Link to={linkFor(sel.player.id)} className="text-pitch-600 text-sm font-semibold hover:underline">
+                  Profile
+                </Link>
+              )}
             </div>
-            <Breakdown items={sel.breakdown} />
+            <StatGrid r={sel} />
+            {sel.recent && sel.recent.length > 1 && (
+              <div>
+                <p className="text-ink-2 text-xs font-semibold uppercase">Last {sel.recent.length} ratings</p>
+                <div className="h-16" aria-label={`Recent ratings: ${sel.recent.map((x) => x.rating).join(", ")}`}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={sel.recent} margin={{ top: 4, right: 4, left: 4, bottom: 4 }}>
+                      <YAxis domain={[5, 9]} hide />
+                      <ReferenceLine y={7} stroke="#1fa05a" strokeDasharray="2 4" />
+                      <Line dataKey="rating" stroke="#2a6fdb" strokeWidth={2} dot={{ r: 2.5 }} isAnimationActive={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+            <div>
+              <p className="text-ink-2 mb-1 text-xs font-semibold uppercase">Why this rating</p>
+              <Breakdown items={sel.breakdown} />
+            </div>
           </Card>
         )}
         <section>

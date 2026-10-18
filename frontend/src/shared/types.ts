@@ -354,6 +354,7 @@ export interface Career {
   recent: AppearanceRow[];
   trend: { date: string; rating: number }[];
   history: import("./RatingHistory").RatingHistoryData;
+  clubs: import("../player/ClubHistory").ClubStint[];
   diary_due: DiaryDue[];
   competitions: { id: string; label: string; level: number; category: string }[];
   note: string;

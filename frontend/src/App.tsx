@@ -22,6 +22,8 @@ const TrainingPitch = lazy(() => import("./coach/TrainingPitch").then((m) => ({ 
 const Matches = lazy(() => import("./coach/Matches").then((m) => ({ default: m.Matches })));
 const MatchReport = lazy(() => import("./coach/Matches").then((m) => ({ default: m.MatchReport })));
 const Devices = lazy(() => import("./player/Devices").then((m) => ({ default: m.Devices })));
+const MatchView = lazy(() => import("./player/MatchView").then((m) => ({ default: m.MatchView })));
+const Finance = lazy(() => import("./coach/Finance").then((m) => ({ default: m.Finance })));
 const Gym = lazy(() => import("./player/Gym").then((m) => ({ default: m.Gym })));
 const Pathway = lazy(() => import("./player/Pathway").then((m) => ({ default: m.Pathway })));
 const Growth = lazy(() => import("./player/Growth").then((m) => ({ default: m.Growth })));
@@ -62,6 +64,7 @@ export function App() {
         <Route path="levels" element={<Pathway />} />
         <Route path="career" element={<Career />} />
         <Route path="devices" element={<Devices />} />
+        <Route path="matches/:id" element={<MatchView />} />
         <Route path="growth" element={<Growth />} />
         <Route path="card" element={<PlayerCard />} />
         <Route path="road" element={<RoadToPro />} />
@@ -79,6 +82,7 @@ export function App() {
         <Route path="pitch" element={<TrainingPitch />} />
         <Route path="matches" element={<Matches />} />
         <Route path="matches/:id" element={<MatchReport />} />
+        <Route path="finance" element={<Finance />} />
         <Route path="tactics" element={<TacticsBoard />} />
         <Route path="players/:id" element={<PlayerProfile />} />
         <Route path="log" element={<AgentLog />} />

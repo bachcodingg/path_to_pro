@@ -716,31 +716,12 @@ def matches(user: CurrentUser = Depends(require(*STAFF)), db: Session = Depends(
 @router.get("/matches/{match_id}")
 def match_report(match_id: str, user: CurrentUser = Depends(require(*STAFF)), db: Session = Depends(get_db)) -> dict:
     from domain.models import Squad
-    from performance.rating import STAT_KEYS, band
+    from performance.rating import STAT_KEYS
 
     m = db.get(Match, match_id)
     if m is None or m.id not in {x.id for x in _team_matches(db, user)}:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Match not found")
-    rows = []
-    for p in _squad_players(db, user):
-        if not performance.is_registered(db, p, m.squad_id):
-            continue
-        a = performance.appearance(db, p, m, create=False)
-        rows.append(
-            {
-                "player": {"id": p.id, "name": p.display_name, "position": p.position},
-                "minutes": a.minutes if a else 0,
-                "started": a.started if a else False,
-                "position": (a.position if a else None) or p.position,
-                "stats": (a.stats if a else {}) or {},
-                "rating": a.rating if a else None,
-                "rating_band": band(a.rating if a else None),
-                "rating_source": a.rating_source if a else None,
-                "breakdown": (a.breakdown if a else []) or [],
-                "self_rating": a.self_rating if a else None,
-            }
-        )
-    rows.sort(key=lambda r: (-(r["minutes"] or 0), r["player"]["name"]))
+    rows = performance.match_rows(db, m, [p for p in _squad_players(db, user) if performance.is_registered(db, p, m.squad_id)])
     squad = db.get(Squad, m.squad_id)
     audit(db, user, "read", "appearance", m.id)
     db.commit()
@@ -785,6 +766,10 @@ def save_ratings(match_id: str, body: MatchStats, user: CurrentUser = Depends(re
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Stats can't be negative")
         a = performance.appearance(db, p, m)
         performance.apply_stats(a, row.minutes, row.started, row.position.value if row.position else None, row.stats)
+    from finance.service import match_bonuses
+
+    db.flush()
+    match_bonuses(db, m)  # goal, assist, win, clean-sheet bonuses for players with bonus clauses
     audit(db, user, "update", "appearance", m.id, players=len(body.players))
     db.commit()
     return match_report(match_id, user, db)

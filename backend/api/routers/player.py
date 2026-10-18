@@ -685,3 +685,27 @@ def match_diary(match_id: str, body: Diary, user: CurrentUser = Depends(require(
     audit(db, user, "create", "appearance", p.id, diary=True)
     db.commit()
     return performance.career_view(db, p, today)
+
+
+@router.get("/matches/{match_id}")
+def match_lineup(match_id: str, user: CurrentUser = Depends(require(Role.PLAYER)), db: Session = Depends(get_db)) -> dict:
+    """The line-up and ratings of a match the player's team played (like a ratings app).
+    Teammates' own self-ratings stay private."""
+    from domain.models import Match, Squad
+
+    p = _me(user, db)
+    m = db.get(Match, match_id)
+    if m is None or not performance.is_registered(db, p, m.squad_id) or m.kickoff.date() > clock.today():
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Match not found")
+    rows = performance.match_rows(db, m, performance.team_players(db, m.squad_id))
+    for r in rows:
+        if r["player"]["id"] != p.id:
+            r["self_rating"] = None
+    squad = db.get(Squad, m.squad_id)
+    audit(db, user, "read", "appearance", m.id)
+    db.commit()
+    return {
+        "match": {"id": m.id, "date": m.kickoff.date().isoformat(), "opponent": m.opponent, "team": squad.name if squad else "", "competition": m.competition},
+        "players": rows,
+        "me": p.id,
+    }

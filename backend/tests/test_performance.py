@@ -122,7 +122,7 @@ def test_dual_player_week_career_and_diary(client):
 def test_second_team_coach_sees_but_does_not_decide(client):
     men = _h(client, "mencoach@demo.pathtopro")
     players = client.get("/api/coach/heatmap", headers=men).json()["players"]
-    assert len(players) == 3
+    assert len(players) == 3 + 16  # dual-registered U18s + the adult squad
     for p in client.get("/api/coach/inbox", headers=men).json():
         r = client.post(f"/api/coach/proposals/{p['id']}/decision", headers=men, json={"action": "approve"})
         assert r.status_code == 403 and "primary" in r.json()["detail"]

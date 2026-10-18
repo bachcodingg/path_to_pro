@@ -15,6 +15,7 @@ competitions:
   fi_kolmonen: {country: FI, name: Kolmonen, category: adult, tier: 5, level: 52}
   fi_nelonen: {country: FI, name: Nelonen, category: adult, tier: 6, level: 42}
   fi_vitonen: {country: FI, name: Vitonen, category: adult, tier: 7, level: 33}
+  fi_kutonen: {country: FI, name: Kutonen, category: adult, tier: 8, level: 25}
   fi_reserve: {country: FI, name: Reserve / U21 team, category: reserve, tier: 1, level: 58}
   fi_u19_national: {country: FI, name: U19 national league, category: youth, tier: 1, level: 56, age_limit: 19}
   fi_u19_regional: {country: FI, name: U19 regional league, category: youth, tier: 2, level: 40, age_limit: 19}
@@ -22,6 +23,9 @@ competitions:
   fi_u17_regional: {country: FI, name: U17 regional league, category: youth, tier: 2, level: 31, age_limit: 17}
   fi_u15_national: {country: FI, name: U15 national league, category: youth, tier: 1, level: 34, age_limit: 15}
   fi_u15_regional: {country: FI, name: U15 regional league, category: youth, tier: 2, level: 22, age_limit: 15}
+  fi_u14_regional: {country: FI, name: U14 regional league, category: youth, tier: 2, level: 18, age_limit: 14}
+  fi_u13_regional: {country: FI, name: U13 regional league, category: youth, tier: 2, level: 14, age_limit: 13}
+  fi_u12_regional: {country: FI, name: U12 regional league, category: youth, tier: 2, level: 10, age_limit: 12}
   other_adult: {country: "--", name: Other adult football, category: adult, tier: 9, level: 30}
   other_youth: {country: "--", name: Other youth football, category: youth, tier: 9, level: 20}
 

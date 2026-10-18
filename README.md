@@ -72,6 +72,7 @@ key, or with `PATHTOPRO_LLM=off`, the agents use rule-based fallbacks and the de
 | Gym programmes | `backend/gym/` + `config/gym.yaml`: shared injury-prevention work for every player plus a block per position (GK, CB, FB, CM, W, ST), adjusted for growth stage, readiness, match proximity and equipment |
 | Self-guided pathway | `backend/pathway/` + `config/pathway.yaml`: 5 levels, 6 benchmark tests (age- and sex-adjusted), level-ups, solo session content, sign-up with parent invite codes under 16 |
 | Teams, careers, ratings | `backend/performance/` + `config/competitions.yaml`: dual registration with rule H8, league ladder (Finland first), career CV, match diary, 3-10 match ratings with a breakdown, coach training pitch |
+| Club finances | `backend/finance/`: contracts (academy fees, semi-pro/pro salaries, staff), running costs and income, automatic match bonuses and title bonuses, ledger; coach page, player and parent views. See [docs/finances.md](docs/finances.md) |
 | Apple Watch | `backend/devices/`: iPhone Shortcut ingest with write-only device codes, Apple Health export upload (safe streaming XML parser), HRV (SDNN) + sleep + workouts into readiness and load. See [docs/apple-watch.md](docs/apple-watch.md) |
 | User interface | `frontend/`: player PWA (check-in, Today, week pitch, gym, growth, card, season map, levels), coach (heatmap, inbox with A/E/R, tactics board, scouting report with instruction box, match commentary, calibration), physio queue, guardian view, sign-up |
 | Architecture | FastAPI, SQLAlchemy 2, Alembic, PostgreSQL, APScheduler, JWT + RBAC, `docker-compose.yml` |
@@ -106,9 +107,9 @@ above the fold-to-fold noise. Demo ratings are synthetic.
 ## Tests
 
 ```bash
-cd backend && pytest                      # 173 unit, scenario and API tests
+cd backend && pytest                      # 181 unit, scenario and API tests
 cd frontend && npm test                   # Vitest
-cd frontend && npx playwright test        # 18 end-to-end tests (API on :8000, web on :5173)
+cd frontend && npx playwright test        # 20 end-to-end tests (API on :8000, web on :5173)
 ```
 
 All demo data is synthetic. No real player data is stored. Benchmarks and norms are

@@ -218,9 +218,23 @@ def career_view(db: Session, player: Player, today: date) -> dict:
         if best is None or row["level"] > best["level"]:
             ladder[row["season"]] = {"season": row["season"], "level": row["level"], "competition_label": row["competition_label"]}
     rated = [a for a in apps if a.rating is not None and a.minutes > 0]
+    regs = registrations(db, player, today)
+    current_rows_for_clubs = [
+        {
+            "season": season,
+            "club": r["club"] or r["team"],
+            "team": short_team(r["competition"]),
+            "competition": r["competition"],
+            "apps": sum(c["apps"] for c in current_rows if c["competition"] == r["competition"]),
+            "goals": sum(c["goals"] for c in current_rows if c["competition"] == r["competition"]),
+            "current": True,
+        }
+        for r in regs
+    ]
     return {
+        "clubs": club_history(past_rows, current_rows_for_clubs),
         "season": season,
-        "registrations": registrations(db, player, today),
+        "registrations": regs,
         "summary": _summary(this),
         "current": current_rows,
         "past": past_rows,
@@ -326,3 +340,75 @@ def rating_history(db: Session, player: Player, today: date) -> dict:
             }
         )
     return {"points": points, "progress": progress}
+
+
+def club_history(past: list[dict], current: list[dict]) -> list[dict]:
+    """Clubs in the order the player joined them: years, teams (U12, U15, men...), leagues,
+    appearances and goals. Overlapping clubs (dual registration, loans) are kept apart."""
+    clubs: dict[str, dict] = {}
+    for r in sorted([*past, *current], key=lambda r: r["season"]):
+        c = clubs.setdefault(
+            r["club"],
+            {"club": r["club"], "from": r["season"], "to": r["season"], "teams": [], "competitions": [], "apps": 0, "goals": 0,
+             "current": False, "top_level": 0, "seasons": []},
+        )  # fmt: skip
+        c["to"] = max(c["to"], r["season"])
+        if r["team"] not in c["teams"]:
+            c["teams"].append(r["team"])
+        label = competitions.label(r["competition"])
+        if label not in c["competitions"]:
+            c["competitions"].append(label)
+        c["apps"] += r.get("apps") or 0
+        c["goals"] += r.get("goals") or 0
+        c["current"] = c["current"] or bool(r.get("current"))
+        c["top_level"] = max(c["top_level"], competitions.level(r["competition"]))
+        c["seasons"].append({"season": r["season"], "team": r["team"], "competition_label": label})
+    # oldest first (the app shows them newest first): ordered by the last season at the club
+    return sorted(clubs.values(), key=lambda c: (c["current"], c["to"], c["from"], c["club"]))
+
+
+def short_team(competition: str) -> str:
+    """"U19" / "Men" from the league: short team names for the club history."""
+    c = competitions.get(competition) or {}
+    if c.get("category") == "youth" and c.get("age_limit"):
+        return f"U{c['age_limit']}"
+    return "Reserves" if c.get("category") == "reserve" else "Men"
+
+
+def match_rows(db: Session, match: Match, players: list[Player]) -> list[dict]:
+    """One row per player of the team in a match: minutes, stats, rating with breakdown,
+    own rating, and the player's last ratings (for the trend on the line-up card)."""
+    rows = []
+    for p in players:
+        a = appearance(db, p, match, create=False)
+        recent = [
+            {"date": x.day.isoformat(), "rating": x.rating}
+            for x in db.scalars(
+                select(Appearance)
+                .where(Appearance.player_id == p.id, Appearance.day <= match.kickoff.date(), Appearance.rating.is_not(None))
+                .order_by(Appearance.day.desc())
+                .limit(8)
+            )
+        ][::-1]
+        rows.append(
+            {
+                "player": {"id": p.id, "name": p.display_name, "position": p.position},
+                "minutes": a.minutes if a else 0,
+                "started": a.started if a else False,
+                "position": (a.position if a else None) or p.position,
+                "stats": (a.stats if a else {}) or {},
+                "rating": a.rating if a else None,
+                "rating_band": band(a.rating if a else None),
+                "rating_source": a.rating_source if a else None,
+                "breakdown": (a.breakdown if a else []) or [],
+                "self_rating": a.self_rating if a else None,
+                "recent": recent,
+            }
+        )
+    rows.sort(key=lambda r: (-(r["minutes"] or 0), r["player"]["name"]))
+    return rows
+
+
+def team_players(db: Session, squad_id: str) -> list[Player]:
+    dual = select(Registration.player_id).where(Registration.squad_id == squad_id)
+    return list(db.scalars(select(Player).where((Player.squad_id == squad_id) | Player.id.in_(dual))))

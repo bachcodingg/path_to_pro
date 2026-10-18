@@ -39,3 +39,21 @@ test("player connects an Apple Watch", async ({ page }) => {
   await expect(page.getByLabel("URL", { exact: true })).toContainText("/api/ingest/apple-health");
   await page.screenshot({ path: `${SHOTS}/apple-watch.png`, fullPage: true });
 });
+
+test("club history, contract money, and a match line-up with everyone's ratings", async ({ page }) => {
+  await login(page, "dual@demo.pathtopro");
+  await page.getByRole("link", { name: "Career" }).click();
+  await expect(page.getByText("Club history")).toBeVisible();
+  await expect(page.getByText("FC Lahti", { exact: true })).toBeVisible();
+  await expect(page.getByText("HooGee", { exact: true })).toBeVisible();
+  await expect(page.getByText("Contract and money")).toBeVisible();
+  await expect(page.getByText("bonuses earned")).toBeVisible();
+  await page.getByText("Club history").scrollIntoViewIfNeeded();
+  await page.screenshot({ path: `${SHOTS}/player-club-history.png`, fullPage: true });
+
+  await page.locator("button[aria-expanded]", { hasText: "vs " }).first().click();
+  await page.getByRole("link", { name: "See the line-up and everyone's ratings" }).click();
+  await expect(page.getByRole("img", { name: /Starting line-up/ })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Selected player rating" }).or(page.getByLabel("Selected player rating"))).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/player-match-lineup.png`, fullPage: true });
+});

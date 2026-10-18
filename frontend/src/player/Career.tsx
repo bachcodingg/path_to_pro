@@ -2,6 +2,7 @@
 // the pathway chart through the league ladder, and the match diary.
 import { ChevronDown } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api, ApiError } from "../shared/api";
 import { useAuth } from "../shared/auth";
@@ -10,6 +11,7 @@ import { RatingHistory } from "../shared/RatingHistory";
 import type { AppearanceRow, Career as CareerData } from "../shared/types";
 import { useApi } from "../shared/useApi";
 import { Button, Card, Chip, ErrorNote, SectionTitle, Spinner, cn, fmtDay } from "../shared/ui";
+import { ClubHistory, MoneyCard } from "./ClubHistory";
 import { MatchDiary } from "./MatchDiary";
 
 export function Career() {
@@ -108,6 +110,10 @@ export function Career() {
         </section>
       )}
 
+      <ClubHistory clubs={data.clubs} />
+
+      <MoneyCard />
+
       <section>
         <SectionTitle>Past seasons</SectionTitle>
         <Card className="overflow-x-auto p-0">
@@ -172,6 +178,9 @@ function MatchRow({ a }: { a: AppearanceRow }) {
             {a.self_rating != null && ` · your own rating ${a.self_rating}/10`}
           </p>
           <Breakdown items={a.breakdown} />
+          <Link to={`/player/matches/${a.match_id}`} className="text-pitch-300 inline-block text-sm font-semibold underline">
+            See the line-up and everyone's ratings
+          </Link>
         </div>
       )}
     </div>

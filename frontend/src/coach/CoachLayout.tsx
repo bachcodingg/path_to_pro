@@ -1,4 +1,4 @@
-import { CalendarRange, ClipboardList, Gauge, Grid3x3, LogOut, MessageSquareText, Play, Star, Stethoscope, Users } from "lucide-react";
+import { CalendarRange, ClipboardList, Euro, Gauge, Grid3x3, LogOut, MessageSquareText, Play, Star, Stethoscope, Users } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { api } from "../shared/api";
@@ -11,6 +11,7 @@ const nav = () => [
   { to: "/coach/inbox", label: t("nav.inbox"), icon: ClipboardList },
   { to: "/coach/pitch", label: t("nav.pitch"), icon: CalendarRange },
   { to: "/coach/matches", label: t("nav.matches"), icon: Star },
+  { to: "/coach/finance", label: t("nav.finance"), icon: Euro, coachOnly: true },
   { to: "/coach/tactics", label: t("nav.tactics"), icon: Users },
   { to: "/coach/log", label: t("nav.log"), icon: MessageSquareText },
   { to: "/coach/calibration", label: t("nav.calibration"), icon: Gauge },
@@ -20,7 +21,8 @@ const nav = () => [
 // Desktop-first staff shell; light by default.
 export function CoachLayout() {
   const { user, logout } = useAuth();
-  const NAV = nav(); // built per render so labels follow the current language
+  // built per render so labels follow the current language; club money is for coaches
+  const NAV = nav().filter((n) => !("coachOnly" in n) || user?.role !== "physio");
   const [running, setRunning] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 

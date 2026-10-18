@@ -146,3 +146,22 @@ test("match ratings with a breakdown, and the second team's coach view", async (
   await page.getByRole("link", { name: "Match ratings" }).click();
   await expect(page.getByRole("link", { name: /PathToPro FC Men vs/ }).first()).toBeVisible();
 });
+
+test("club finances: fees, salaries, bonuses and the ledger", async ({ page }) => {
+  await login(page, "coach@demo.pathtopro");
+  await page.getByRole("link", { name: "Club finances" }).click();
+  await expect(page.getByRole("heading", { name: "Club finances" })).toBeVisible();
+  await expect(page.getByText("Fees outstanding")).toBeVisible();
+  await expect(page.getByText("Players pay the club")).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/coach-finance.png`, fullPage: true });
+  await page.getByRole("tab", { name: "Ledger" }).click();
+  await page.getByRole("button", { name: "Not paid yet" }).click();
+  await expect(page.getByText("Academy fee").first()).toBeVisible();
+  if (!process.env.E2E_DEMO) {
+    await page.getByRole("button", { name: "Book this month" }).click();
+    await expect(page.getByText(/already booked|Booked \d+ entries/)).toBeVisible();
+  }
+  await page.getByRole("button", { name: /Sign out/ }).click();
+  await login(page, "physio@demo.pathtopro");
+  await expect(page.getByRole("link", { name: "Club finances" })).toHaveCount(0);
+});

@@ -40,7 +40,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["analytics*", "agents*", "domain*", "simulator*", "eval*", "planner*", "api*", "gym*", "pathway*", "performance*", "devices*"]
+include = ["analytics*", "agents*", "domain*", "simulator*", "eval*", "planner*", "api*", "gym*", "pathway*", "performance*", "devices*", "finance*"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]

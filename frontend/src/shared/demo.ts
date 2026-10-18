@@ -371,6 +371,7 @@ async function route(path: string, method: string, body?: Json): Promise<Json> {
       }
       return st[p] ?? fail(404, "Not available in the demo");
     }
+    if (p.startsWith("/api/coach/finance/")) fail(403, "Booking money needs the live server, not this offline demo");
     if (p === "/api/coach/squad-week/session" || /^\/api\/coach\/matches\/[^/]+\/ratings$/.test(p) || p === "/api/coach/ratings/preview")
       fail(403, "This runs the planner or the rating engine: it needs the live server, not this offline demo");
     const decision = p.match(/^\/api\/coach\/proposals\/([^/]+)\/decision$/);

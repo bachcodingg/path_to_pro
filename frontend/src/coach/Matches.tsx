@@ -277,7 +277,7 @@ export function MatchReport() {
         ))}
       </div>
 
-      {tab === "lineup" && <MatchLineup rows={rows} />}
+      {tab === "lineup" && <MatchLineup rows={rows} linkFor={(id) => `/coach/players/${id}`} />}
       {tab === "sheet" && (
         <>
           {canEdit && (

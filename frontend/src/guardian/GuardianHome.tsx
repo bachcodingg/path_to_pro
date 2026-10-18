@@ -3,6 +3,7 @@ import { Download, LogOut, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { api, download } from "../shared/api";
 import { useAuth } from "../shared/auth";
+import { eur } from "../shared/money";
 import { useApi } from "../shared/useApi";
 import { Button, Card, ErrorNote, SectionTitle, Spinner } from "../shared/ui";
 
@@ -50,6 +51,9 @@ export function GuardianHome() {
 function ChildPanel({ child }: { child: Child }) {
   const summary = useApi<Summary>(`/api/guardian/children/${child.id}/summary`);
   const consent = useApi<Consent>(`/api/guardian/children/${child.id}/consent`);
+  const money = useApi<{ contracts: { id: string; title: string; amount_cents: number; direction: string; ends_on: string | null }[]; fees_paid_cents: number; fees_due_cents: number }>(
+    `/api/guardian/children/${child.id}/finance`,
+  );
   const [confirm, setConfirm] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -100,6 +104,23 @@ function ChildPanel({ child }: { child: Child }) {
           ))}
         </Card>
       )}
+      {money.data && money.data.contracts.some((c) => c.direction === "income" && !c.ends_on) && (
+        <Card>
+          <p className="font-bold">Fees</p>
+          {money.data.contracts
+            .filter((c) => c.direction === "income" && !c.ends_on)
+            .map((c) => (
+              <p key={c.id} className="text-sm">
+                {c.title}: {eur(c.amount_cents)} / month
+              </p>
+            ))}
+          <p className="text-ink-2 mt-1 text-sm">
+            Paid this season {eur(money.data.fees_paid_cents)} ·{" "}
+            <span className={money.data.fees_due_cents > 0 ? "text-ready-amber font-semibold" : ""}>due {eur(money.data.fees_due_cents)}</span>
+          </p>
+        </Card>
+      )}
+
       {consent.data && (
         <Card>
           <SectionTitle>Consent</SectionTitle>

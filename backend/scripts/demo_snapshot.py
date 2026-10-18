@@ -88,7 +88,11 @@ def main(out: Path) -> None:
                 "/api/me/career",
             ]
             paths += ["/api/me/pathway"] if me["pathway"] == "amateur" else ["/api/me/card", "/api/me/roadmap"]
-            snap["users"][email] = {"me": me, "responses": {p: get(h, p) for p in paths}}
+            paths += ["/api/me/finance"]
+            responses = {p: get(h, p) for p in paths}
+            for a in responses["/api/me/career"]["recent"][:3]:  # line-ups of the last matches
+                responses[f"/api/me/matches/{a['match_id']}"] = get(h, f"/api/me/matches/{a['match_id']}")
+            snap["users"][email] = {"me": me, "responses": responses}
         for email in STAFF:
             snap["users"][email] = {"me": get(login(email), "/api/auth/me"), "responses": {}}
         h = login("coach@demo.pathtopro")
@@ -108,6 +112,7 @@ def main(out: Path) -> None:
         def team_views(h: dict) -> dict:
             out = {f"/api/coach/squad-week?offset={o}": get(h, f"/api/coach/squad-week?offset={o}") for o in (0, 1)}
             out["/api/coach/matches"] = get(h, "/api/coach/matches")
+            out["/api/coach/finance"] = get(h, "/api/coach/finance")
             for m in out["/api/coach/matches"]:
                 out[f"/api/coach/matches/{m['id']}"] = get(h, f"/api/coach/matches/{m['id']}")
             return out
@@ -128,7 +133,7 @@ def main(out: Path) -> None:
             kids = get(h, "/api/guardian/children")
             resp = {"/api/guardian/children": kids}
             for k in kids:
-                for sub in ("summary", "consent", "export"):
+                for sub in ("summary", "consent", "export", "finance"):
                     resp[f"/api/guardian/children/{k['id']}/{sub}"] = get(h, f"/api/guardian/children/{k['id']}/{sub}")
             snap["users"][email] = {"me": get(h, "/api/auth/me"), "responses": resp}
     out.parent.mkdir(parents=True, exist_ok=True)

@@ -532,3 +532,66 @@ class DeviceToken(Base):
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_summary: Mapped[dict] = mapped_column(JSON, default=dict)
     revoked: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+# --------------------------------------------------------------------------- club finances (amounts in euro cents)
+
+
+class Contract(Base):
+    """What a player or staff member pays the club, or is paid by it.
+
+    direction "income": the club receives it (academy fee, membership).
+    direction "expense": the club pays it (semi-pro or pro salary, staff salary, coach fee).
+    `bonus` (expense contracts): cents per goal, assist, appearance, win, clean sheet, title.
+    """
+
+    __tablename__ = "contracts"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    player_id: Mapped[str | None] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    staff_id: Mapped[str | None] = mapped_column(ForeignKey("staff_members.id", ondelete="CASCADE"), index=True)
+    squad_id: Mapped[str | None] = mapped_column(ForeignKey("squads.id", ondelete="SET NULL"), index=True)
+    kind: Mapped[str] = mapped_column(String(20))  # academy_fee | membership | amateur | semi_pro | pro | staff_salary | coach_fee
+    title: Mapped[str] = mapped_column(String(100))
+    direction: Mapped[str] = mapped_column(String(10))  # income | expense
+    amount_cents: Mapped[int] = mapped_column(Integer)
+    period: Mapped[str] = mapped_column(String(10), default="month")  # month | match | season
+    bonus: Mapped[dict] = mapped_column(JSON, default=dict)
+    starts_on: Mapped[date] = mapped_column(Date)
+    ends_on: Mapped[date | None] = mapped_column(Date)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class RecurringItem(Base):
+    """A running cost or income of a team: pitch hire per training session, referee fees
+    per home match, a sponsor's monthly payment, gate money per match..."""
+
+    __tablename__ = "recurring_items"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    squad_id: Mapped[str | None] = mapped_column(ForeignKey("squads.id", ondelete="SET NULL"), index=True)
+    name: Mapped[str] = mapped_column(String(100))
+    category: Mapped[str] = mapped_column(String(20))
+    direction: Mapped[str] = mapped_column(String(10))  # income | expense
+    amount_cents: Mapped[int] = mapped_column(Integer)
+    period: Mapped[str] = mapped_column(String(10), default="month")  # month | session | match
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+
+
+class LedgerEntry(Base):
+    """One money movement (or a fee that is due). `key` makes generated entries
+    idempotent: running a month or a match twice never books twice."""
+
+    __tablename__ = "ledger_entries"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    squad_id: Mapped[str | None] = mapped_column(ForeignKey("squads.id", ondelete="SET NULL"), index=True)
+    day: Mapped[date] = mapped_column(Date, index=True)
+    category: Mapped[str] = mapped_column(String(20), index=True)
+    direction: Mapped[str] = mapped_column(String(10))
+    amount_cents: Mapped[int] = mapped_column(Integer)
+    description: Mapped[str] = mapped_column(String(200))
+    player_id: Mapped[str | None] = mapped_column(ForeignKey("players.id", ondelete="SET NULL"), index=True)
+    staff_id: Mapped[str | None] = mapped_column(ForeignKey("staff_members.id", ondelete="SET NULL"))
+    contract_id: Mapped[str | None] = mapped_column(ForeignKey("contracts.id", ondelete="SET NULL"))
+    match_id: Mapped[str | None] = mapped_column(ForeignKey("matches.id", ondelete="SET NULL"))
+    status: Mapped[str] = mapped_column(String(10), default="due")  # due | paid
+    key: Mapped[str | None] = mapped_column(String(160), unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)

@@ -31,6 +31,7 @@ from domain.models import (
     Drill,
     Guardian,
     HRVRecord,
+    LedgerEntry,
     Match,
     Player,
     Proposal,
@@ -262,6 +263,30 @@ def seed(db: Session, n_players: int = 25, story: bool = True) -> dict:
 
 
 DUAL_EMAIL = "dual@demo.pathtopro"
+FORMATION = {"gk": 1, "def": 4, "mid": 3, "fwd": 3}  # 4-3-3
+GROUP_OF = {"goalkeeper": "gk", "centre_back": "def", "full_back": "def", "midfielder": "mid", "winger": "fwd", "striker": "fwd"}
+
+
+def pick_xi(rows: list[tuple[str, str, float]]) -> set[str]:
+    """Starting XI for a 4-3-3 from (player id, position, minutes): per position group the
+    players with most minutes; open slots (no player of that group) go to the next most
+    minutes. Everyone else came off the bench."""
+    chosen: list[str] = []
+    ordered = sorted(rows, key=lambda r: -r[2])
+    for g, n in FORMATION.items():
+        chosen += [pid for pid, pos, _ in ordered if GROUP_OF.get(pos, "mid") == g][:n]
+    for pid, _, _ in ordered:
+        if len(chosen) >= 11:
+            break
+        if pid not in chosen:
+            chosen.append(pid)
+    return set(chosen[:11])
+MEN_SQUAD = [
+    ("Ville K.", "goalkeeper"), ("Aleksi P.", "goalkeeper"), ("Juho M.", "centre_back"), ("Tuomas R.", "centre_back"),
+    ("Eero S.", "centre_back"), ("Lauri H.", "full_back"), ("Joonas V.", "full_back"), ("Arttu L.", "full_back"),
+    ("Mikael N.", "midfielder"), ("Santeri J.", "midfielder"), ("Otto K.", "midfielder"), ("Roope A.", "midfielder"),
+    ("Veeti T.", "winger"), ("Niko E.", "winger"), ("Aatu P.", "striker"), ("Kasper O.", "striker"),
+]  # fmt: skip
 MEN_COACH_EMAIL = "mencoach@demo.pathtopro"
 RATED_WEEKS = 26  # the whole season so far: enough matches for rating trends
 
@@ -274,7 +299,7 @@ def _teams_and_careers(db: Session, res, players: dict[str, Player], academy: Sq
     """
     import random
 
-    from domain.models import CareerSeason, Registration
+    from domain.models import Appearance, CareerSeason, Registration
     from performance import competitions
     from performance import service as perf
 
@@ -331,7 +356,7 @@ def _teams_and_careers(db: Session, res, players: dict[str, Player], academy: Sq
         if s["kind"] == "match" and s["minutes"] > 0:
             by_date.setdefault(s["date"], []).append(s)
     for d_, rows in by_date.items():
-        starters[d_] = {r["player_id"] for r in sorted(rows, key=lambda r: -r["minutes"])[:11]}
+        starters[d_] = pick_xi([(r["player_id"], players[r["player_id"]].position, r["minutes"]) for r in rows])
     for s in res.sessions:
         d = date.fromisoformat(s["date"])
         if s["kind"] != "match" or d < first_rated or d > yesterday or d not in academy_matches or s["minutes"] <= 0:
@@ -363,9 +388,77 @@ def _teams_and_careers(db: Session, res, players: dict[str, Player], academy: Sq
             perf.apply_stats(a, minutes, minutes >= 60, p.position, perf.synthetic_stats(rng, p.position, minutes, result, conceded, form(p, d)))
             db.add(SessionLoad(player_id=p.id, match_id=m.id, day=d, rpe=7, minutes=minutes, load_au=7 * minutes))
 
-    # Past seasons on everyone's football CV
+    # The rest of the men's squad (adults, synthetic, no logins and no health data): they
+    # complete each men's match to 11 starters and 3 substitutes around the dual players.
+    men_squad = []
+    for i, (name, pos) in enumerate(MEN_SQUAD):
+        mp = Player(
+            squad_id=men.id,
+            display_name=name,
+            birth_date=today - timedelta(days=round((21 + i % 9) * 365.25)),
+            sex="male",
+            position=pos,
+            exam_dates=[],
+            preferred_days=[],
+        )
+        db.add(mp)
+        men_squad.append(mp)
+    db.flush()
+    for d, m in men_matches.items():
+        if d < first_rated or d > yesterday:
+            continue
+        rng = random.Random(f"menxi{d}")
+        result, conceded = outcome(d, "men")
+        played = {a.player_id: a for a in db.scalars(select(Appearance).where(Appearance.match_id == m.id))}
+        open_slots = dict(FORMATION)
+        for a in played.values():
+            if a.started:
+                g = GROUP_OF[a.position or "midfielder"]
+                open_slots[g] = max(0, open_slots[g] - 1)
+        pool = list(men_squad)
+        rng.shuffle(pool)
+        starters_men = []
+        for g, n in open_slots.items():
+            starters_men += [mp for mp in pool if GROUP_OF[mp.position] == g][:n]
+        bench = [mp for mp in pool if mp not in starters_men and mp.position != "goalkeeper"][:3]
+        for mp in [*starters_men, *bench]:
+            start_ = mp in starters_men
+            minutes = rng.choice([90, 90, 90, 80, 70]) if start_ else rng.choice([10, 20, 25, 30])
+            a = perf.appearance(db, mp, m)
+            perf.apply_stats(a, minutes, start_, mp.position, perf.synthetic_stats(rng, mp.position, minutes, result, conceded))
+
+    # Past seasons on everyone's football CV. The first dual player has a real journey
+    # through clubs (synthetic): grassroots, a bigger youth club, the academy, and a
+    # season with a men's team in Kolmonen alongside the U17s.
     year = today.year
+    journey = [
+        (6, "FC Lahti", "U12", "fi_u12_regional", 18, 15, 9, 6),
+        (5, "FC Lahti", "U13", "fi_u13_regional", 20, 18, 11, 7),
+        (4, "FC Honka", "U14", "fi_u14_regional", 22, 17, 8, 5),
+        (3, "FC Honka", "U15", "fi_u15_national", 21, 14, 5, 4),
+        (2, "PathToPro FC", "U17", "fi_u17_national", 19, 13, 4, 3),
+        (1, "PathToPro FC", "U17", "fi_u17_national", 16, 12, 3, 5),
+        (1, "HooGee", "Men", "fi_kolmonen", 9, 3, 1, 1),
+    ]
+    for back, club, team, comp, apps, starts, goals, assists in journey:
+        db.add(
+            CareerSeason(
+                player_id=dual[0].id,
+                season=str(year - back),
+                club=club,
+                team=team,
+                competition=comp,
+                apps=apps,
+                starts=starts,
+                minutes=starts * 75 + (apps - starts) * 25,
+                goals=goals,
+                assists=assists,
+                avg_rating=round(6.6 + 0.08 * (6 - back), 2),
+            )
+        )
     for p in players.values():
+        if p is dual[0]:
+            continue
         rng = random.Random(f"cv{p.email}")
         for back in (2, 1):
             age = agent_runner.age_on(p.birth_date, date(year - back, 7, 1))
@@ -390,7 +483,79 @@ def _teams_and_careers(db: Session, res, players: dict[str, Player], academy: Sq
                 )
             )
     db.flush()
+    _finances(db, academy, men, men_coach, list(players.values()), dual, first, today)
     return DUAL_EMAIL
+
+
+def _finances(db: Session, academy: Squad, men: Squad, men_coach: StaffMember, players: list[Player], dual: list[Player], first: date, today: date) -> None:
+    """A season of synthetic club money: academy fees, semi-pro contracts with bonuses for
+    the dual players, staff pay, pitch hire, referees, sponsors and gate money."""
+    from domain.models import Contract, RecurringItem
+    from finance import service as fin
+
+    start = first.replace(day=1)
+    coach = db.scalars(select(StaffMember).where(StaffMember.email == "coach@demo.pathtopro")).first()
+    physio = db.scalars(select(StaffMember).where(StaffMember.email == "physio@demo.pathtopro")).first()
+    for p in players:
+        fee = 12000 if agent_runner.age_on(p.birth_date, today) < 16 else 15000
+        db.add(Contract(player_id=p.id, squad_id=academy.id, kind="academy_fee", title="Academy fee", direction="income",
+                        amount_cents=fee, period="month", starts_on=start))  # fmt: skip
+    for p in dual:
+        db.add(
+            Contract(
+                player_id=p.id,
+                squad_id=men.id,
+                kind="semi_pro",
+                title="Semi-pro contract (men's team)",
+                direction="expense",
+                amount_cents=35000,
+                period="month",
+                bonus={"appearance": 5000, "goal": 10000, "assist": 5000, "win": 7500, "clean_sheet": 5000, "title": 100000},
+                starts_on=start,
+            )
+        )
+    db.add_all(
+        [
+            Contract(staff_id=coach.id, squad_id=academy.id, kind="staff_salary", title="Head coach", direction="expense",
+                     amount_cents=220000, starts_on=start),
+            Contract(staff_id=physio.id, squad_id=academy.id, kind="staff_salary", title="Physio (part-time)", direction="expense",
+                     amount_cents=160000, starts_on=start),
+            Contract(staff_id=men_coach.id, squad_id=men.id, kind="coach_fee", title="Men's team coach", direction="expense",
+                     amount_cents=90000, starts_on=start),
+            RecurringItem(squad_id=academy.id, name="Pitch hire per training session", category="field_rental", direction="expense",
+                          amount_cents=8500, period="session"),
+            RecurringItem(squad_id=academy.id, name="Away match travel", category="travel", direction="expense",
+                          amount_cents=40000, period="month"),
+            RecurringItem(squad_id=academy.id, name="Training equipment", category="equipment", direction="expense",
+                          amount_cents=30000, period="month"),
+            RecurringItem(squad_id=academy.id, name="Academy sponsor", category="sponsorship", direction="income",
+                          amount_cents=200000, period="month"),
+            RecurringItem(squad_id=men.id, name="Pitch hire per match", category="field_rental", direction="expense",
+                          amount_cents=12000, period="match"),
+            RecurringItem(squad_id=men.id, name="Referee fees per match", category="referee", direction="expense",
+                          amount_cents=9000, period="match"),
+            RecurringItem(squad_id=men.id, name="Gate money per match", category="ticketing", direction="income",
+                          amount_cents=45000, period="match"),
+            RecurringItem(squad_id=men.id, name="Shirt sponsor", category="sponsorship", direction="income",
+                          amount_cents=120000, period="month"),
+        ]
+    )  # fmt: skip
+    db.flush()
+    this_month = today.replace(day=1)
+    m = start
+    while m <= this_month:
+        fin.run_month(db, m, paid=m < this_month)
+        m = fin.next_month(m)
+    # Three families are a month behind with the academy fee
+    last = fin.next_month(this_month - timedelta(days=1)) - timedelta(days=1)
+    late = db.scalars(
+        select(LedgerEntry).where(LedgerEntry.category == "academy_fee", LedgerEntry.day == last.replace(day=1)).order_by(LedgerEntry.description).limit(3)
+    ).all()
+    for e in late:
+        e.status = "due"
+    for match in db.scalars(select(Match).where(Match.squad_id == men.id, Match.kickoff < _at(today, 0))):
+        fin.match_bonuses(db, match, paid=match.kickoff.date() < this_month)
+    db.flush()
 
 
 def _amateur(db: Session, pw: str, today: date, week_start: date) -> None:
