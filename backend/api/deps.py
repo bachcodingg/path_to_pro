@@ -81,8 +81,15 @@ def player_in_scope(player_id: str, user: CurrentUser, db: Session) -> Player:
         if linked:
             return player
     if user.role in (Role.COACH, Role.PHYSIO):
+        from domain.models import Registration
+
         staff = staff_of(user, db)
         if staff.squad_id is None or staff.squad_id == player.squad_id:
+            return player
+        # Dual registration: the second team's staff see the player too
+        if db.scalars(
+            select(Registration.id).where(Registration.player_id == player_id, Registration.squad_id == staff.squad_id)
+        ).first():
             return player
     raise HTTPException(status.HTTP_403_FORBIDDEN, "Not your player")
 

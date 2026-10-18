@@ -114,6 +114,9 @@ def default_explanation(flags: list[Flag], result: PlanResult, goals: list[DevGo
     else:
         s2 = "Every session has a clear purpose, and the day before each match is kept easy."
     s3 = "Sleep 8-10 hours and tell your coach if anything hurts."
+    matches = [d for d in result.days if d.kind == SessionType.MATCH]
+    if any(b.day == a.day + 1 for a, b in zip(matches, matches[1:])):
+        s3 = "You have two matches on back-to-back days, so your minutes are shared between them. " + s3
     coach = f"{result.status}: {_join([f.detail for f in flags if not f.is_safety]) or 'no flags'}; load {result.weekly_load} AU"
     if result.weekly_load_cap:
         coach += f" (cap {result.weekly_load_cap})"

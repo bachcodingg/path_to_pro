@@ -151,18 +151,33 @@ def _previous_band(db: Session, player: Player, day: date):
     return Band(prev.band) if prev and prev.band and (day - prev.day).days <= 3 else None
 
 
+def team_ids(db: Session, player: Player) -> list[str]:
+    """The player's primary team first, then teams from dual registrations."""
+    from domain.models import Registration
+
+    extra = [r.squad_id for r in db.scalars(select(Registration).where(Registration.player_id == player.id))]
+    return [player.squad_id, *[s for s in extra if s != player.squad_id]]
+
+
 def match_days(db: Session, player: Player, start: date, n: int = 7) -> dict[date, Match]:
+    """Fixtures of every team the player is registered with. Two matches on one day:
+    the primary team's match counts (the player can't play both)."""
     end = start + timedelta(days=n)
-    return {
-        m.kickoff.date(): m
-        for m in db.scalars(
-            select(Match).where(
-                Match.squad_id == player.squad_id,
-                Match.kickoff >= datetime.combine(start, datetime.min.time()),
-                Match.kickoff < datetime.combine(end, datetime.min.time()),
-            )
+    teams = team_ids(db, player)
+    out: dict[date, Match] = {}
+    for m in db.scalars(
+        select(Match)
+        .where(
+            Match.squad_id.in_(teams),
+            Match.kickoff >= datetime.combine(start, datetime.min.time()),
+            Match.kickoff < datetime.combine(end, datetime.min.time()),
         )
-    }
+        .order_by(Match.kickoff)
+    ):
+        d = m.kickoff.date()
+        if d not in out or teams.index(m.squad_id) < teams.index(out[d].squad_id):
+            out[d] = m
+    return out
 
 
 def active_goals(db: Session, player: Player, day: date) -> list[IDPGoal]:
@@ -217,6 +232,13 @@ def plan_days(db: Session, player: Player, start: date, n: int = 7) -> list[Plan
             )
         else:
             out.append(PlanDay(day=i, date=d, kind=SessionType.REST, rpe=0, minutes=0))
+    # Not planned yet (e.g. next week): show back-to-back matches within H8 already,
+    # the second team's match taking what's left of the 90 minutes.
+    if age_on(player.birth_date, start) < 18:
+        for a, b in zip(out, out[1:]):
+            if a.kind == b.kind == SessionType.MATCH and a.date not in items and b.date not in items and a.minutes + b.minutes > 90:
+                second = b if matches[b.date].squad_id != player.squad_id else a
+                second.minutes = max(0, 90 - (a.minutes if second is b else b.minutes))
     return out
 
 
@@ -248,6 +270,8 @@ def planner_input(db: Session, player: Player, start: date, n: int = 7) -> Plann
         player_id=player.id,
         start=start,
         days=n,
+        under_18=age_on(player.birth_date, start) < 18,
+        match_priority={(d - start).days: 2 if m.squad_id == player.squad_id else 1 for d, m in matches.items()},
         match_days=sorted((d - start).days for d in matches),
         exam_days=sorted((d - start).days for d in exams if 0 <= (d - start).days < n),
         preferred_days=player.preferred_days or [],

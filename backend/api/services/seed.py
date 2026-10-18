@@ -89,7 +89,7 @@ def seed(db: Session, n_players: int = 25, story: bool = True) -> dict:
         db.execute(delete(table))
     db.flush()
 
-    squad = Squad(name="PathToPro Academy U13-U18", age_group="U13-U18")
+    squad = Squad(name="PathToPro Academy U13-U18", age_group="U13-U18", club="PathToPro FC")
     db.add(squad)
     db.flush()
     coach = StaffMember(name="Alex Weber", email="coach@demo.pathtopro", role=Role.COACH, squad_id=squad.id)
@@ -207,7 +207,9 @@ def seed(db: Session, n_players: int = 25, story: bool = True) -> dict:
             db.add(TestResult(player_id=players[t["player_id"]].id, day=d, test=t["test"], value=t["value"]))
     db.flush()
 
+    dual_email = _teams_and_careers(db, res, players, squad, pw, today)
     story_ids = _story(db, players, yesterday) if story else {}
+    story_ids["dual_email"] = dual_email
     story_player = next((p for p in players.values() if p.display_name == story_ids.get("tired_player")), None)
 
     # Synthetic staff ratings (coach and physio) for the last STATUS_DAYS, for calibration
@@ -254,7 +256,134 @@ def seed(db: Session, n_players: int = 25, story: bool = True) -> dict:
         "story": story_ids,
         "password": DEMO_PASSWORD,
         "amateur_email": AMATEUR_EMAIL,
+        "dual_email": DUAL_EMAIL,
+        "men_coach_email": MEN_COACH_EMAIL,
     }
+
+
+DUAL_EMAIL = "dual@demo.pathtopro"
+MEN_COACH_EMAIL = "mencoach@demo.pathtopro"
+RATED_WEEKS = 6
+
+
+def _teams_and_careers(db: Session, res, players: dict[str, Player], academy: Squad, pw: str, today: date) -> str:
+    """Men's team with dual-registered U18s, match ratings for recent games, past seasons.
+
+    The club's men's team (Kakkonen) plays on Sundays, so dual players this weekend have
+    the youth match on Saturday and the men's match on Sunday: rule H8 shares their minutes.
+    """
+    import random
+
+    from domain.models import CareerSeason, Registration
+    from performance import competitions
+    from performance import service as perf
+
+    yesterday = today - timedelta(days=1)
+    men = Squad(name="PathToPro FC Men", age_group="SEN", competition="fi_kakkonen", club="PathToPro FC")
+    db.add(men)
+    db.flush()
+    men_coach = StaffMember(name="Mikko Laine", email=MEN_COACH_EMAIL, role=Role.COACH, squad_id=men.id)
+    db.add(men_coach)
+    db.flush()
+    db.add(UserAccount(email=MEN_COACH_EMAIL, password_hash=pw, role=Role.COACH, staff_id=men_coach.id))
+
+    first = date.fromisoformat(res.fixtures[0]["date"])
+    sunday = first + timedelta(days=(6 - first.weekday()) % 7)
+    men_matches: dict[date, Match] = {}
+    k = 0
+    while sunday <= today + timedelta(days=14):
+        m = Match(squad_id=men.id, kickoff=_at(sunday, 14), opponent=f"FC Opponent {k + 1}", competition="Kakkonen")
+        db.add(m)
+        men_matches[sunday] = m
+        sunday += timedelta(weeks=1)
+        k += 1
+    db.flush()
+
+    # Dual registration: the three oldest players still under 18
+    plist = sorted(players.values(), key=lambda p: p.birth_date)
+    dual = [p for p in plist if agent_runner.age_on(p.birth_date, today) < 18][:3]
+    for p in dual:
+        db.add(Registration(player_id=p.id, squad_id=men.id, season=perf.season_of(today)))
+    db.flush()
+    # An extra demo login for the first dual player (their own pNN login still works)
+    db.add(UserAccount(email=DUAL_EMAIL, password_hash=pw, role=Role.PLAYER, player_id=dual[0].id))
+
+    academy_matches = {
+        m.kickoff.date(): m for m in db.scalars(select(Match).where(Match.squad_id == academy.id, Match.kickoff < _at(today, 0)))
+    }
+    first_rated = today - timedelta(weeks=RATED_WEEKS)
+
+    def outcome(d: date, team: str) -> tuple[str, int]:
+        r = random.Random(f"{team}{d}")
+        return r.choice(["win", "win", "draw", "loss"]), r.choice([0, 0, 1, 1, 2, 3])
+
+    # Academy matches: stats and ratings from the simulated minutes; some match diaries.
+    # The 11 players with the most minutes in a match started it.
+    starters: dict[str, set[str]] = {}
+    by_date: dict[str, list] = {}
+    for s in res.sessions:
+        if s["kind"] == "match" and s["minutes"] > 0:
+            by_date.setdefault(s["date"], []).append(s)
+    for d_, rows in by_date.items():
+        starters[d_] = {r["player_id"] for r in sorted(rows, key=lambda r: -r["minutes"])[:11]}
+    for s in res.sessions:
+        d = date.fromisoformat(s["date"])
+        if s["kind"] != "match" or d < first_rated or d > yesterday or d not in academy_matches or s["minutes"] <= 0:
+            continue
+        p = players[s["player_id"]]
+        rng = random.Random(f"{p.id}{d}")
+        minutes = int(s["minutes"])
+        result, conceded = outcome(d, "academy")
+        a = perf.appearance(db, p, academy_matches[d])
+        started = s["player_id"] in starters.get(s["date"], set())
+        perf.apply_stats(a, minutes, started, p.position, perf.synthetic_stats(rng, p.position, minutes, result, conceded))
+        if rng.random() < 0.6 and a.rating is not None:
+            a.self_rating = max(1, min(10, round(a.rating + rng.choice([-1, 0, 0, 1]))))
+            a.self_rpe, a.diary_at = 7, _at(d, 20)
+
+    # Men's matches for dual players before this week: off the bench after a youth match
+    # the day before, otherwise longer
+    for p in dual:
+        for d, m in men_matches.items():
+            if d < first_rated or d > yesterday:
+                continue
+            rng = random.Random(f"men{p.id}{d}")
+            if rng.random() < 0.35:
+                continue
+            minutes = 30 if (d - timedelta(days=1)) in academy_matches else rng.choice([60, 75, 90])
+            result, conceded = outcome(d, "men")
+            a = perf.appearance(db, p, m)
+            perf.apply_stats(a, minutes, minutes >= 60, p.position, perf.synthetic_stats(rng, p.position, minutes, result, conceded))
+            db.add(SessionLoad(player_id=p.id, match_id=m.id, day=d, rpe=7, minutes=minutes, load_au=7 * minutes))
+
+    # Past seasons on everyone's football CV
+    year = today.year
+    for p in players.values():
+        rng = random.Random(f"cv{p.id}")
+        for back in (2, 1):
+            age = agent_runner.age_on(p.birth_date, date(year - back, 7, 1))
+            if age < 12:
+                continue
+            comp = competitions.academy_competition(age)
+            apps = rng.randint(14, 24)
+            starts = rng.randint(apps // 2, apps)
+            db.add(
+                CareerSeason(
+                    player_id=p.id,
+                    season=str(year - back),
+                    club="PathToPro FC",
+                    team=f"{competitions.label(comp).split()[0]} academy",
+                    competition=comp,
+                    apps=apps,
+                    starts=starts,
+                    minutes=starts * rng.randint(60, 85) + (apps - starts) * 20,
+                    goals=rng.randint(0, 8 if p.position in ("striker", "winger") else 3),
+                    assists=rng.randint(0, 6),
+                    avg_rating=round(rng.uniform(6.4, 7.4), 2),
+                )
+            )
+    db.flush()
+    return DUAL_EMAIL
 
 
 def _amateur(db: Session, pw: str, today: date, week_start: date) -> None:

@@ -5,7 +5,7 @@ const LIVE = !process.env.E2E_DEMO; // sign-up and the planner need the server, 
 
 test("academy player sees a position-specific gym session", async ({ page }) => {
   await login(page, "p03@demo.pathtopro");
-  await page.getByRole("link", { name: "Gym" }).click();
+  await page.getByRole("link", { name: "Gym", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Gym", exact: true })).toBeVisible();
   await expect(page.getByText("Your position", { exact: true })).toBeVisible();
   await expect(page.getByText("Warm-up").first()).toBeVisible();
@@ -28,7 +28,7 @@ test("self-guided player logs a test and levels up", async ({ page }) => {
   await expect(page.getByText("Level up! You're now Competitive amateur.")).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/amateur-levels.png`, fullPage: true });
 
-  await page.getByRole("link", { name: "Gym" }).click();
+  await page.getByRole("link", { name: "Gym", exact: true }).click();
   await expect(page.getByText(/This week · Home: band and dumbbells/)).toBeVisible();
   await expect(page.getByText("Striker work").first()).toBeVisible();
 });

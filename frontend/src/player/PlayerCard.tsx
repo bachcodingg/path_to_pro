@@ -1,5 +1,7 @@
 // "Your attribute card": percentiles vs players at the same stage of growth (bio-banded).
+import { Map } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { Attribute, Card as CardData } from "../shared/types";
 import { useApi } from "../shared/useApi";
@@ -23,6 +25,9 @@ export function PlayerCard() {
 
   return (
     <div className="space-y-4 pt-2">
+      <Link to="/player/road" className="text-pitch-300 flex items-center justify-end gap-1 text-sm font-semibold">
+        <Map className="h-4 w-4" aria-hidden /> Road to Pro
+      </Link>
       <div className="rounded-3xl bg-gradient-to-br from-amber-300 via-amber-200 to-amber-500 p-1 shadow-lg">
         <div className="rounded-[20px] bg-gradient-to-br from-pitch-800 to-pitch-950 p-5 text-white">
           <div className="flex items-start justify-between">

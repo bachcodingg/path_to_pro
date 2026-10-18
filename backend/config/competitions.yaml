@@ -1,0 +1,33 @@
+# League ladder for careers and dual registration.
+#
+# Each competition: country, name, category (adult | youth | reserve), tier within its
+# category, and `level` (0-100): one scale across men's and youth football, used for
+# the career chart and to weight minutes ("exposure": 90 minutes in the men's third tier
+# develop a player more than 90 minutes in a regional youth league).
+#
+# The levels are PLACEHOLDER judgements for a demo, not official rankings. Names follow
+# the Finnish structure as an example; add a country by adding entries with its prefix.
+competitions:
+  fi_veikkausliiga: {country: FI, name: Veikkausliiga, category: adult, tier: 1, level: 100}
+  fi_ykkosliiga: {country: FI, name: Ykkösliiga, category: adult, tier: 2, level: 85}
+  fi_ykkonen: {country: FI, name: Ykkönen, category: adult, tier: 3, level: 74}
+  fi_kakkonen: {country: FI, name: Kakkonen, category: adult, tier: 4, level: 63}
+  fi_kolmonen: {country: FI, name: Kolmonen, category: adult, tier: 5, level: 52}
+  fi_nelonen: {country: FI, name: Nelonen, category: adult, tier: 6, level: 42}
+  fi_vitonen: {country: FI, name: Vitonen, category: adult, tier: 7, level: 33}
+  fi_reserve: {country: FI, name: Reserve / U21 team, category: reserve, tier: 1, level: 58}
+  fi_u19_national: {country: FI, name: U19 national league, category: youth, tier: 1, level: 56, age_limit: 19}
+  fi_u19_regional: {country: FI, name: U19 regional league, category: youth, tier: 2, level: 40, age_limit: 19}
+  fi_u17_national: {country: FI, name: U17 national league, category: youth, tier: 1, level: 45, age_limit: 17}
+  fi_u17_regional: {country: FI, name: U17 regional league, category: youth, tier: 2, level: 31, age_limit: 17}
+  fi_u15_national: {country: FI, name: U15 national league, category: youth, tier: 1, level: 34, age_limit: 15}
+  fi_u15_regional: {country: FI, name: U15 regional league, category: youth, tier: 2, level: 22, age_limit: 15}
+  other_adult: {country: "--", name: Other adult football, category: adult, tier: 9, level: 30}
+  other_youth: {country: "--", name: Other youth football, category: youth, tier: 9, level: 20}
+
+# Academy squads without a fixed league play in the national youth league for the
+# player's age group.
+academy_by_age:
+  15: fi_u15_national
+  17: fi_u17_national
+  19: fi_u19_national

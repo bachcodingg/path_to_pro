@@ -104,3 +104,39 @@ test("coach turns a plain-words note into a plan change", async ({ page }) => {
   await page.getByRole("button", { name: /Apply to Elias's week/ }).click();
   await expect(page.getByText(/Applied\. Elias sees the new week/)).toBeVisible();
 });
+
+test("training pitch: a team session is checked for every player", async ({ page }) => {
+  await login(page, "coach@demo.pathtopro");
+  await page.getByRole("link", { name: "Training pitch" }).click();
+  await expect(page.getByRole("heading", { name: "Training pitch" })).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/coach-pitch.png` });
+  test.skip(!!process.env.E2E_DEMO, "placing sessions runs the planner on the server");
+  await page.getByRole("button", { name: "Speed" }).click();
+  await page.getByRole("button", { name: "Place on Friday" }).click();
+  const preview = page.getByRole("status", { name: "Team session preview" });
+  await expect(preview).toContainText("adjusted for safety");
+  await page.screenshot({ path: `${SHOTS}/coach-pitch-preview.png` });
+  await preview.getByRole("button", { name: "Apply to squad" }).click();
+  await expect(page.getByText(/Applied: \d+ as planned, \d+ adjusted for safety/)).toBeVisible();
+});
+
+test("match ratings with a breakdown, and the second team's coach view", async ({ page }) => {
+  await login(page, "coach@demo.pathtopro");
+  await page.getByRole("link", { name: "Match ratings" }).click();
+  await expect(page.getByRole("heading", { name: "Match ratings" })).toBeVisible();
+  await page.getByRole("link", { name: /PathToPro Academy .* vs/ }).first().click();
+  await expect(page.getByText(/Player of the match/)).toBeVisible();
+  await page.getByRole("button", { name: /Rating breakdown for/ }).first().click();
+  await expect(page.getByText(/Pass accuracy|Goals|Tackles|Interceptions|Duels/).first()).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/coach-match-ratings.png`, fullPage: true });
+  if (!process.env.E2E_DEMO) {
+    await page.getByRole("button", { name: "Save and rate" }).click();
+    await expect(page.getByText("Saved. Ratings updated.")).toBeVisible();
+  }
+
+  await page.getByRole("button", { name: /Sign out/ }).click();
+  await login(page, "mencoach@demo.pathtopro");
+  await expect(page.getByRole("link", { name: /\./ }).first()).toBeVisible();
+  await page.getByRole("link", { name: "Match ratings" }).click();
+  await expect(page.getByRole("link", { name: /PathToPro FC Men vs/ }).first()).toBeVisible();
+});

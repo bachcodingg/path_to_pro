@@ -1,4 +1,4 @@
-# Demo script (6 minutes)
+# Demo script (7 minutes)
 
 Setup: `docker compose up --build`, open http://localhost:8080. The seeder resets the
 synthetic season and sets "today" to Thursday of week 12. All passwords: `demo1234`.
@@ -29,12 +29,19 @@ synthetic season and sets "today" to Thursday of week 12. All passwords: `demo12
    passes in 30 s", log 19: she meets 4 of 6 benchmarks and moves up to level 3. Anyone
    can sign up at `/register`; under-16s get a parent invite code.
 
-5. **Evidence (1 min)** - `docs/evaluation/report.md`: 0 hard-rule violations (baseline:
+5. **Two teams, one plan (1 min)** - sign in as **Player (U19 + men's team)**: My week shows
+   the U19 match on Saturday at 90 minutes and the men's Kakkonen match on Sunday at 0' (rule
+   H8: under-18s play at most 90 minutes over back-to-back days). **Career** shows both
+   teams, ratings and the pathway chart; fill in the match diary. As **Coach**: Training
+   pitch, drag "Speed" onto Friday: every player gets an easier version (day before a match),
+   apply. Match ratings: open the last match, expand a rating to see its breakdown.
+
+6. **Evidence (1 min)** - `docs/evaluation/report.md`: 0 hard-rule violations (baseline:
    ~375), 58-66% fewer ACWR spike weeks, and still 60-66% fewer against the template scaled
    to the same total load, 91% of goal sessions delivered, 50/50 safety scenarios. SUS
    pending usability tests.
 
-6. **Safety (30 s)** - sign in as any player, check in with mood "Not good". Sign in as
+7. **Safety (30 s)** - sign in as any player, check in with mood "Not good". Sign in as
    **Physio** (`physio@demo.pathtopro`): the red check-in is in the queue within a second,
    with no agent reply to the player beyond "a staff member will talk to you".
 

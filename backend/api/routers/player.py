@@ -32,6 +32,7 @@ from domain.models import (
 )
 from pathway import levels
 from pathway import service as pathway
+from performance import service as performance
 
 router = APIRouter(prefix="/api/me", tags=["player"])
 NORMS = NormTable.load()
@@ -132,7 +133,13 @@ def today_view(p: Player, user: CurrentUser, db: Session) -> dict:
     }
     days = views.checkin_days(db, p.id)
     audit(db, user, "read", "daily_status", p.id, view="today")
-    extra: dict = {"gym": gym_view.programme(db, p, plan, today), "pathway": None, "safety": [], "logged": []}
+    extra: dict = {
+        "gym": gym_view.programme(db, p, plan, today),
+        "pathway": None,
+        "safety": [],
+        "logged": [],
+        "diary_due": performance.diary_due(db, p, today),
+    }
     if prof is not None:
         a = pathway.assessment(db, p, prof, today)
         extra["pathway"] = {
@@ -590,3 +597,91 @@ def log_session(body: LoggedSession, user: CurrentUser = Depends(require(Role.PL
     audit(db, user, "create", "session_load", p.id)
     db.commit()
     return {"today": today_view(p, user, db), "levelled_up": bool(a.get("levelled_up"))}
+
+
+# --------------------------------------------------------------------------- Career and match diary
+
+
+@router.get("/career")
+def career(user: CurrentUser = Depends(require(Role.PLAYER)), db: Session = Depends(get_db)) -> dict:
+    p = _me(user, db)
+    out = performance.career_view(db, p, clock.today())
+    audit(db, user, "read", "appearance", p.id, view="career")
+    db.commit()
+    return out
+
+
+class PastSeason(BaseModel):
+    season: str = Field(pattern=r"^(19|20)\d\d$")
+    club: str = Field(min_length=1, max_length=100)
+    team: str = Field(min_length=1, max_length=100)
+    competition: str
+    apps: int = Field(default=0, ge=0, le=80)
+    starts: int = Field(default=0, ge=0, le=80)
+    minutes: int = Field(default=0, ge=0, le=7200)
+    goals: int = Field(default=0, ge=0, le=150)
+    assists: int = Field(default=0, ge=0, le=150)
+    avg_rating: float | None = Field(default=None, ge=3, le=10)
+
+
+@router.post("/career/seasons", status_code=201)
+def add_season(body: PastSeason, user: CurrentUser = Depends(require(Role.PLAYER)), db: Session = Depends(get_db)) -> dict:
+    from domain.models import CareerSeason
+    from performance import competitions
+
+    p = _me(user, db)
+    if competitions.get(body.competition) is None:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Unknown competition")
+    if int(body.season) > clock.today().year:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Add past seasons only")
+    if body.starts > body.apps:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Starts can't be more than appearances")
+    db.add(CareerSeason(player_id=p.id, **body.model_dump()))
+    audit(db, user, "create", "career_season", p.id)
+    db.commit()
+    return performance.career_view(db, p, clock.today())
+
+
+@router.delete("/career/seasons/{season_id}")
+def delete_season(season_id: str, user: CurrentUser = Depends(require(Role.PLAYER)), db: Session = Depends(get_db)) -> dict:
+    from domain.models import CareerSeason
+
+    p = _me(user, db)
+    row = db.get(CareerSeason, season_id)
+    if row is None or row.player_id != p.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Season not found")
+    db.delete(row)
+    audit(db, user, "delete", "career_season", p.id)
+    db.commit()
+    return performance.career_view(db, p, clock.today())
+
+
+class Diary(BaseModel):
+    minutes: int = Field(ge=0, le=130)
+    position: Position | None = None
+    goals: int = Field(default=0, ge=0, le=10)
+    assists: int = Field(default=0, ge=0, le=10)
+    self_rating: int = Field(ge=1, le=10)
+    rpe: int = Field(default=7, ge=1, le=10)
+
+
+@router.post("/matches/{match_id}/diary")
+def match_diary(match_id: str, body: Diary, user: CurrentUser = Depends(require(Role.PLAYER)), db: Session = Depends(get_db)) -> dict:
+    """After the final whistle: minutes, position, goals, assists, self-rating and effort."""
+    from domain.models import Match
+
+    p = _me(user, db)
+    m = db.get(Match, match_id)
+    today = clock.today()
+    if m is None or not performance.is_registered(db, p, m.squad_id):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Match not found")
+    if m.kickoff.date() > today:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "The match hasn't been played yet")
+    if not has_consent(db, p, ConsentDataType.WELLNESS, today):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "The match diary needs consent from your parent")
+    performance.apply_diary(
+        db, p, m, body.minutes, body.position.value if body.position else None, body.goals, body.assists, body.self_rating, body.rpe
+    )
+    audit(db, user, "create", "appearance", p.id, diary=True)
+    db.commit()
+    return performance.career_view(db, p, today)

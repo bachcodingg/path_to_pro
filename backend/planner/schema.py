@@ -60,6 +60,10 @@ class PlannerInput(BaseModel):
     # Self-guided players: their club's training nights. The planner puts a football
     # session there (strong soft rule: a red day or an exam can still turn it easy or off).
     team_days: list[Weekday] = []
+    # Dual registration: under-18s may not play more than 90 minutes over two consecutive
+    # days (H8). Priority 2 = primary team's match: its minutes are cut last.
+    under_18: bool = False
+    match_priority: dict[int, int] = {}
 
     def target_load(self, llm_factor: float = 1.0) -> int:
         planned = self.club_weekly_load * self.days / 7

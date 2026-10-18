@@ -25,6 +25,7 @@ export interface PlanDay {
   actual_load?: number | null;
   team_day?: boolean;
   content?: SessionContent | null;
+  match?: { opponent: string; team: string; primary: boolean };
 }
 
 export interface SessionContent {
@@ -116,6 +117,7 @@ export interface Today {
   safety?: string[];
   logged?: { minutes: number; rpe: number; load: number }[];
   consent?: { wellness: boolean; test_results: boolean };
+  diary_due?: DiaryDue[];
 }
 
 export interface TodayPathway {
@@ -269,6 +271,7 @@ export interface Proposal {
   proposed: PlanDay[];
   explanation_player: string | null;
   solver_status: string | null;
+  teams?: string[];
 }
 
 export interface HeatmapRow {
@@ -286,4 +289,71 @@ export interface Heatmap {
   dates: string[];
   today: string;
   players: HeatmapRow[];
+}
+
+export type RatingBand = "elite" | "good" | "fair" | "average" | "poor";
+
+export interface BreakdownItem {
+  label: string;
+  value: number;
+}
+
+export interface AppearanceRow {
+  match_id: string;
+  date: string;
+  team: string;
+  opponent: string;
+  competition: string | null;
+  competition_label: string;
+  minutes: number;
+  started: boolean;
+  position: Position | null;
+  goals: number;
+  assists: number;
+  rating: number | null;
+  rating_band: RatingBand | null;
+  rating_source: "stats" | "diary" | null;
+  breakdown: BreakdownItem[];
+  self_rating: number | null;
+  stats: Record<string, number | string>;
+}
+
+export interface DiaryDue {
+  match_id: string;
+  date: string;
+  team: string;
+  opponent: string;
+  minutes: number | null;
+}
+
+export interface SeasonRow {
+  id?: string;
+  season: string;
+  club?: string;
+  team?: string;
+  competition: string;
+  competition_label: string;
+  level: number;
+  apps: number;
+  starts: number;
+  minutes: number;
+  goals: number;
+  assists: number;
+  avg_rating: number | null;
+  rating_band: RatingBand | null;
+  exposure: number;
+}
+
+export interface Career {
+  season: string;
+  registrations: { team_id: string; team: string; club: string | null; competition: string; competition_label: string; level: number; primary: boolean }[];
+  summary: Omit<SeasonRow, "season" | "competition" | "competition_label" | "level">;
+  current: SeasonRow[];
+  past: SeasonRow[];
+  ladder: { season: string; level: number; competition_label: string }[];
+  recent: AppearanceRow[];
+  trend: { date: string; rating: number }[];
+  diary_due: DiaryDue[];
+  competitions: { id: string; label: string; level: number; category: string }[];
+  note: string;
 }

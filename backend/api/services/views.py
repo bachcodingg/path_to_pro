@@ -61,7 +61,18 @@ def week_start(day: date) -> date:
 
 
 def week_days(db: Session, player: Player, start: date) -> list[dict]:
-    return [day_json(d) for d in agent_runner.plan_days(db, player, start, 7)]
+    from domain.models import Squad
+
+    matches = agent_runner.match_days(db, player, start, 7)
+    out = []
+    for d in agent_runner.plan_days(db, player, start, 7):
+        j = day_json(d)
+        m = matches.get(d.date)
+        if m is not None:
+            squad = db.get(Squad, m.squad_id)
+            j["match"] = {"opponent": m.opponent, "team": squad.name if squad else "", "primary": m.squad_id == player.squad_id}
+        out.append(j)
+    return out
 
 
 def status(db: Session, player_id: str, day: date) -> DailyStatus | None:
@@ -133,6 +144,7 @@ def _card_title(p: Proposal) -> str:
         "new_goal": "New development goal",
         "drill_suggestion": "New drills for you",
         "coach_instruction": "Your coach adjusted your week",
+        "team_session": "Your coach planned a team session",
     }.get(p.kind, "Plan updated")
 
 

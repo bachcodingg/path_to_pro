@@ -29,8 +29,9 @@ from api.db import SessionLocal, init_db  # noqa: E402
 from api.main import app  # noqa: E402
 from api.services.seed import DEMO_PASSWORD, seed  # noqa: E402
 
-PLAYERS = ["p15@demo.pathtopro", "p03@demo.pathtopro", "p07@demo.pathtopro", "amateur@demo.pathtopro"]
+PLAYERS = ["p15@demo.pathtopro", "p03@demo.pathtopro", "p07@demo.pathtopro", "dual@demo.pathtopro", "amateur@demo.pathtopro"]
 STAFF = ["coach@demo.pathtopro", "physio@demo.pathtopro"]
+SECOND_TEAM_COACH = "mencoach@demo.pathtopro"
 GUARDIANS = ["guardian02@demo.pathtopro"]
 
 
@@ -84,6 +85,7 @@ def main(out: Path) -> None:
                 "/api/me/gym?offset=0",
                 "/api/me/gym?offset=1",
                 "/api/me/growth",
+                "/api/me/career",
             ]
             paths += ["/api/me/pathway"] if me["pathway"] == "amateur" else ["/api/me/card", "/api/me/roadmap"]
             snap["users"][email] = {"me": me, "responses": {p: get(h, p) for p in paths}}
@@ -102,7 +104,25 @@ def main(out: Path) -> None:
         }
         for row in heatmap["players"]:
             staff[f"/api/coach/players/{row['id']}"] = get(h, f"/api/coach/players/{row['id']}")
+
+        def team_views(h: dict) -> dict:
+            out = {f"/api/coach/squad-week?offset={o}": get(h, f"/api/coach/squad-week?offset={o}") for o in (0, 1)}
+            out["/api/coach/matches"] = get(h, "/api/coach/matches")
+            for m in out["/api/coach/matches"]:
+                out[f"/api/coach/matches/{m['id']}"] = get(h, f"/api/coach/matches/{m['id']}")
+            return out
+
+        staff.update(team_views(h))
         snap["staff"] = staff
+        # The men's team coach sees his own team (and the dual-registered players)
+        h = login(SECOND_TEAM_COACH)
+        own = {
+            "/api/coach/heatmap": get(h, "/api/coach/heatmap"),
+            "/api/coach/inbox": get(h, "/api/coach/inbox"),
+            "/api/coach/lineup": get(h, "/api/coach/lineup"),
+            **team_views(h),
+        }
+        snap["users"][SECOND_TEAM_COACH] = {"me": get(h, "/api/auth/me"), "responses": own}
         for email in GUARDIANS:
             h = login(email)
             kids = get(h, "/api/guardian/children")

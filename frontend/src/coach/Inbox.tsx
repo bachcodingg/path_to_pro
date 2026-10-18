@@ -110,8 +110,9 @@ export function Inbox() {
               </Button>
             </div>
           </div>
-          {p.chips.length > 0 && (
+          {(p.chips.length > 0 || (p.teams?.length ?? 0) > 1) && (
             <div className="flex flex-wrap gap-2">
+              {(p.teams?.length ?? 0) > 1 && <Chip tone="amber">Dual registration: {p.teams!.join(" + ")}</Chip>}
               {p.chips.map((c) => (
                 <Chip key={c}>{c}</Chip>
               ))}

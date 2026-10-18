@@ -17,6 +17,10 @@ const TacticsBoard = lazy(() => import("./coach/TacticsBoard").then((m) => ({ de
 const GuardianHome = lazy(() => import("./guardian/GuardianHome").then((m) => ({ default: m.GuardianHome })));
 const PhysioHome = lazy(() => import("./physio/PhysioHome").then((m) => ({ default: m.PhysioHome })));
 const CheckIn = lazy(() => import("./player/CheckIn").then((m) => ({ default: m.CheckIn })));
+const Career = lazy(() => import("./player/Career").then((m) => ({ default: m.Career })));
+const TrainingPitch = lazy(() => import("./coach/TrainingPitch").then((m) => ({ default: m.TrainingPitch })));
+const Matches = lazy(() => import("./coach/Matches").then((m) => ({ default: m.Matches })));
+const MatchReport = lazy(() => import("./coach/Matches").then((m) => ({ default: m.MatchReport })));
 const Gym = lazy(() => import("./player/Gym").then((m) => ({ default: m.Gym })));
 const Pathway = lazy(() => import("./player/Pathway").then((m) => ({ default: m.Pathway })));
 const Growth = lazy(() => import("./player/Growth").then((m) => ({ default: m.Growth })));
@@ -55,6 +59,7 @@ export function App() {
         <Route path="week" element={<MyWeek />} />
         <Route path="gym" element={<Gym />} />
         <Route path="levels" element={<Pathway />} />
+        <Route path="career" element={<Career />} />
         <Route path="growth" element={<Growth />} />
         <Route path="card" element={<PlayerCard />} />
         <Route path="road" element={<RoadToPro />} />
@@ -69,6 +74,9 @@ export function App() {
       >
         <Route index element={<Heatmap />} />
         <Route path="inbox" element={<Inbox />} />
+        <Route path="pitch" element={<TrainingPitch />} />
+        <Route path="matches" element={<Matches />} />
+        <Route path="matches/:id" element={<MatchReport />} />
         <Route path="tactics" element={<TacticsBoard />} />
         <Route path="players/:id" element={<PlayerProfile />} />
         <Route path="log" element={<AgentLog />} />

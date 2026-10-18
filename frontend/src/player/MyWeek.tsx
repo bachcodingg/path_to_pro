@@ -96,7 +96,11 @@ export function MyWeek() {
                 )
               )}
               <text x={x + 8.5} y={146} textAnchor="middle" fontSize={4.6} fill="rgba(255,255,255,0.85)">
-                {d.team_day && (d.kind === "technical" || d.kind === "tactical") ? "Club" : SHORT[d.kind]}
+                {d.kind === "match" && d.minutes < 90
+                  ? `Match ${d.minutes}'`
+                  : d.team_day && (d.kind === "technical" || d.kind === "tactical")
+                    ? "Club"
+                    : SHORT[d.kind]}
               </text>
             </g>
           );
@@ -134,10 +138,20 @@ export function MyWeek() {
               Close
             </Button>
           </div>
+          {detail.match && (
+            <p className="mt-2 text-sm">
+              <span className="font-semibold">{detail.match.team}</span> vs {detail.match.opponent}
+              {detail.minutes === 0 && (
+                <span className="text-ready-amber block">
+                  In the squad, but planned not to play: two matches on back-to-back days are too much for under-18s.
+                </span>
+              )}
+            </p>
+          )}
           {detail.kind !== "rest" && (
             <ul className="mt-2 space-y-1 text-sm">
               <li>Effort: {detail.rpe} / 10</li>
-              <li>Duration: {detail.minutes} min</li>
+              <li>{detail.kind === "match" ? "Planned minutes" : "Duration"}: {detail.minutes} min</li>
               <li>Planned load: {detail.load} AU</li>
               {detail.actual_load != null && <li className={cn(detail.actual_load > detail.load * 1.2 && "text-ready-amber")}>Actual load: {Math.round(detail.actual_load)} AU</li>}
             </ul>

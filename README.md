@@ -21,8 +21,10 @@ app (PWA). Sign-up and plain-words coach instructions need the full system (belo
 | Demo account | Shows |
 | --- | --- |
 | Player (tired, growth zone) | Check-in, Today, why-cards, growth zone, position gym session |
+| Player (U19 + men's team) | Dual registration: 90 minutes shared over a Saturday + Sunday double; Career tab with ratings; match diary |
 | Self-guided player | Levels: log a wall-pass test of 18+ and she moves up to level 3 |
-| Coach | Heatmap, approval inbox, tactics board, profile with gym preview and instruction box, calibration |
+| Coach | Heatmap, approval inbox, training pitch, match ratings, tactics board, profile with gym preview and instruction box, calibration |
+| Men's team coach | Second team's view of the dual-registered players (sees, but the primary coach approves) |
 | Physio, Guardian | Escalation queue; consent per data type |
 
 ## Deploy the full system (Render, free)
@@ -66,16 +68,17 @@ key, or with `PATHTOPRO_LLM=off`, the agents use rule-based fallbacks and the de
 | --- | --- |
 | Agents and autonomy | `backend/agents/`: Monitor, Planner, Development Coach, Coordinator policy table, coach-instruction parser |
 | Sports science engine | `backend/analytics/`: sRPE, EWMA ACWR, monotony, strain, Mirwald, readiness, bio-banded norms |
-| Weekly planner | `backend/planner/`: OR-Tools CP-SAT, hard rules H1-H7, projected ACWR, club training nights, relaxation, safe template |
+| Weekly planner | `backend/planner/`: OR-Tools CP-SAT, hard rules H1-H8, projected ACWR, club training nights, relaxation, safe template |
 | Gym programmes | `backend/gym/` + `config/gym.yaml`: shared injury-prevention work for every player plus a block per position (GK, CB, FB, CM, W, ST), adjusted for growth stage, readiness, match proximity and equipment |
 | Self-guided pathway | `backend/pathway/` + `config/pathway.yaml`: 5 levels, 6 benchmark tests (age- and sex-adjusted), level-ups, solo session content, sign-up with parent invite codes under 16 |
+| Teams, careers, ratings | `backend/performance/` + `config/competitions.yaml`: dual registration with rule H8, league ladder (Finland first), career CV, match diary, 3-10 match ratings with a breakdown, coach training pitch |
 | User interface | `frontend/`: player PWA (check-in, Today, week pitch, gym, growth, card, season map, levels), coach (heatmap, inbox with A/E/R, tactics board, scouting report with instruction box, match commentary, calibration), physio queue, guardian view, sign-up |
 | Architecture | FastAPI, SQLAlchemy 2, Alembic, PostgreSQL, APScheduler, JWT + RBAC, `docker-compose.yml` |
 | Simulator | `backend/simulator/`: 25 players x 40 weeks, seeded, 3 injury models, pluggable policy |
 | Evaluation | `backend/eval/`: `python -m eval`, 50-case safety suite, equal-load baseline, report in [docs/evaluation/report.md](docs/evaluation/report.md) |
 | Safety and ethics | [docs/safety-case.md](docs/safety-case.md): encryption, audit log, consent, export/delete, escalations |
 
-More: [gym and pathway](docs/gym-and-pathway.md) · [architecture](docs/architecture.md) · [demo script](docs/demo-script.md) · [week-1 decisions](docs/week1-scope.md)
+More: [teams, careers and ratings](docs/teams-careers-ratings.md) · [gym and pathway](docs/gym-and-pathway.md) · [architecture](docs/architecture.md) · [demo script](docs/demo-script.md) · [week-1 decisions](docs/week1-scope.md)
 
 ## Results (25 players x 40 weeks, 3 injury models, vs a fixed weekly template)
 
@@ -102,9 +105,9 @@ above the fold-to-fold noise. Demo ratings are synthetic.
 ## Tests
 
 ```bash
-cd backend && pytest                      # 156 unit, scenario and API tests
+cd backend && pytest                      # 166 unit, scenario and API tests
 cd frontend && npm test                   # Vitest
-cd frontend && npx playwright test        # 14 end-to-end tests (API on :8000, web on :5173)
+cd frontend && npx playwright test        # 17 end-to-end tests (API on :8000, web on :5173)
 ```
 
 All demo data is synthetic. No real player data is stored. Benchmarks and norms are

@@ -70,6 +70,9 @@ class Squad(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
     name: Mapped[str] = mapped_column(String(100))
     age_group: Mapped[str] = mapped_column(String(10))  # e.g. U15
+    # The team's league (config/competitions.yaml); None = by the player's age group (academy).
+    competition: Mapped[str | None] = mapped_column(String(40))
+    club: Mapped[str | None] = mapped_column(String(100))
     players: Mapped[list[Player]] = relationship(back_populates="squad")
 
 
@@ -449,3 +452,63 @@ class AmateurProfile(Base):
     team_days: Mapped[list[int]] = mapped_column(JSON, default=list)  # weekdays, 0 = Monday
     match_day: Mapped[int | None] = mapped_column(Integer)  # weekday, None = no regular match
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+# --------------------------------------------------------------------------- teams, careers and match performance
+
+
+class Registration(Base):
+    """A player's registration with a second team (dual registration), e.g. an U19
+    player who also plays for the club's men's team. The primary team is Player.squad.
+    Fixtures of every registered team go into the same plan."""
+
+    __tablename__ = "registrations"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    player_id: Mapped[str] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    squad_id: Mapped[str] = mapped_column(ForeignKey("squads.id", ondelete="CASCADE"), index=True)
+    season: Mapped[str] = mapped_column(String(10))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    __table_args__ = (UniqueConstraint("player_id", "squad_id"),)
+
+
+class Appearance(Base):
+    """One player in one match: minutes, stats, the computed match rating (coach stats),
+    and the player's own match diary (self-rating and effort)."""
+
+    __tablename__ = "appearances"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    player_id: Mapped[str] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    match_id: Mapped[str] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"), index=True)
+    day: Mapped[date] = mapped_column(Date, index=True)
+    competition: Mapped[str | None] = mapped_column(String(40))
+    minutes: Mapped[int] = mapped_column(Integer, default=0)
+    started: Mapped[bool] = mapped_column(Boolean, default=False)
+    position: Mapped[str | None] = mapped_column(String(20))
+    goals: Mapped[int] = mapped_column(Integer, default=0)
+    assists: Mapped[int] = mapped_column(Integer, default=0)
+    stats: Mapped[dict] = mapped_column(JSON, default=dict)  # coach / data-provider match stats
+    rating: Mapped[float | None] = mapped_column(Float)
+    rating_source: Mapped[str | None] = mapped_column(String(10))  # stats | diary
+    breakdown: Mapped[list] = mapped_column(JSON, default=list)
+    self_rating: Mapped[int | None] = mapped_column(Integer)  # match diary, 1-10
+    self_rpe: Mapped[int | None] = mapped_column(EncryptedInt, info=HEALTH)
+    diary_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    __table_args__ = (UniqueConstraint("player_id", "match_id"),)
+
+
+class CareerSeason(Base):
+    """A past season on the player's football CV (current seasons come from Appearances)."""
+
+    __tablename__ = "career_seasons"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    player_id: Mapped[str] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    season: Mapped[str] = mapped_column(String(10))
+    club: Mapped[str] = mapped_column(String(100))
+    team: Mapped[str] = mapped_column(String(100))
+    competition: Mapped[str] = mapped_column(String(40))
+    apps: Mapped[int] = mapped_column(Integer, default=0)
+    starts: Mapped[int] = mapped_column(Integer, default=0)
+    minutes: Mapped[int] = mapped_column(Integer, default=0)
+    goals: Mapped[int] = mapped_column(Integer, default=0)
+    assists: Mapped[int] = mapped_column(Integer, default=0)
+    avg_rating: Mapped[float | None] = mapped_column(Float)

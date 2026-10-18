@@ -18,7 +18,7 @@ from api import clock
 from api.db import get_db
 from api.deps import CurrentUser, age_on, audit, player_in_scope, require, staff_of
 from api.routers.player import player_card, roadmap_view
-from api.services import agent_runner, calibration, gym_view, views
+from api.services import agent_runner, calibration, gym_view, squad_week, views
 from domain.enums import AgentName, Position, ProposalStatus, Role, SessionType
 from domain.models import (
     AgentRun,
@@ -34,16 +34,21 @@ from domain.models import (
     StaffRating,
     WeeklyPlan,
 )
+from performance import service as performance
 
 router = APIRouter(prefix="/api/coach", tags=["coach"])
 STAFF = (Role.COACH, Role.PHYSIO)
 
 
 def _squad_players(db: Session, user: CurrentUser) -> list[Player]:
+    """The staff member's squad, including players dual-registered with it."""
+    from domain.models import Registration
+
     staff = staff_of(user, db)
     q = select(Player).order_by(Player.display_name)
     if staff.squad_id:
-        q = q.where(Player.squad_id == staff.squad_id)
+        dual = select(Registration.player_id).where(Registration.squad_id == staff.squad_id)
+        q = q.where((Player.squad_id == staff.squad_id) | Player.id.in_(dual))
     return list(db.scalars(q))
 
 
@@ -120,6 +125,7 @@ def _proposal_json(db: Session, p: Proposal) -> dict:
         "proposed": [],
         "explanation_player": plan.explanation_player if plan else None,
         "solver_status": plan.solver_status if plan else None,
+        "teams": [t["team"] for t in performance.registrations(db, player, clock.today())],
     }
     if plan:
         items = sorted(plan.items, key=lambda i: i.day)
@@ -159,7 +165,11 @@ def decide(
     prop = db.get(Proposal, proposal_id)
     if prop is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Proposal not found")
-    player_in_scope(prop.player_id, user, db)
+    player = player_in_scope(prop.player_id, user, db)
+    staff = staff_of(user, db)
+    if staff.squad_id and staff.squad_id != player.squad_id:
+        # Dual registration: both coaches see it, the primary team's coach decides.
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "The player's primary team coach decides")
     try:
         agent_runner.decide_proposal(db, prop, staff_of(user, db), body.action, body.edits, body.note)
     except agent_runner.EditRejected as e:
@@ -303,6 +313,8 @@ def _commentary(run: AgentRun, player: Player | None) -> str:
     flags = ", ".join(f["detail"] for f in run.flags or []) or "no flags"
     if run.agent == AgentName.MONITOR:
         return f"Monitor checked {who}: {flags}. No change needed."
+    if run.trigger == "team_session":
+        return f"Team session for {who}: {(run.output or {}).get('status')} ({', '.join((run.output or {}).get('reasons') or []) or 'as planned'})."
     if run.trigger == "coach_instruction":
         return (
             f"Coach instruction for {who}: \"{(run.inputs or {}).get('instruction', '')}\". "
@@ -604,3 +616,188 @@ def instruction(
     audit(db, user, "approve", "proposal", prop.id, player=p.id, instruction=True)
     db.commit()
     return {**out, "applied": True}
+
+
+# --------------------------------------------------------------------------- training pitch (squad week)
+
+
+@router.get("/squad-week")
+def get_squad_week(offset: int = 0, user: CurrentUser = Depends(require(*STAFF)), db: Session = Depends(get_db)) -> dict:
+    today = clock.today()
+    start = views.week_start(today) + timedelta(weeks=max(0, min(1, offset)))
+    out = squad_week.squad_week(db, _squad_players(db, user), start, today)
+    audit(db, user, "read", "weekly_plan", None, view="squad_week")
+    db.commit()
+    return out
+
+
+class TeamSession(BaseModel):
+    day: date
+    kind: SessionType
+    rpe: int = Field(ge=0, le=10)
+    minutes: int | None = Field(default=None, ge=15, le=150)
+    player_ids: list[str] | None = None
+    apply: bool = False
+
+
+@router.post("/squad-week/session")
+def team_session(body: TeamSession, user: CurrentUser = Depends(require(Role.COACH)), db: Session = Depends(get_db)) -> dict:
+    """Place one team session on a day for the squad. Each player gets it as planned, or
+    the nearest safe version when it would break a hard rule for them."""
+    from planner.schema import RPE_RANGE
+
+    today = clock.today()
+    if body.day < today:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Plan today or a later day")
+    lo, hi = RPE_RANGE[body.kind]
+    if not lo <= body.rpe <= hi or body.kind == SessionType.MATCH:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"{body.kind.value} sessions use effort {lo}-{hi}")
+    staff = staff_of(user, db)
+    players = [p for p in _squad_players(db, user) if body.player_ids is None or p.id in body.player_ids]
+    # The primary team's coach plans the player's week
+    players = [p for p in players if not staff.squad_id or p.squad_id == staff.squad_id]
+    label = f"{views.SESSION_LABEL[body.kind].lower()} (effort {body.rpe})"
+    results = [squad_week.place(db, p, body.day, body.kind, body.rpe, body.minutes, today) for p in players]
+    if body.apply:
+        by_id = {p.id: p for p in players}
+        for r in results:
+            squad_week.apply(db, by_id[r["player"]["id"]], r, staff, label)
+        audit(db, user, "approve", "team_session", None, day=body.day.isoformat(), kind=body.kind.value, players=len(results))
+    db.commit()
+    counts: dict[str, int] = {}
+    for r in results:
+        counts[r["status"]] = counts.get(r["status"], 0) + 1
+    return {"day": body.day.isoformat(), "label": label, "counts": counts, "players": results, "applied": body.apply}
+
+
+# --------------------------------------------------------------------------- match ratings
+
+
+def _team_matches(db: Session, user: CurrentUser) -> list[Match]:
+    staff = staff_of(user, db)
+    today = clock.today()
+    q = select(Match).where(
+        Match.kickoff < datetime.combine(today + timedelta(days=1), datetime.min.time()),
+        Match.kickoff >= datetime.combine(today - timedelta(days=42), datetime.min.time()),
+    )
+    if staff.squad_id:
+        q = q.where(Match.squad_id == staff.squad_id)
+    return list(db.scalars(q.order_by(Match.kickoff.desc())))
+
+
+@router.get("/matches")
+def matches(user: CurrentUser = Depends(require(*STAFF)), db: Session = Depends(get_db)) -> list[dict]:
+    from domain.models import Appearance, Squad
+
+    out = []
+    for m in _team_matches(db, user):
+        apps = list(db.scalars(select(Appearance).where(Appearance.match_id == m.id, Appearance.minutes > 0)))
+        rated = [a.rating for a in apps if a.rating is not None and a.rating_source == "stats"]
+        best = max(apps, key=lambda a: a.rating or 0, default=None)
+        squad = db.get(Squad, m.squad_id)
+        out.append(
+            {
+                "id": m.id,
+                "date": m.kickoff.date().isoformat(),
+                "opponent": m.opponent,
+                "team": squad.name if squad else "",
+                "competition": m.competition,
+                "players": len(apps),
+                "rated": len(rated),
+                "avg_rating": round(sum(rated) / len(rated), 2) if rated else None,
+                "best": None if best is None or best.rating is None else {"name": db.get(Player, best.player_id).display_name, "rating": best.rating},
+            }
+        )
+    db.commit()
+    return out
+
+
+@router.get("/matches/{match_id}")
+def match_report(match_id: str, user: CurrentUser = Depends(require(*STAFF)), db: Session = Depends(get_db)) -> dict:
+    from domain.models import Squad
+    from performance.rating import STAT_KEYS, band
+
+    m = db.get(Match, match_id)
+    if m is None or m.id not in {x.id for x in _team_matches(db, user)}:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Match not found")
+    rows = []
+    for p in _squad_players(db, user):
+        if not performance.is_registered(db, p, m.squad_id):
+            continue
+        a = performance.appearance(db, p, m, create=False)
+        rows.append(
+            {
+                "player": {"id": p.id, "name": p.display_name, "position": p.position},
+                "minutes": a.minutes if a else 0,
+                "started": a.started if a else False,
+                "position": (a.position if a else None) or p.position,
+                "stats": (a.stats if a else {}) or {},
+                "rating": a.rating if a else None,
+                "rating_band": band(a.rating if a else None),
+                "rating_source": a.rating_source if a else None,
+                "breakdown": (a.breakdown if a else []) or [],
+                "self_rating": a.self_rating if a else None,
+            }
+        )
+    rows.sort(key=lambda r: (-(r["minutes"] or 0), r["player"]["name"]))
+    squad = db.get(Squad, m.squad_id)
+    audit(db, user, "read", "appearance", m.id)
+    db.commit()
+    return {
+        "match": {"id": m.id, "date": m.kickoff.date().isoformat(), "opponent": m.opponent, "team": squad.name if squad else "", "competition": m.competition},
+        "stat_keys": STAT_KEYS,
+        "players": rows,
+    }
+
+
+class PlayerStats(BaseModel):
+    player_id: str
+    minutes: int = Field(ge=0, le=130)
+    started: bool = False
+    position: Position | None = None
+    stats: dict[str, float | int | str | None] = Field(default_factory=dict)
+
+
+class MatchStats(BaseModel):
+    players: list[PlayerStats] = Field(max_length=40)
+
+
+@router.put("/matches/{match_id}/ratings")
+def save_ratings(match_id: str, body: MatchStats, user: CurrentUser = Depends(require(Role.COACH)), db: Session = Depends(get_db)) -> dict:
+    """Coach (or data-provider) match stats; ratings are computed with a breakdown."""
+    from performance.rating import STAT_KEYS
+
+    m = db.get(Match, match_id)
+    if m is None or m.id not in {x.id for x in _team_matches(db, user)}:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Match not found")
+    allowed = {p.id: p for p in _squad_players(db, user) if performance.is_registered(db, p, m.squad_id)}
+    for row in body.players:
+        p = allowed.get(row.player_id)
+        if p is None:
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "Not a player of this team")
+        unknown = set(row.stats) - set(STAT_KEYS)
+        if unknown:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, f"Unknown stats: {', '.join(sorted(unknown))}")
+        if row.stats.get("result") not in (None, "win", "draw", "loss"):
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "result is win, draw or loss")
+        if any(isinstance(v, (int, float)) and v < 0 for v in row.stats.values()):
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Stats can't be negative")
+        a = performance.appearance(db, p, m)
+        performance.apply_stats(a, row.minutes, row.started, row.position.value if row.position else None, row.stats)
+    audit(db, user, "update", "appearance", m.id, players=len(body.players))
+    db.commit()
+    return match_report(match_id, user, db)
+
+
+class Preview(BaseModel):
+    position: Position | None = None
+    minutes: int = Field(ge=0, le=130)
+    stats: dict[str, float | int | str | None] = Field(default_factory=dict)
+
+
+@router.post("/ratings/preview")
+def rating_preview(body: Preview, _: CurrentUser = Depends(require(*STAFF))) -> dict:
+    from performance.rating import band, rate
+
+    r = rate(body.position.value if body.position else None, body.minutes, body.stats)
+    return {**r.to_json(), "rating_band": band(r.value)}

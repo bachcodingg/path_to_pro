@@ -65,3 +65,13 @@ not left to the LLM. Each claim below names the mechanism and the evidence.
   notes mentioning pain or injury are refused and pointed to the physio.
 - **Limits:** benchmarks and doses are placeholders; sign-up has no email verification or
   rate limiting yet.
+
+## Dual registration and team sessions
+
+- **H8** (hard): under-18s play at most 90 match minutes over two consecutive days across
+  all their teams; `hard_violations` checks it and tests cover it.
+- Only the **primary team's coach** approves changes; the second team's coach can see them.
+- **Team sessions** from the training pitch never bypass the hard rules: each player gets
+  the nearest safe version, and the reason is shown to the coach and the player.
+- Match ratings are performance feedback, not selection decisions; they are labelled as a
+  formula with placeholder weights.

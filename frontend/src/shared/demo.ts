@@ -256,6 +256,35 @@ async function route(path: string, method: string, body?: Json): Promise<Json> {
       return { today, levelled_up: levelled };
     }
     if (p === "/api/me/position") fail(403, "Changing position needs the live server");
+    const career = r["/api/me/career"];
+    const diary = p.match(/^\/api\/me\/matches\/([^/]+)\/diary$/);
+    if (diary && career) {
+      if (!(body.self_rating >= 1 && body.self_rating <= 10)) fail(422, "Rate yourself from 1 to 10");
+      const recent = career.recent.find((a: Json) => a.match_id === diary[1]);
+      if (recent) recent.self_rating = body.self_rating;
+      career.diary_due = career.diary_due.filter((d: Json) => d.match_id !== diary[1]);
+      if (today) today.diary_due = career.diary_due;
+      return career;
+    }
+    const season = p.match(/^\/api\/me\/career\/seasons\/([^/]+)$/);
+    if (season && method === "DELETE" && career) {
+      career.past = career.past.filter((x: Json) => x.id !== season[1]);
+      return career;
+    }
+    if (p === "/api/me/career/seasons" && career) {
+      const comp = career.competitions.find((c: Json) => c.id === body.competition) ?? fail(422, "Unknown competition");
+      career.past.push({
+        ...body,
+        id: `demo-${Date.now()}`,
+        competition_label: comp.label,
+        level: comp.level,
+        avg_rating: null,
+        rating_band: null,
+        exposure: Math.round(((body.minutes * comp.level) / 100 / 90) * 10) / 10,
+      });
+      career.past.sort((a: Json, b: Json) => a.season.localeCompare(b.season));
+      return career;
+    }
     if (p === "/api/me/checkin") {
       const prev = today.readiness?.band ?? null;
       const { score, band, components } = checkinReadiness(
@@ -309,8 +338,13 @@ async function route(path: string, method: string, body?: Json): Promise<Json> {
   // ---- staff
   if (p.startsWith("/api/coach/") || p.startsWith("/api/physio/")) {
     if (role !== "coach" && role !== "physio" && role !== "admin") fail(403, "Not allowed for your role");
-    const st = s.staff;
+    // A second team's coach has his own recorded views; everyone else shares the main squad's
+    const st: Record<string, Json> = { ...s.staff, ...user.responses };
     if (method === "GET") {
+      if (p === "/api/coach/squad-week") {
+        const off = Math.max(0, Math.min(1, Number(q.get("offset") ?? 0)));
+        return st[`${p}?offset=${off}`] ?? fail(404, "Not available in the demo");
+      }
       if (p === "/api/coach/heatmap") {
         const hm = st[p];
         const group = q.get("age_group"),
@@ -328,6 +362,8 @@ async function route(path: string, method: string, body?: Json): Promise<Json> {
       }
       return st[p] ?? fail(404, "Not available in the demo");
     }
+    if (p === "/api/coach/squad-week/session" || /^\/api\/coach\/matches\/[^/]+\/ratings$/.test(p) || p === "/api/coach/ratings/preview")
+      fail(403, "This runs the planner or the rating engine: it needs the live server, not this offline demo");
     const decision = p.match(/^\/api\/coach\/proposals\/([^/]+)\/decision$/);
     if (decision) {
       if (role !== "coach") fail(403, "Only coaches decide on proposals");

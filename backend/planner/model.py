@@ -8,6 +8,7 @@ Hard rules (always enforced, never from the LLM):
   H5 when ACWR > 1.5, weekly load <= cap
   H6 no session on exam evenings
   H7 each session type stays inside its RPE range
+  H8 under 18: at most 90 match minutes over two consecutive days (dual registration)
 
 Soft constraints are weighted penalties. LLM constraints with weight >= 8 are first
 imposed as hard; if that is infeasible they are dropped lowest weight first, and if
@@ -45,6 +46,7 @@ MIN_DAYS_FOR_REST_RULE = 4
 ACWR_CAP_THRESHOLD = 1.5
 ACWR_CAP_FACTOR = 1.0  # cap = chronic weekly load when ACWR is high
 MD_MINUS_1_MAX_RPE = 4
+BACK_TO_BACK_MATCH_MINUTES = 90  # H8: under-18 limit over two consecutive match days
 PHV_SPEED_MAX_RPE = 6
 ENFORCE_WEIGHT = 8  # LLM constraints at or above this weight start as hard
 TYPES = list(SessionType)
@@ -137,6 +139,10 @@ class _Model:
         for d in inp.exam_days:  # H6
             if d not in matches:
                 m.Add(self.is_rest[d] == 1)
+        if inp.under_18:  # H8
+            for d in matches:
+                if d + 1 in matches:
+                    m.Add(self.match_min[d] + self.match_min[d + 1] <= BACK_TO_BACK_MATCH_MINUTES)
         if inp.rpe_ceiling is not None:  # a re-plan never adds load to a day
             for d, ceiling in enumerate(inp.rpe_ceiling[:n]):
                 if d not in matches:
@@ -168,7 +174,7 @@ class _Model:
         for d in matches:
             cut = m.NewIntVar(0, 6, f"mmcut_{d}")
             m.Add(15 * cut == 90 - self.match_min[d])
-            penalties.append(W_MATCH_MINUTES * cut)
+            penalties.append(W_MATCH_MINUTES * inp.match_priority.get(d, 1) * cut)
 
         penalties.append(W_BACK_TO_BACK * self._hard_pairs(7))  # threshold RPE 7
 
@@ -377,6 +383,12 @@ def hard_violations(result: PlanResult, inp: PlannerInput) -> list[str]:
             out.append(f"H4 day {d}")
         if d in inp.exam_days and d not in matches and pd.kind != SessionType.REST:
             out.append(f"H6 day {d}")
+    if inp.under_18:
+        for d in matches:
+            if d + 1 in matches and d in days and d + 1 in days:
+                total = days[d].minutes + days[d + 1].minutes
+                if total > BACK_TO_BACK_MATCH_MINUTES:
+                    out.append(f"H8 days {d}-{d + 1}: {total} match minutes")
     no_rest = not any(pd.kind == SessionType.REST for d, pd in days.items() if d not in matches)
     if inp.days >= MIN_DAYS_FOR_REST_RULE and no_rest:
         out.append("H2 no rest day")

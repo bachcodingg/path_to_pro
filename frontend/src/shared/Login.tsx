@@ -7,8 +7,10 @@ import { Button, Card } from "./ui";
 const DEMO = [
   { label: "Player (tired, growth zone)", email: "p15@demo.pathtopro" },
   { label: "Player", email: "p03@demo.pathtopro" },
+  { label: "Player (U19 + men's team)", email: "dual@demo.pathtopro" },
   { label: "Self-guided player", email: "amateur@demo.pathtopro" },
   { label: "Coach", email: "coach@demo.pathtopro" },
+  { label: "Men's team coach", email: "mencoach@demo.pathtopro" },
   { label: "Physio", email: "physio@demo.pathtopro" },
   { label: "Guardian", email: "guardian02@demo.pathtopro" },
 ];

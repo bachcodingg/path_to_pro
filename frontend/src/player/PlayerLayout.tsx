@@ -1,4 +1,4 @@
-import { CalendarDays, Dumbbell, Home, LogOut, Map, Ruler, Shield, TrendingUp } from "lucide-react";
+import { CalendarDays, Dumbbell, Home, LogOut, Ruler, Shield, Star, TrendingUp } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../shared/auth";
 import { t } from "../shared/i18n";
@@ -11,14 +11,11 @@ function navFor(selfGuided: boolean) {
     { to: "/player/week", label: t("nav.week"), icon: CalendarDays },
     { to: "/player/gym", label: t("nav.gym"), icon: Dumbbell },
   ];
+  const career = { to: "/player/career", label: t("nav.career"), icon: Star, end: false };
+  // Six tabs fit a phone; Road to Pro opens from My card.
   return selfGuided
-    ? [...common, { to: "/player/levels", label: t("nav.levels"), icon: TrendingUp }, { to: "/player/growth", label: t("nav.growth"), icon: Ruler }]
-    : [
-        ...common,
-        { to: "/player/growth", label: t("nav.growth"), icon: Ruler },
-        { to: "/player/card", label: t("nav.card"), icon: Shield },
-        { to: "/player/road", label: t("nav.road"), icon: Map },
-      ];
+    ? [...common, { to: "/player/levels", label: t("nav.levels"), icon: TrendingUp, end: false }, career, { to: "/player/growth", label: t("nav.growth"), icon: Ruler, end: false }]
+    : [...common, career, { to: "/player/growth", label: t("nav.growth"), icon: Ruler, end: false }, { to: "/player/card", label: t("nav.card"), icon: Shield, end: false }];
 }
 
 // Mobile-first PWA shell; dark by default (players use it in the evening).

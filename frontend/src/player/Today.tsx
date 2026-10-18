@@ -3,13 +3,16 @@ import { CheckCircle2, ChevronDown, ChevronRight, Circle, Dumbbell, Flame, Heart
 import { useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { api } from "../shared/api";
+import { useAuth } from "../shared/auth";
 import { t } from "../shared/i18n";
 import type { SessionKind, Today, WhyCard } from "../shared/types";
 import { useApi } from "../shared/useApi";
 import { BAND_BG, BAND_TEXT, BandIcon, Button, Card, Chip, ErrorNote, SectionTitle, Spinner, cn, intensityClass } from "../shared/ui";
+import { MatchDiary } from "./MatchDiary";
 
 export function TodayScreen() {
   const { data, setData, error, loading, reload } = useApi<Today>("/api/me/today");
+  const { user } = useAuth();
   const escalated = (useLocation().state as { escalated?: boolean } | null)?.escalated;
 
   if (loading && !data) return <Spinner />;
@@ -42,6 +45,10 @@ export function TodayScreen() {
           <HeartHandshake className="text-pitch-300 h-6 w-6 shrink-0" aria-hidden />
           <p>Thanks for your honest check-in. Someone from the staff will talk to you today. You don't need to do anything else.</p>
         </Card>
+      )}
+
+      {data.consent?.wellness !== false && (
+        <MatchDiary due={data.diary_due ?? []} position={user?.position} onSaved={() => void reload()} />
       )}
 
       {data.safety?.map((msg) => (
