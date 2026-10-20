@@ -2,7 +2,7 @@
 
 Agent system that watches each young footballer's load, growth, recovery and
 development, then rebuilds next week's plan before problems happen. Academy coaches
-approve risky changes. Players outside an academy get a self-guided pathway with five
+approve risky changes. Players outside an academy get a self guided pathway with five
 levels, benchmark tests and the same safety engine
 
 **Design principle:** code computes, the LLM plans and explains, a fixed policy decides who approves.
