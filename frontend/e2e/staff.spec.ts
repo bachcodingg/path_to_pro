@@ -165,3 +165,19 @@ test("club finances: fees, salaries, bonuses and the ledger", async ({ page }) =
   await login(page, "physio@demo.pathtopro");
   await expect(page.getByRole("link", { name: "Club finances" })).toHaveCount(0);
 });
+
+test("team analysis: an opponent's corners and penalties from real match data", async ({ page }) => {
+  await login(page, "coach@demo.pathtopro");
+  await page.getByRole("link", { name: "Team analysis" }).click();
+  await expect(page.getByRole("heading", { name: "Team analysis" })).toBeVisible();
+  await expect(page.getByText("Main corner taker:")).toBeVisible();
+  await expect(page.getByRole("img", { name: /corner deliveries on the attacking half/ })).toBeVisible();
+  await page.getByRole("button", { name: "From left" }).click();
+  await expect(page.getByRole("button", { name: "From left" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("img", { name: /kicks on the goal mouth/ }).first()).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/coach-team-analysis.png`, fullPage: true });
+
+  await page.getByLabel("Team").selectOption("barcelona");
+  await expect(page).toHaveURL(/\/coach\/analysis\/barcelona$/);
+  await expect(page.getByRole("cell", { name: "Lionel Messi" }).first()).toBeVisible();
+});
