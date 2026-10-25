@@ -64,6 +64,8 @@ cd ../frontend && npm ci && npm run dev                         # http://localho
 Optional: set `ANTHROPIC_API_KEY` to let Claude propose constraints, explanations, drill
 picks and parse coach instructions (answers are cached in `backend/llm_cache/`). Without a
 key, or with `PATHTOPRO_LLM=off`, the agents use rule-based fallbacks and the demo works offline.
+No cached answers are committed, so the offline demo and every result below are the
+rule-based agents: the LLM's contribution has not been evaluated yet.
 
 ## What's in it
 
@@ -71,7 +73,7 @@ key, or with `PATHTOPRO_LLM=off`, the agents use rule-based fallbacks and the de
 | --- | --- |
 | Agents and autonomy | `backend/agents/`: Monitor, Planner, Development Coach, Coordinator policy table, coach-instruction parser |
 | Sports science engine | `backend/analytics/`: sRPE, EWMA ACWR, monotony, strain, Mirwald, readiness, bio-banded norms |
-| Weekly planner | `backend/planner/`: OR-Tools CP-SAT, hard rules H1-H8, projected ACWR, club training nights, relaxation, safe template |
+| Weekly planner | `backend/planner/`: OR-Tools CP-SAT, hard rules H1-H9, projected ACWR, club training nights, relaxation, safe template |
 | Gym programmes | `backend/gym/` + `config/gym.yaml`: shared injury-prevention work for every player plus a block per position (GK, CB, FB, CM, W, ST), adjusted for growth stage, readiness, match proximity and equipment |
 | Self-guided pathway | `backend/pathway/` + `config/pathway.yaml`: 5 levels, 6 benchmark tests (age- and sex-adjusted), level-ups, solo session content, sign-up with parent invite codes under 16 |
 | Teams, careers, ratings | `backend/performance/` + `config/competitions.yaml`: dual registration with rule H8, league ladder (Finland first), career CV, match diary, 3-10 match ratings with a breakdown, coach training pitch |
@@ -80,27 +82,44 @@ key, or with `PATHTOPRO_LLM=off`, the agents use rule-based fallbacks and the de
 | User interface | `frontend/`: player PWA (check-in, Today, week pitch, gym, growth, card, season map, levels), coach (heatmap, inbox with A/E/R, tactics board, scouting report with instruction box, match commentary, calibration), physio queue, guardian view, sign-up |
 | Architecture | FastAPI, SQLAlchemy 2, Alembic, PostgreSQL, APScheduler, JWT + RBAC, `docker-compose.yml` |
 | Simulator | `backend/simulator/`: 25 players x 40 weeks, seeded, 3 injury models, pluggable policy |
-| Evaluation | `backend/eval/`: `python -m eval`, 50-case safety suite, equal-load baseline, report in [docs/evaluation/report.md](docs/evaluation/report.md) |
+| Evaluation | `backend/eval/`: `python -m eval`, 54-case safety suite, equal-load and heuristic-coach baselines, 10-seed CIs (`python -m eval.seeds`), report in [docs/evaluation/report.md](docs/evaluation/report.md) |
 | Safety and ethics | [docs/safety-case.md](docs/safety-case.md): encryption, audit log, consent, export/delete, escalations |
 
 More: [teams, careers and ratings](docs/teams-careers-ratings.md) · [gym and pathway](docs/gym-and-pathway.md) · [architecture](docs/architecture.md) · [demo script](docs/demo-script.md) · [week-1 decisions](docs/week1-scope.md)
 
-## Results (25 players x 40 weeks, 3 injury models, vs a fixed weekly template)
+## Results (25 players x 40 weeks, 3 injury models, 10 seeds)
+
+Three policies face the same simulated seasons: the plan's **baseline** (a fixed template
+with random RPE, blind to exams and fixtures), a **heuristic** coach (the same template
+plus the safety rules as plain if-statements) and the **agents** (rule-based, no LLM).
+Mean [95% CI] over 10 seeds unless noted; details in
+[seeds.md](docs/evaluation/seeds.md) and [report.md](docs/evaluation/report.md) (seed 2026).
 
 | Metric | Target | Result |
 | --- | --- | --- |
-| Hard constraint violations | 0 | **0** (baseline: ~375 per season) |
-| Safety scenario suite | 50/50 | **50/50** |
-| Player-weeks with ACWR > 1.5 | ≥ 50% fewer | **58-66% fewer** |
-| Same, against the template scaled to the agents' total load | fewer at equal load | **60-66% fewer** (spikes come from how load is spread, not how much) |
-| Development sessions delivered | ≥ 90% | **91-92%** |
-| Solver time | < 2 s / player-week | **≤ 0.53 s** |
+| Hard rule violations in executed weeks | 0 | **0** on every seed (baseline ~380, heuristic 0) |
+| Safety scenario suite | all pass | **54/54** |
+| Player-weeks with ACWR > 1.5 vs baseline | ≥ 50% fewer | **68-70% fewer** (CIs 51-87%) |
+| Same, vs the heuristic coach | fewer | **67-71% fewer** (CIs 57-85%): what the planner adds beyond the rules |
+| Injuries vs the heuristic coach (secondary, synthetic model) | fewer | **no detectable difference** (every CI contains 0) |
+| Weeks with monotony > 2 | ≥ 40% fewer | **worse**: the baseline never exceeds 2; the agents add ~1 week per season |
+| Development sessions delivered | ≥ 90% | **91-92%** (seed 2026) |
+| Solver time | < 2 s / player-week | **≤ 0.47 s** (seed 2026) |
 | Readiness colour changes day to day | fewer, no delayed warnings | 58% -> 44% of days (safety-first buffer) |
-| Weights calibrated against staff ratings | better agreement, red recall kept | kappa 0.32 -> 0.34 (synthetic ratings); applied only if the held-out gain beats the noise |
 | Readiness weight sensitivity | < 10% bands change | 15.0% -> 13.0%: **still fails**; 91% of flipped days were within 5 points of a colour boundary |
 
-Not yet measured: LLM first-try validity (needs an API key), expert plan ratings and SUS
-(need people). Weeks with monotony > 2 can't show a reduction: the baseline never exceeds 2.
+**What these results don't show.** Fewer ACWR spikes is partly the planner meeting its own
+objective (it penalises projected ACWR), and the 54 scenarios were written by the same team
+as the code. The injury model is synthetic, so injuries are a secondary result. Weight
+calibration has only been run on the simulator's synthetic staff ratings.
+
+**Not measured yet:**
+- **LLM contribution.** Every result above is the rule-based agents; there is no
+  with-vs-without-LLM comparison and no first-try validity rate (needs an API key).
+- **People.** No coach or player interviews, no SUS score, no expert rating of plans.
+- **Notification time.** A red check-in is queued for staff in milliseconds, but there is
+  no push, email or SMS channel, so the time until a person sees it is unknown.
+- **Norms.** Benchmark norms are placeholders, so bio-banded percentiles are illustrative.
 
 **Readiness calibration:** staff rate players in the heatmap ("How ready does he look?");
 the Calibration page suggests weights that agree best with staff without missing more red
@@ -110,7 +129,9 @@ above the fold-to-fold noise. Demo ratings are synthetic.
 ## Tests
 
 ```bash
-cd backend && pytest                      # 181 unit, scenario and API tests
+cd backend && pytest                      # 193 unit, scenario and API tests
+cd backend && python -m eval              # evaluation report (seed 2026) -> eval_results/
+cd backend && python -m eval.seeds        # 10-seed comparison with confidence intervals
 cd frontend && npm test                   # Vitest
 cd frontend && npx playwright test        # 20 end-to-end tests (API on :8000, web on :5173)
 ```
