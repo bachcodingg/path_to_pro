@@ -168,6 +168,7 @@ function syncTodayPathway(user: { responses: Record<string, Json> }) {
 const KIND_TITLE: Record<string, string> = {
   session_swap: "Your sessions were changed",
   load_cut: "Your week was made lighter",
+  load_increase: "Your week got a bit harder",
   intensity_change: "Session intensity adjusted",
   match_minutes: "Your match minutes are limited",
   new_goal: "New development goal",

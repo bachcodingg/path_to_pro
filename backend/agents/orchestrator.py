@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from agents import planner_agent
-from agents.coordinator import ActionKind, Proposal, Ruling, decide
+from agents.coordinator import MAX_AUTO_LOAD_INCREASE_PCT, ActionKind, Proposal, Ruling, decide
 from agents.llm import LLMBackend
 from agents.monitor import Assessment, PlayerHistory, assess
 from agents.rules import DevGoal
@@ -76,6 +76,9 @@ def to_proposal(player_id: str, d: PlanDiff, reason: str) -> Proposal:
         cut = -d.load_change_pct
         if cut > 20:
             return Proposal(player_id, ActionKind.LOAD_CUT, load_cut_pct=cut, reason=reason)
+    elif d.load_change_pct > MAX_AUTO_LOAD_INCREASE_PCT:
+        # +1 RPE on every day is "within +/-1 RPE" but can add a lot of load: the coach decides.
+        return Proposal(player_id, ActionKind.LOAD_INCREASE, reason=reason)
     return Proposal(player_id, ActionKind.INTENSITY_CHANGE, rpe_delta=d.max_rpe_delta, reason=reason)
 
 

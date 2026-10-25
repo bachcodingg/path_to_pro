@@ -11,6 +11,7 @@ import { Button, Card, Chip, ErrorNote, Spinner, cn, fmtDay, intensityClass } fr
 const KIND_TITLE: Record<string, string> = {
   session_swap: "Session swap",
   load_cut: "Load cut",
+  load_increase: "Load increase",
   intensity_change: "Intensity change",
   match_minutes: "Match minutes limit",
   new_goal: "New development goal",

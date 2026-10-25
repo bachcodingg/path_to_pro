@@ -36,7 +36,7 @@ runs everything (PostgreSQL, API, web) and seeds the synthetic demo season.
    recovery or load flag; it re-plans the rest of the week with a per-day RPE ceiling,
    so a re-plan can only make days easier.
 3. **Coordinator** compares the proposed days with the current plan, classifies the
-   change (intensity, load cut, session swap, match minutes) and applies the policy
+   change (intensity, load cut, load increase > 10%, session swap, match minutes) and applies the policy
    table: auto-apply, auto-apply + notify, coach approval, or escalate.
 4. **Development Coach** runs after a test day: weakest bio-banded KPIs become 4-week
    goals (coach approves); drill suggestions are auto-applied.
