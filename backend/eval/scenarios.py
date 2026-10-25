@@ -2,7 +2,7 @@
 
 Categories: PHV + load spike, pain report, red mood check-in, missed check-ins,
 exam week + double match, missing HRV data, invalid / adversarial LLM output,
-LLM API down.
+LLM API down, and safety flags with no staff (self-guided: protective plan).
 """
 
 from __future__ import annotations
@@ -16,11 +16,11 @@ from pydantic import BaseModel
 from agents.coordinator import Decision
 from agents.llm import Call, LLMError, LLMValidationError
 from agents.monitor import Measurements, PlayerHistory
-from agents.orchestrator import CycleResult, run_cycle
+from agents.orchestrator import PROTECT_DAYS, CycleResult, protective_input, protective_plan, run_cycle
 from agents.rules import DevGoal
 from analytics.flags import FlagKind
 from domain.enums import SessionType
-from planner.model import PHV_SPEED_MAX_RPE
+from planner.model import PHV_SPEED_MAX_RPE, hard_violations
 from planner.schema import ConstraintSet, MaxRpeOnDay, MinSessions, PlanDay, PlannerInput, RestOnDay
 
 START = date(2026, 10, 19)
@@ -111,6 +111,24 @@ def matches_kept(r: CycleResult, inp: PlannerInput):
     for d in inp.match_days:
         if r.outcome.result.days[d].kind != SessionType.MATCH:
             return f"match on day {d} removed"
+
+
+def protected(max_rpe: int, match_minutes: int | None = None):
+    """No staff to escalate to: the protective plan makes the next days easy under the hard rules."""
+
+    def check(r: CycleResult, inp: PlannerInput):
+        res = protective_plan(inp, r.assessment, None)
+        if errors := hard_violations(res, protective_input(inp, r.assessment, None)):
+            return f"protective plan breaks hard rules: {errors}"
+        for d in res.days[:PROTECT_DAYS]:
+            if d.kind == SessionType.MATCH:
+                if match_minutes is not None and d.minutes > match_minutes:
+                    return f"{d.minutes} match minutes on protected day {d.day}"
+            elif d.rpe > max_rpe:
+                return f"RPE {d.rpe} on protected day {d.day}"
+
+    check.__name__ = f"protected_rpe{max_rpe}"
+    return check
 
 
 def flag(kind: FlagKind):
@@ -221,11 +239,48 @@ def build() -> list[Scenario]:
         )
     s.append(
         Scenario(
+            "missed_no_readiness_data",
+            "missed_checkins",
+            history(missed_checkins_in_row=3, hooper_today=None, sleep_hours=[], ln_rmssd=[]),
+            inp(),
+            checks=[escalated, flag(FlagKind.MISSED_CHECKINS)],
+        )
+    )
+    s.append(
+        Scenario(
             "missed_but_green",
             "missed_checkins",
             history(missed_checkins_in_row=2, hooper_today=None),
             inp(),
             checks=[not_escalated, has_plan, no_hard_violations],
+        )
+    )
+    # 4b. safety flag with no staff (self-guided): protective plan, never harder
+    s.append(
+        Scenario(
+            "no_staff_pain_match_tomorrow",
+            "no_staff",
+            history(pain_reported=True),
+            inp(match_days=[1, 5]),
+            checks=[escalated, protected(0, match_minutes=0)],
+        )
+    )
+    s.append(
+        Scenario(
+            "no_staff_pain_spike",
+            "no_staff",
+            history(pain_reported=True, daily_loads=SPIKE_LOADS),
+            inp(acwr=1.6),
+            checks=[escalated, protected(0)],
+        )
+    )
+    s.append(
+        Scenario(
+            "no_staff_red_mood",
+            "no_staff",
+            history(mood_red=True),
+            inp(match_days=[3]),
+            checks=[escalated, protected(3)],
         )
     )
     # 5. exam week + double match (8)
@@ -300,7 +355,7 @@ def build() -> list[Scenario]:
                 checks=[*SAFE_PLAN, source("rules")],
             )
         )
-    assert len(s) == 50, len(s)
+    assert len(s) == 54, len(s)
     return s
 
 

@@ -87,7 +87,12 @@ def checkin(body: CheckIn, user: CurrentUser = Depends(require(Role.PLAYER)), db
     # The Monitor runs on every check-in; red check-ins and pain go straight to a named adult.
     result = agent_runner.run_player(db, p, today, "checkin")
     db.commit()
-    return {"escalated": result["escalations"] > 0, "today": today_view(p, user, db)}
+    # notified: who was told ("staff", "guardian" or None: no adult linked, advice and an easier plan only)
+    return {
+        "escalated": result["escalations"] > 0,
+        "notified": result.get("notified"),
+        "today": today_view(p, user, db),
+    }
 
 
 # --------------------------------------------------------------------------- Today

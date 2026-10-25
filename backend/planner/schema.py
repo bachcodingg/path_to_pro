@@ -64,6 +64,8 @@ class PlannerInput(BaseModel):
     # days (H8). Priority 2 = primary team's match: its minutes are cut last.
     under_18: bool = False
     match_priority: dict[int, int] = {}
+    # H9: most match minutes per match day (protective plan after a pain report: 0 = sits out).
+    match_minutes_cap: dict[int, int] = {}
 
     def target_load(self, llm_factor: float = 1.0) -> int:
         planned = self.club_weekly_load * self.days / 7

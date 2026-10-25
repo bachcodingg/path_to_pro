@@ -12,7 +12,10 @@ from analytics.readiness import Band
 SHORT_SLEEP_HOURS = 6.0
 SHORT_SLEEP_NIGHTS = 3
 LOW_HRV_Z = -1.0
-MISSED_CHECKINS_ESCALATE = 2
+MISSED_CHECKINS_ESCALATE = 2  # with red readiness
+# With no readiness at all (no check-in, no sleep, no wearable) silence itself is the warning:
+# a player who stops answering would otherwise never be flagged.
+MISSED_CHECKINS_UNKNOWN_ESCALATE = 3
 
 
 class FlagKind(str, Enum):
@@ -97,5 +100,9 @@ def evaluate(s: PlayerSnapshot) -> list[Flag]:
     if s.missed_checkins_in_row >= MISSED_CHECKINS_ESCALATE and s.readiness_band == Band.RED:
         flags.append(
             Flag(FlagKind.MISSED_CHECKINS, f"{s.missed_checkins_in_row} missed check-ins with red readiness")
+        )
+    elif s.missed_checkins_in_row >= MISSED_CHECKINS_UNKNOWN_ESCALATE and s.readiness_band is None:
+        flags.append(
+            Flag(FlagKind.MISSED_CHECKINS, f"{s.missed_checkins_in_row} missed check-ins and no readiness data")
         )
     return flags

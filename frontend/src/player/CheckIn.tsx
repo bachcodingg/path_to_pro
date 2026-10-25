@@ -37,7 +37,7 @@ export function CheckIn() {
     setBusy(true);
     setError(null);
     try {
-      const res = await api<{ escalated: boolean; today: Today }>("/api/me/checkin", {
+      const res = await api<{ escalated: boolean; notified?: "staff" | "guardian" | null; today: Today }>("/api/me/checkin", {
         method: "POST",
         json: {
           ...answers,
@@ -47,7 +47,7 @@ export function CheckIn() {
           duration_s: Math.round((performance.now() - started.current) / 100) / 10,
         },
       });
-      nav("/player", { state: { escalated: res.escalated } });
+      nav("/player", { state: { escalated: res.escalated, notified: res.notified ?? null, flagged: mood === "red" || pain } });
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not send. Check your connection.");
       setBusy(false);

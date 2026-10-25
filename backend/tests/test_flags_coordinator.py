@@ -40,6 +40,13 @@ def test_missed_checkins_need_red_readiness():
     assert FlagKind.MISSED_CHECKINS in kinds(PlayerSnapshot(missed_checkins_in_row=2, readiness_band=Band.RED))
 
 
+def test_silence_with_no_readiness_data_escalates():
+    # No check-in, no sleep, no wearable: readiness is unknown, so silence itself is the flag.
+    assert FlagKind.MISSED_CHECKINS not in kinds(PlayerSnapshot(missed_checkins_in_row=2, readiness_band=None))
+    assert FlagKind.MISSED_CHECKINS in kinds(PlayerSnapshot(missed_checkins_in_row=3, readiness_band=None))
+    assert FlagKind.MISSED_CHECKINS not in kinds(PlayerSnapshot(missed_checkins_in_row=5, readiness_band=Band.GREEN))
+
+
 @pytest.mark.parametrize(
     "proposal,expected",
     [

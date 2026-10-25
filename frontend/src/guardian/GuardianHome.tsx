@@ -1,5 +1,5 @@
 // Guardian: weekly summary card, consent switches per data type, data export and delete.
-import { Download, LogOut, Trash2 } from "lucide-react";
+import { Download, LogOut, ShieldAlert, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { api, download } from "../shared/api";
 import { useAuth } from "../shared/auth";
@@ -19,6 +19,7 @@ interface Summary {
   avg_sleep_h: number | null;
   goals: { label: string; progress: number }[];
   streak: number;
+  alerts?: { id: string; kind: string; text: string; created_at: string }[];
 }
 interface Consent {
   age: number;
@@ -60,6 +61,10 @@ function ChildPanel({ child }: { child: Child }) {
   async function toggle(dataType: string, granted: boolean) {
     consent.setData(await api<Consent>(`/api/guardian/children/${child.id}/consent`, { method: "PUT", json: { data_type: dataType, granted } }));
   }
+  async function seen(id: string) {
+    await api(`/api/guardian/children/${child.id}/alerts/${id}/seen`, { method: "POST" });
+    void summary.reload();
+  }
   async function del() {
     try {
       await api(`/api/guardian/children/${child.id}/data`, { method: "DELETE" });
@@ -77,6 +82,20 @@ function ChildPanel({ child }: { child: Child }) {
       <h1 className="text-2xl font-extrabold">
         {child.name} <span className="text-ink-2 text-base font-medium">{child.age} y</span>
       </h1>
+      {s?.alerts?.map((a) => (
+        <Card key={a.id} className="border-ready-red/50 flex gap-3" role="alert">
+          <ShieldAlert className="text-ready-red h-6 w-6 shrink-0" aria-hidden />
+          <div className="flex-1">
+            <p>
+              <span className="font-bold">{child.name.split(" ")[0]}</span> {a.text}
+            </p>
+            <p className="text-ink-2 mt-1 text-xs">{new Date(a.created_at).toLocaleString("en-GB", { weekday: "short", hour: "2-digit", minute: "2-digit" })}</p>
+          </div>
+          <Button variant="secondary" size="sm" onClick={() => seen(a.id)}>
+            Seen
+          </Button>
+        </Card>
+      ))}
       {s && (
         <Card>
           <SectionTitle>This week</SectionTitle>

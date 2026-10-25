@@ -13,7 +13,7 @@ import { MatchDiary } from "./MatchDiary";
 export function TodayScreen() {
   const { data, setData, error, loading, reload } = useApi<Today>("/api/me/today");
   const { user } = useAuth();
-  const escalated = (useLocation().state as { escalated?: boolean } | null)?.escalated;
+  const checkin = useLocation().state as { escalated?: boolean; notified?: "staff" | "guardian" | null; flagged?: boolean } | null;
 
   if (loading && !data) return <Spinner />;
   if (error || !data) return <ErrorNote message={error ?? "No data"} onRetry={reload} />;
@@ -40,10 +40,16 @@ export function TodayScreen() {
         )}
       </div>
 
-      {escalated && (
+      {checkin?.flagged && (
         <Card className="border-pitch-400 flex gap-3">
           <HeartHandshake className="text-pitch-300 h-6 w-6 shrink-0" aria-hidden />
-          <p>Thanks for your honest check-in. Someone from the staff will talk to you today. You don't need to do anything else.</p>
+          <p>
+            {checkin.escalated && checkin.notified === "guardian"
+              ? "Thanks for your honest check-in. We've let your parent know, and your next two days are now rest or easy recovery. You don't need to do anything else."
+              : checkin.escalated || checkin.notified === "staff"
+                ? "Thanks for your honest check-in. Someone from the staff will talk to you today. You don't need to do anything else."
+                : "Thanks for your honest check-in. Your next two days are now rest or easy recovery. Please tell an adult you trust how you feel."}
+          </p>
         </Card>
       )}
 

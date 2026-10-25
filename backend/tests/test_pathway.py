@@ -177,3 +177,50 @@ def test_academy_player_gym_by_position(client):
     assert gym["equipment"] == "gym" and gym["position"]
     assert client.get("/api/me/pathway", headers=h).status_code == 403
     assert client.put("/api/me/position", json={"position": "striker"}, headers=h).status_code == 403
+
+
+RED_CHECKIN = {"sleep_quality": 7, "fatigue": 7, "stress": 7, "soreness": 7, "mood": "red", "pain": True, "sleep_hours": 4}
+
+
+def _next_days(client, h, n=2):
+    today = clock.today()
+    days = {d["date"]: d for d in client.get("/api/me/week", headers=h).json()["days"]}
+    return [days.get((today + timedelta(days=k)).isoformat()) for k in range(1, n + 1)]
+
+
+def test_self_guided_pain_with_no_adult_makes_the_next_days_easy(client):
+    r = _signup(client, "solo@example.com", age=19)
+    h = {"Authorization": f"Bearer {r.json()['token']}"}
+    res = client.post("/api/me/checkin", json=RED_CHECKIN, headers=h)
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["escalated"] is False and body["notified"] is None  # nobody to tell: advice + easier plan
+    assert body["today"]["safety"]  # stop, tell an adult, see a doctor or physio
+    for d in _next_days(client, h):
+        if d is not None:
+            assert d["kind"] == "rest" or (d["kind"] == "match" and d.get("minutes", 0) == 0), d
+    # a second check-in the same day changes nothing more
+    assert client.post("/api/me/checkin", json=RED_CHECKIN, headers=h).status_code == 200
+
+
+def test_self_guided_minor_red_check_in_alerts_the_parent(client):
+    r = _signup(client, "kid2@example.com", age=14, guardian_email="parent2@example.com")
+    h = {"Authorization": f"Bearer {r.json()['token']}"}
+    g = client.post("/api/auth/register/guardian", json={"invite_code": r.json()["guardian_invite"], "name": "Pat Two", "password": "goodpassword"})
+    gh = {"Authorization": f"Bearer {g.json()['token']}"}
+    kid = client.get("/api/guardian/children", headers=gh).json()[0]["id"]
+    for dt in ("wellness", "sleep"):
+        client.put(f"/api/guardian/children/{kid}/consent", json={"data_type": dt, "granted": True}, headers=gh)
+    assert client.get(f"/api/guardian/children/{kid}/summary", headers=gh).json()["alerts"] == []
+
+    body = client.post("/api/me/checkin", json=RED_CHECKIN, headers=h).json()
+    assert body["escalated"] is True and body["notified"] == "guardian"
+    alerts = client.get(f"/api/guardian/children/{kid}/summary", headers=gh).json()["alerts"]
+    assert {a["kind"] for a in alerts} == {"pain_report", "red_mood"}
+    # deduplicated while unseen
+    client.post("/api/me/checkin", json=RED_CHECKIN, headers=h)
+    assert len(client.get(f"/api/guardian/children/{kid}/summary", headers=gh).json()["alerts"]) == 2
+    for a in alerts:
+        assert client.post(f"/api/guardian/children/{kid}/alerts/{a['id']}/seen", headers=gh).status_code == 200
+    assert client.get(f"/api/guardian/children/{kid}/summary", headers=gh).json()["alerts"] == []
+    assert client.post(f"/api/guardian/children/{kid}/alerts/nope/seen", headers=gh).status_code == 404

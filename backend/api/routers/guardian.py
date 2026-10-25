@@ -20,6 +20,7 @@ from domain.enums import ConsentDataType, Role
 from domain.models import (
     Anthropometrics,
     DailyStatus,
+    GuardianAlert,
     HRVRecord,
     Player,
     SessionLoad,
@@ -61,6 +62,15 @@ def summary(player_id: str, user: CurrentUser = Depends(require(Role.GUARDIAN)),
         for s in db.scalars(select(SleepRecord).where(SleepRecord.player_id == p.id, SleepRecord.night_of >= start - timedelta(days=7)))
     ]
     rm = roadmap_view(db, p, today)
+    alerts = db.scalars(
+        select(GuardianAlert)
+        .where(
+            GuardianAlert.player_id == p.id,
+            GuardianAlert.guardian_id == user.account.guardian_id,
+            GuardianAlert.seen_at.is_(None),
+        )
+        .order_by(GuardianAlert.created_at.desc())
+    )
     audit(db, user, "read", "weekly_summary", p.id)
     db.commit()
     return {
@@ -70,7 +80,35 @@ def summary(player_id: str, user: CurrentUser = Depends(require(Role.GUARDIAN)),
         "avg_sleep_h": None if not sleeps else round(statistics.fmean(sleeps), 1),
         "goals": [{"label": g["label"], "progress": g["progress"]} for g in rm["goals"] if g["status"] == "active"],
         "streak": rm["streak"],
+        # Safety flags with no staff to take them (self-guided players): the parent is told.
+        "alerts": [
+            {"id": a.id, "kind": a.kind, "text": ALERT_TEXT.get(a.kind, a.kind), "created_at": a.created_at.isoformat()}
+            for a in alerts
+        ],
     }
+
+
+ALERT_TEXT = {
+    "pain_report": "reported pain in this morning's check-in. The next two days are now rest only. "
+    "Please check in with them, and see a doctor or physio if it lasts or gets worse.",
+    "red_mood": "had a really low mood in this morning's check-in. The plan is now easy for two days. "
+    "Please find a moment to talk today.",
+    "missed_checkins": "hasn't checked in for a few days and their readiness looks low. Please check how they are.",
+}
+
+
+@router.post("/children/{player_id}/alerts/{alert_id}/seen")
+def alert_seen(
+    player_id: str, alert_id: str, user: CurrentUser = Depends(require(Role.GUARDIAN)), db: Session = Depends(get_db)
+) -> dict:
+    p = player_in_scope(player_id, user, db)
+    a = db.get(GuardianAlert, alert_id)
+    if a is None or a.player_id != p.id or a.guardian_id != user.account.guardian_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Alert not found")
+    a.seen_at = datetime.now(UTC)
+    audit(db, user, "acknowledge", "guardian_alert", a.id, player=p.id)
+    db.commit()
+    return {"id": a.id, "seen_at": a.seen_at.isoformat()}
 
 
 @router.get("/children/{player_id}/consent")
@@ -130,6 +168,7 @@ def export(player_id: str, user: CurrentUser = Depends(require(Role.GUARDIAN)), 
         "anthropometrics": rows(Anthropometrics, "day", "height_cm", "sitting_height_cm", "weight_kg"),
         "tests": rows(TestResult, "day", "test", "value"),
         "consents": rows(Consent, "data_type", "granted", "recorded_at"),
+        "guardian_alerts": rows(GuardianAlert, "kind", "created_at", "seen_at"),
     }
     audit(db, user, "export", "player", p.id)
     db.commit()
@@ -141,7 +180,7 @@ def delete_data(player_id: str, user: CurrentUser = Depends(require(Role.GUARDIA
     """Deletes all health data about the player (GDPR Art. 17). The account remains."""
     p = player_in_scope(player_id, user, db)
     counts = {}
-    for model in (SessionLoad, WellnessCheckin, SleepRecord, HRVRecord, Anthropometrics, TestResult, DailyStatus):
+    for model in (SessionLoad, WellnessCheckin, SleepRecord, HRVRecord, Anthropometrics, TestResult, DailyStatus, GuardianAlert):
         counts[model.__tablename__] = db.execute(delete(model).where(model.player_id == p.id)).rowcount
     audit(db, user, "delete", "player_health_data", p.id, **counts)
     db.commit()

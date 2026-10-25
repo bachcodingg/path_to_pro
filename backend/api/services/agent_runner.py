@@ -14,7 +14,7 @@ from agents.coordinator import ActionKind, Decision, decide
 from agents.coordinator import Proposal as PolicyProposal
 from agents.llm import LLMBackend
 from agents.monitor import Measurements, PlayerHistory, assess
-from agents.orchestrator import CycleResult, run_cycle
+from agents.orchestrator import PROTECT_DAYS, CycleResult, diff, protective_plan, run_cycle
 from agents.rules import DevGoal
 from analytics.maturation import MaturityStatus
 from api.deps import age_on, audit, has_consent
@@ -25,6 +25,7 @@ from domain.models import (
     DailyStatus,
     Drill,
     Escalation,
+    GuardianAlert,
     HRVRecord,
     IDPGoal,
     Match,
@@ -363,7 +364,9 @@ def _escalate(db: Session, player: Player, cycle: CycleResult, run: AgentRun, da
         )
     }
     for f in cycle.assessment.safety_flags:
-        if f.kind.value in open_kinds or staff is None:
+        if staff is None:
+            break  # no staff: _alert_guardians and _protect take over
+        if f.kind.value in open_kinds:
             continue
         esc = Escalation(player_id=player.id, kind=f.kind.value, staff_id=staff.id, created_at=_now())
         db.add(esc)
@@ -372,6 +375,79 @@ def _escalate(db: Session, player: Player, cycle: CycleResult, run: AgentRun, da
         out.append(esc)
         audit(db, None, "escalate", "escalation", None, player=player.id, kind=f.kind.value, staff=staff.id, run=run.id)
     return out
+
+
+def _alert_guardians(db: Session, player: Player, cycle: CycleResult) -> list[GuardianAlert]:
+    """No staff to escalate to (self-guided player): each linked parent is the named adult."""
+    out = []
+    for g in player.guardians:
+        open_kinds = {
+            a.kind
+            for a in db.scalars(
+                select(GuardianAlert).where(
+                    GuardianAlert.player_id == player.id, GuardianAlert.guardian_id == g.id, GuardianAlert.seen_at.is_(None)
+                )
+            )
+        }
+        for f in cycle.assessment.safety_flags:
+            if f.kind.value in open_kinds:
+                continue
+            alert = GuardianAlert(player_id=player.id, guardian_id=g.id, kind=f.kind.value, created_at=_now())
+            db.add(alert)
+            out.append(alert)
+            audit(db, None, "alert_guardian", "guardian_alert", None, player=player.id, kind=f.kind.value, guardian=g.id)
+    return out
+
+
+def _protect(
+    db: Session, player: Player, cycle: CycleResult, run: AgentRun, inp: PlannerInput, current: list[PlanDay] | None
+) -> bool:
+    """No staff can take over, so "no agent action" would leave a hard session in place after
+    a pain report. Instead the next days become rest or recovery (rules only, never harder
+    than the current plan) and the player sees a why-card. Returns True if the plan changed."""
+    result = protective_plan(inp, cycle.assessment, current)
+    run.output["protective_plan"] = {
+        "status": result.status,
+        "weekly_load": result.weekly_load,
+        "hard_violations": hard_violations(result, inp),
+    }
+    if current is not None and diff(current, result.days).is_empty:
+        return False
+    kinds = ", ".join(sorted(f.kind.value.replace("_", " ") for f in cycle.assessment.safety_flags))
+    plan = _plan_from(
+        result.days,
+        player,
+        run,
+        "draft",
+        solver_status=result.status,
+        explanation_player=(
+            "You told us something that matters more than training. The next two days are rest or easy "
+            "recovery only. Talk to a parent or another adult you trust, and see a doctor or physio if it's pain."
+        ),
+        reason_coach=f"Safety flag ({kinds}) with no staff to decide: protective plan",
+    )
+    db.add(plan)
+    db.flush()
+    d = diff(current, result.days) if current is not None else None
+    db.add(
+        Proposal(
+            agent_run_id=run.id,
+            player_id=player.id,
+            kind=ActionKind.LOAD_CUT.value,
+            payload={
+                "rpe_delta": 0 if d is None else d.max_rpe_delta,
+                "load_change_pct": 0.0 if d is None else round(d.load_change_pct, 1),
+                "changed_days": [] if d is None else [(inp.start + timedelta(days=x)).isoformat() for x in d.changed_days],
+            },
+            proposed_plan_id=plan.id,
+            reason=f"Safety flag ({kinds}): the next {PROTECT_DAYS} days are rest or recovery only",
+            data_chips=cycle.assessment.chips,
+            policy_rule="safety flag with no staff: protective plan (rest or recovery only), applied automatically",
+            status=ProposalStatus.AUTO_APPLIED,
+        )
+    )
+    activate(db, plan, player)
+    return True
 
 
 def _proposal_status(decision: Decision) -> ProposalStatus:
@@ -445,7 +521,14 @@ def run_player(db: Session, player: Player, day: date, trigger: str, llm: LLMBac
     if cycle.escalate:
         run.agent = AgentName.COORDINATOR
         run.output = {"decision": "escalate", "rule": cycle.ruling.rule}
-        summary["escalations"] = len(_escalate(db, player, cycle, run, day))
+        if escalation_contact(db, player) is not None:
+            summary["escalations"] = len(_escalate(db, player, cycle, run, day))
+            summary["notified"] = "staff"
+        else:
+            alerts = _alert_guardians(db, player, cycle)
+            summary["escalations"] = len(alerts)
+            summary["notified"] = "guardian" if player.guardians else None
+            summary["protected"] = _protect(db, player, cycle, run, inp, current)
     elif cycle.outcome is not None:
         out = cycle.outcome
         run.constraints = out.constraints.model_dump(mode="json")

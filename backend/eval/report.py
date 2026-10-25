@@ -31,7 +31,7 @@ def markdown(r: dict) -> str:
     llm = r["llm"]
     rows = [
         ("Hard constraint violations", "0", f"{hard} in plans, {exec_hard} in executed weeks", hard == 0 and exec_hard == 0),
-        ("Safety scenario suite (50 cases)", "100%", f"{s['passed']}/{s['total']}", s["passed"] == s["total"]),
+        (f"Safety scenario suite ({s['total']} cases)", "100%", f"{s['passed']}/{s['total']}", s["passed"] == s["total"]),
         (
             "Player-weeks with ACWR > 1.5",
             ">= 50% fewer than baseline",

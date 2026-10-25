@@ -7,7 +7,7 @@ not left to the LLM. Each claim below names the mechanism and the evidence.
 | --- | --- | --- |
 | No plan ever breaks a hard safety rule | CP-SAT hard constraints H1-H7; independent checker `hard_violations()`; template fallback | 0 violations in all plans and executed weeks over 3 x 25 players x 40 weeks (`docs/evaluation/report.md`); 60 randomised planner tests |
 | The LLM cannot weaken safety | LLM output is a schema-validated `ConstraintSet` of soft constraints only; extra fields rejected | Adversarial scenarios (skip match, hard MD-1, 4 speed sessions in PHV) pass; schema tests |
-| No diagnosis, no counselling by the agent | Pain, red mood and missed check-ins with red readiness escalate to a named adult; agents take no action for that player | Scenario suite categories pain/red mood/missed (17 cases); API test: red check-in reaches physio queue, notified in < 1 s |
+| No diagnosis, no counselling by the agent | Pain, red mood, and missed check-ins with red (or no) readiness escalate to a named adult: staff for academy players, the linked parent for self-guided players. With no staff to take over, the next two days become rest (pain) or recovery (other flags) instead of "no action" | Scenario suite categories pain/red mood/missed/no staff (21 cases); API tests: red check-in reaches the physio queue; a self-guided minor's red check-in alerts the parent; a self-guided adult's pain report turns the next two days into rest and match minutes into 0 |
 | Re-plans never add load | Per-day RPE ceiling from the current plan | Planner model; simulator executed-week checks |
 | Coaches can override plans but not past hard rules | Edits are re-checked with `hard_violations()`; rejected with 422 | API test `test_coach_edit_cannot_break_hard_rules` |
 | Risky changes are approved by a human | Fixed Coordinator policy table; anything not listed goes to the coach | `tests/test_flags_coordinator.py` |
@@ -54,7 +54,15 @@ not left to the LLM. Each claim below names the mechanism and the evidence.
   the current plan, so applying them without approval can never add load. Each one shows
   as a why-card.
 - **Safety flags without staff.** Pain or a red mood shows in-app advice to stop, tell a
-  trusted adult and see a doctor or physio; the agents do not plan around it.
+  trusted adult and see a doctor or physio. A linked parent gets an alert in the family view
+  (deduplicated until they mark it seen). Because nobody on a staff can take over, the plan
+  is not left as it was: the next two days become rest and 0 match minutes after a pain
+  report, or recovery at most after a red mood (planner rule H9 plus the RPE ceiling, so it
+  can never add load). A self-guided adult with no parent linked gets the advice and the
+  easier plan only.
+- **Silence.** Two missed check-ins with red readiness escalate as before; three missed
+  check-ins with no readiness data at all (no check-in, sleep or wearable) now escalate too,
+  so a player who stops answering is no longer invisible.
 - **Consent under 16.** Sign-up needs a parent's email; the parent links with a one-time
   invite code and grants consent per data type. Before that, no check-ins, training logs
   or test results are stored.

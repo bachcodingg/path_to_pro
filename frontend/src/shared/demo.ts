@@ -302,7 +302,9 @@ async function route(path: string, method: string, body?: Json): Promise<Json> {
         today.readiness?.components?.hrv,
         s.meta.readiness ?? DEFAULT_READINESS,
       );
-      const escalated = body.mood === "red" || !!body.pain;
+      const flagged = body.mood === "red" || !!body.pain;
+      // Self-guided players have no staff queue (the server alerts a linked parent instead).
+      const escalated = flagged && user.me.pathway !== "amateur";
       Object.assign(today, {
         checked_in: true,
         readiness_is_today: true,
@@ -322,7 +324,7 @@ async function route(path: string, method: string, body?: Json): Promise<Json> {
           readiness: today.readiness,
         });
       }
-      return { escalated, today };
+      return { escalated, notified: escalated ? "staff" : null, today };
     }
     const task = p.match(/^\/api\/me\/tasks\/([^/]+)\/toggle$/);
     if (task) {
