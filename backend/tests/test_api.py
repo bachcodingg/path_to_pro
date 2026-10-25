@@ -311,3 +311,15 @@ def test_demo_data_and_sign_up_are_separate_in_production(monkeypatch):
     assert Settings(env="production", autoseed=True, registration=False).registration is False
     with pytest.raises(RuntimeError):
         Settings(env="production", autoseed=True, registration=True)
+
+
+def test_team_analysis_is_for_coaches(demo):
+    client, _ = demo
+    coach = login(client, "coach@demo.pathtopro")
+    teams = client.get("/api/coach/analysis/teams", headers=coach).json()
+    assert any(t["id"] == "real-madrid" for t in teams["teams"])
+    r = client.get("/api/coach/analysis/teams/real-madrid", headers=coach)
+    assert r.status_code == 200 and r.json()["team"] == "Real Madrid"
+    assert client.get("/api/coach/analysis/teams/nobody-fc", headers=coach).status_code == 404
+    player = login(client, "p03@demo.pathtopro")
+    assert client.get("/api/coach/analysis/teams", headers=player).status_code == 403
