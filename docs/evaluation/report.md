@@ -10,10 +10,10 @@
 | Weeks with monotony > 2 | >= 40% fewer than baseline | load: 0 -> 4, readiness: 0 -> 3, random: 0 -> 4: the baseline never exceeds 2, so the target can't be met, and the agents add weeks above 2 | WORSE |
 | Planned development sessions delivered | >= 90% of goal | load: 91%, readiness: 91%, random: 92% | PASS |
 | LLM output valid on first try | >= 95% (200 runs) | LLM not used (rule-based run) | not measured |
-| LLM valid after retry or fallback | 100% | 100% (every run produced a plan) | PASS |
+| Every run ends in a valid plan (LLM, retry or rule fallback) | 100% | 100%, all from the rule fallback: the LLM retry path was not exercised | PASS |
 | Planner consistency (20 runs) | >= 80% identical | 100% | PASS |
-| Solver time | < 2 s player-week, < 60 s squad | max 0.47 s / 3.4 s | PASS |
-| Red check-in to staff notification | < 5 min | escalation decided and queued in-app in 0 ms; there is no push, email or SMS channel, so the time until a person actually sees it is not measured | not measured |
+| Solver time | < 2 s player-week, < 60 s squad | max 0.79 s / 6.5 s | PASS |
+| Red check-in to staff notification | < 5 min | escalation decided and queued in-app in 1 ms; there is no push, email or SMS channel, so the time until a person actually sees it is not measured | not measured |
 | Expert rating of 10 plans | >= 3.5 / 5 | pending: needs 2+ reviewers | not measured |
 | SUS score | >= 70 | pending: usability tests in week 10 | not measured |
 | Readiness weight sensitivity | < 10% of daily bands change at +/-0.1 | 15.0% without buffer, 14.3% with buffer, 13.0% with buffer + calibrated weights | FAIL |

@@ -40,7 +40,8 @@ synthetic season and sets "today" to Thursday of week 12. All passwords: `demo12
    violations, 68-70% fewer ACWR spike weeks than the plan's baseline and still 67-71% fewer
    than a heuristic coach that follows the same rules as if-statements, 54/54 safety
    scenarios. Say the limits out loud: no detectable injury difference vs the heuristic, the
-   agents add ~1 high-monotony week per season, the LLM and SUS are not measured yet.
+   agents add ~1 high-monotony player-week per squad season (the baseline has none), the LLM
+   and SUS are not measured yet.
 
 7. **Safety (30 s)** - sign in as any player, check in with mood "Not good". Sign in as
    **Physio** (`physio@demo.pathtopro`): the red check-in is in the queue within a second,

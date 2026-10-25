@@ -91,7 +91,14 @@ def markdown(r: dict) -> str:
             _fmt(llm["first_try_valid_pct"], 1, "%") if llm["backend"] else "LLM not used (rule-based run)",
             None if llm["first_try_valid_pct"] is None else llm["first_try_valid_pct"] >= 95,
         ),
-        ("LLM valid after retry or fallback", "100%", "100% (every run produced a plan)", True),
+        (
+            "Every run ends in a valid plan (LLM, retry or rule fallback)",
+            "100%",
+            "100% (every run produced a plan)"
+            if llm["backend"]
+            else "100%, all from the rule fallback: the LLM retry path was not exercised",
+            True,
+        ),
         (
             "Planner consistency (20 runs)",
             ">= 80% identical",

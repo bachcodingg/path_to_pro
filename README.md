@@ -6,6 +6,7 @@ approve risky changes. Players outside an academy get a self-guided pathway with
 levels, benchmark tests and the same safety engine.
 
 **Design principle:** code computes, the LLM plans and explains, a fixed policy decides who approves.
+Without an API key the LLM's part is done by rules, which is how every result below was produced.
 
 ![Coach approval inbox](docs/screenshots/coach-inbox.png)
 
@@ -101,12 +102,13 @@ Mean [95% CI] over 10 seeds unless noted; details in
 | Safety scenario suite | all pass | **54/54** |
 | Player-weeks with ACWR > 1.5 vs baseline | ≥ 50% fewer | **68-70% fewer** (CIs 51-87%) |
 | Same, vs the heuristic coach | fewer | **67-71% fewer** (CIs 57-85%): what the planner adds beyond the rules |
-| Injuries vs the heuristic coach (secondary, synthetic model) | fewer | **no detectable difference** (every CI contains 0) |
-| Weeks with monotony > 2 | ≥ 40% fewer | **worse**: the baseline never exceeds 2; the agents add ~1 week per season |
+| Injuries vs the heuristic coach (secondary, synthetic model) | fewer | **no detectable difference** (every CI contains 0; under the readiness model the agents lean worse, +2.2 [-0.1, 4.5]) |
+| Injuries vs the baseline (same caveat) | fewer | fewer only under the readiness model (-4.0 [-6.0, -2.0]); load and random models: CIs contain 0 |
+| Player-weeks with monotony > 2 | ≥ 40% fewer | **worse, target unreachable**: the baseline never exceeds 2; the agents have ~1 of the squad's 1,000 player-weeks above 2 per season (CI -0.5 to 2.6; seed 2026: 3-4) |
 | Development sessions delivered | ≥ 90% | **91-92%** (seed 2026) |
-| Solver time | < 2 s / player-week | **≤ 0.47 s** (seed 2026) |
-| Readiness colour changes day to day | fewer, no delayed warnings | 58% -> 44% of days (safety-first buffer) |
-| Readiness weight sensitivity | < 10% bands change | 15.0% -> 13.0%: **still fails**; 91% of flipped days were within 5 points of a colour boundary |
+| Solver time | < 2 s / player-week | **≤ 0.79 s** (seed 2026; wall-clock, varies with the machine) |
+| Readiness colour changes day to day | fewer, no delayed warnings | 58% -> 44% of days (safety-first buffer, seed 2026) |
+| Readiness weight sensitivity | < 10% bands change | 15.0% -> 13.0%: **still fails**; 91% of flipped days were within 5 points of a colour boundary (seed 2026) |
 
 **What these results don't show.** Fewer ACWR spikes is partly the planner meeting its own
 objective (it penalises projected ACWR), and the 54 scenarios were written by the same team

@@ -71,7 +71,9 @@ and `AuditLog` rows; the coach's "Match commentary" renders them in plain langua
 through `messages.parse` with Pydantic output models, server-side refusal fallbacks,
 and a manual tool loop for the Development Coach. Every answer is validated; one
 retry with the validation error, then rules. A disk cache (`backend/llm_cache/`)
-stores answers so demo scenarios replay offline. `PATHTOPRO_LLM=off` runs pure rules.
+stores answers from runs with an API key, keyed by the full prompt, so only an identical
+rerun replays them. No answers are committed: the offline demo, the tests and every
+evaluation result use the rule-based fallbacks. `PATHTOPRO_LLM=off` runs pure rules.
 
 ## Data and security
 

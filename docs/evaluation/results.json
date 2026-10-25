@@ -109,9 +109,9 @@
     "constraint_source": {
       "rules": 1686
     },
-    "solver_max_s_player_week": 0.4665759000054095,
-    "solver_mean_s_player_week": 0.06968296992884311,
-    "solver_max_s_squad_week": 3.3641116000071634,
+    "solver_max_s_player_week": 0.5287754000019049,
+    "solver_mean_s_player_week": 0.0827348321471837,
+    "solver_max_s_squad_week": 4.340566500002751,
     "decisions": {
       "weekly_plan": 999,
       "coach_approval": 439,
@@ -224,9 +224,9 @@
     "constraint_source": {
       "rules": 1690
     },
-    "solver_max_s_player_week": 0.39092340000206605,
-    "solver_mean_s_player_week": 0.06012368911237335,
-    "solver_max_s_squad_week": 3.22437219999847,
+    "solver_max_s_player_week": 0.7930744999903254,
+    "solver_mean_s_player_week": 0.08823083284042002,
+    "solver_max_s_squad_week": 5.337085200022557,
     "decisions": {
       "weekly_plan": 999,
       "coach_approval": 445,
@@ -339,9 +339,9 @@
     "constraint_source": {
       "rules": 1694
     },
-    "solver_max_s_player_week": 0.20664219999162015,
-    "solver_mean_s_player_week": 0.0320178172962054,
-    "solver_max_s_squad_week": 1.7669761999713955,
+    "solver_max_s_player_week": 0.6790641000116011,
+    "solver_mean_s_player_week": 0.0937019410861877,
+    "solver_max_s_squad_week": 6.488789900002303,
     "decisions": {
       "weekly_plan": 999,
       "coach_approval": 439,
@@ -427,7 +427,7 @@
       100.0
     ]
   },
-  "red_checkin_to_escalation_s": 0.00038130000757519156,
+  "red_checkin_to_escalation_s": 0.0008550999918952584,
   "llm": {
     "backend": null,
     "first_try_valid_pct": null,
