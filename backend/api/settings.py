@@ -38,11 +38,21 @@ class Settings:
     # Load the synthetic demo season when the database is empty (demo deployments).
     autoseed: bool = os.environ.get("PATHTOPRO_AUTOSEED", "off") == "on"
     # Self sign-up for the self-guided pathway (players 13+, parents by invite code).
-    registration: bool = os.environ.get("PATHTOPRO_REGISTRATION", "on") == "on"
+    # Off by default on demo deployments: their demo accounts share a published password
+    # and "today" is pinned inside the synthetic season, so real players must not join.
+    registration: bool = (
+        os.environ.get("PATHTOPRO_REGISTRATION", "off" if os.environ.get("PATHTOPRO_AUTOSEED") == "on" else "on")
+        == "on"
+    )
 
     def __post_init__(self):
         if self.env == "production" and self.jwt_secret == "dev-only-change-me-this-is-not-a-secret-key":
             raise RuntimeError("PATHTOPRO_JWT_SECRET must be set in production")
+        if self.env == "production" and self.autoseed and self.registration:
+            raise RuntimeError(
+                "PATHTOPRO_AUTOSEED=on (public demo accounts) and PATHTOPRO_REGISTRATION=on (real players) "
+                "can't be combined in production: run the demo and the real service as separate deployments"
+            )
 
 
 settings = Settings()

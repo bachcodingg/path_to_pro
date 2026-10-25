@@ -84,7 +84,8 @@ def player_in_scope(player_id: str, user: CurrentUser, db: Session) -> Player:
         from domain.models import Registration
 
         staff = staff_of(user, db)
-        if staff.squad_id is None or staff.squad_id == player.squad_id:
+        # Staff without a squad see nobody (fail closed); only admins see every player.
+        if staff.squad_id is not None and staff.squad_id == player.squad_id:
             return player
         # Dual registration: the second team's staff see the player too
         if db.scalars(

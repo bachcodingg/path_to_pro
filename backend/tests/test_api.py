@@ -263,3 +263,51 @@ def test_coach_sets_position(demo):
     r = client.put(f"/api/coach/players/{pid}/position", headers=coach, json={"position": "goalkeeper"})
     assert r.status_code == 200 and r.json()["gym"]["position"] == "goalkeeper"
     assert client.put(f"/api/coach/players/{pid}/position", headers=coach, json={"position": "libero"}).status_code == 422
+
+
+def test_no_admin_with_the_demo_password(demo):
+    client, _ = demo
+    r = client.post("/api/auth/login", json={"email": "admin@demo.pathtopro", "password": "demo1234"})
+    assert r.status_code == 401
+
+
+def test_staff_without_a_squad_see_nobody(demo):
+    client, _ = demo
+    from api.security import hash_password
+    from domain.enums import Role
+    from domain.models import StaffMember, UserAccount
+
+    with SessionLocal() as db:
+        s = StaffMember(name="No Squad", email="nosquad@example.com", role=Role.COACH, squad_id=None)
+        db.add(s)
+        db.flush()
+        db.add(UserAccount(email=s.email, password_hash=hash_password("goodpassword"), role=Role.COACH, staff_id=s.id))
+        pid = db.scalars(select(Player.id)).first()
+        db.commit()
+    h = login(client, "nosquad@example.com", "goodpassword")
+    assert client.get("/api/coach/heatmap", headers=h).json()["players"] == []
+    assert client.get(f"/api/coach/players/{pid}", headers=h).status_code == 403
+    assert client.get("/api/physio/queue", headers=h).json() == []
+
+
+def test_failed_logins_are_limited(demo):
+    client, _ = demo
+    from api.routers import auth
+
+    for _ in range(auth.MAX_FAILED_LOGINS):
+        assert client.post("/api/auth/login", json={"email": "p04@demo.pathtopro", "password": "nope"}).status_code == 401
+    r = client.post("/api/auth/login", json={"email": "p04@demo.pathtopro", "password": "demo1234"})
+    assert r.status_code == 429
+    auth._failed.clear()
+    login(client, "p04@demo.pathtopro")
+
+
+def test_demo_data_and_sign_up_are_separate_in_production(monkeypatch):
+    from api.settings import Settings
+
+    for k, v in {"PATHTOPRO_ENV": "production", "PATHTOPRO_JWT_SECRET": "x" * 40, "PATHTOPRO_AUTOSEED": "on"}.items():
+        monkeypatch.setenv(k, v)
+    monkeypatch.delenv("PATHTOPRO_REGISTRATION", raising=False)
+    assert Settings(env="production", autoseed=True, registration=False).registration is False
+    with pytest.raises(RuntimeError):
+        Settings(env="production", autoseed=True, registration=True)

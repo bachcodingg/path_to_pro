@@ -24,7 +24,8 @@ def _scope(user: CurrentUser, db: Session) -> fin.Scope:
     if user.role == Role.ADMIN:
         return fin.Scope(None)
     staff = staff_of(user, db)
-    return fin.Scope(None if staff.squad_id is None else [staff.squad_id])
+    # Staff without a squad see no club's books (fail closed); only admins see all.
+    return fin.Scope([] if staff.squad_id is None else [staff.squad_id])
 
 
 def _view(user: CurrentUser, db: Session) -> dict:
@@ -131,6 +132,8 @@ class ContractIn(BaseModel):
 def add_contract(body: ContractIn, user: CurrentUser = Depends(require(Role.COACH)), db: Session = Depends(get_db)) -> dict:
     staff = staff_of(user, db) if user.role != Role.ADMIN else None
     squad_id = staff.squad_id if staff else None
+    if staff is not None and squad_id is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Staff without a squad can't add contracts")
     if body.player_id:
         p = player_in_scope(body.player_id, user, db)
         squad_id = squad_id or p.squad_id

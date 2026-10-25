@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import copy
 import logging
+import os
 from datetime import UTC, date, datetime, time, timedelta
 
 from sqlalchemy import delete, select
@@ -51,6 +52,7 @@ from simulator.season import SeasonSimulator, load_config
 log = logging.getLogger(__name__)
 
 DEMO_PASSWORD = "demo1234"
+ADMIN_EMAIL = "admin@demo.pathtopro"
 TODAY_WEEK, TODAY_WEEKDAY = 12, 3  # Thursday of week 12
 STATUS_DAYS = 56  # Monitor history computed at seed time (heatmap uses 14, calibration all)
 FIRST_NAMES = [
@@ -102,9 +104,13 @@ def seed(db: Session, n_players: int = 25, story: bool = True) -> dict:
         [
             UserAccount(email=coach.email, password_hash=pw, role=Role.COACH, staff_id=coach.id),
             UserAccount(email=physio.email, password_hash=pw, role=Role.PHYSIO, staff_id=physio.id),
-            UserAccount(email="admin@demo.pathtopro", password_hash=pw, role=Role.ADMIN),
         ]
     )
+    # Admin sees every player, so it never gets the published demo password: it exists only
+    # when the operator sets its password explicitly.
+    admin_pw = os.environ.get("PATHTOPRO_ADMIN_PASSWORD")
+    if admin_pw:
+        db.add(UserAccount(email=ADMIN_EMAIL, password_hash=hash_password(admin_pw), role=Role.ADMIN))
     for d in agent_runner_drills():
         db.add(d)
 
