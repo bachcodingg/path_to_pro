@@ -24,7 +24,7 @@ app (PWA). Sign-up and plain-words coach instructions need the full system (belo
 | Player (tired, growth zone) | Check-in, Today, why-cards, growth zone, position gym session |
 | Player (U19 + men's team) | Dual registration: 90 minutes shared over a Saturday + Sunday double; Career tab with ratings; match diary |
 | Self-guided player | Levels: log a wall-pass test of 18+ and she moves up to level 3 |
-| Coach | Heatmap, approval inbox, training pitch, match ratings, tactics board, profile with gym preview and instruction box, calibration |
+| Coach | Heatmap, approval inbox, training pitch, match ratings, tactics board, team analysis (an opponent's corners, penalties and free kicks), profile with gym preview and instruction box, calibration |
 | Men's team coach | Second team's view of the dual-registered players (sees, but the primary coach approves) |
 | Physio, Guardian | Escalation queue; consent per data type |
 
@@ -84,9 +84,10 @@ rule-based agents: the LLM's contribution has not been evaluated yet.
 | Architecture | FastAPI, SQLAlchemy 2, Alembic, PostgreSQL, APScheduler, JWT + RBAC, `docker-compose.yml` |
 | Simulator | `backend/simulator/`: 25 players x 40 weeks, seeded, 3 injury models, pluggable policy |
 | Evaluation | `backend/eval/`: `python -m eval`, 54-case safety suite, equal-load and heuristic-coach baselines, 10-seed CIs (`python -m eval.seeds`), report in [docs/evaluation/report.md](docs/evaluation/report.md) |
+| Team analysis | `backend/scouting/`: opponents' set pieces from real La Liga 2015/16 event data (StatsBomb Open Data, all 380 matches): corner delivery zones (short, near post, six-yard, penalty spot, far post, edge), in/out-swinging, takers, shots and xG from corners, corners defended, penalty and free-kick placement by kicker. A tendency is flagged only when its 95% interval excludes the rest of the league. See [docs/team-analysis.md](docs/team-analysis.md) |
 | Safety and ethics | [docs/safety-case.md](docs/safety-case.md): encryption, audit log, consent, export/delete, escalations |
 
-More: [teams, careers and ratings](docs/teams-careers-ratings.md) · [gym and pathway](docs/gym-and-pathway.md) · [architecture](docs/architecture.md) · [demo script](docs/demo-script.md) · [week-1 decisions](docs/week1-scope.md)
+More: [teams, careers and ratings](docs/teams-careers-ratings.md) · [team analysis](docs/team-analysis.md) · [gym and pathway](docs/gym-and-pathway.md) · [architecture](docs/architecture.md) · [demo script](docs/demo-script.md) · [week-1 decisions](docs/week1-scope.md)
 
 ## Results (25 players x 40 weeks, 3 injury models, 10 seeds)
 
@@ -131,12 +132,14 @@ above the fold-to-fold noise. Demo ratings are synthetic.
 ## Tests
 
 ```bash
-cd backend && pytest                      # 193 unit, scenario and API tests
+cd backend && pytest                      # 201 unit, scenario and API tests
 cd backend && python -m eval              # evaluation report (seed 2026) -> eval_results/
 cd backend && python -m eval.seeds        # 10-seed comparison with confidence intervals
 cd frontend && npm test                   # Vitest
-cd frontend && npx playwright test        # 20 end-to-end tests (API on :8000, web on :5173)
+cd frontend && npx playwright test        # 21 end-to-end tests (API on :8000, web on :5173)
 ```
 
-All demo data is synthetic. No real player data is stored. Benchmarks and norms are
-placeholder values until validated against club data.
+All academy demo data is synthetic. No real player data is stored. Benchmarks and norms are
+placeholder values until validated against club data. The one exception is Team analysis,
+which uses published professional match events: data from StatsBomb Open Data
+(https://github.com/statsbomb/open-data), credited as their terms require.
