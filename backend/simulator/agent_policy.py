@@ -22,6 +22,7 @@ from analytics.flags import FlagKind
 from analytics.maturation import MaturityStatus
 from analytics.norms import NormTable
 from domain.enums import SessionType
+from planner.model import MD_MINUS_1_MAX_RPE, PHV_SPEED_MAX_RPE
 from planner.schema import PlanDay, PlannerInput
 from simulator.policies import BaselinePolicy, PlannedSession, WeekContext, WeekPlan
 from simulator.season import PRESEASON_DAILY_LOAD, PlayerState
@@ -133,10 +134,27 @@ class AgentPolicy:
             # Staff handle it; the team template stands, minus what hard rules never allow.
             self.decisions["escalate"] += 1
             plan = self.baseline.plan_week(ps, ctx, rng)
-            return {d: s for d, s in plan.items() if d not in ctx.exam_days}
+            return self._within_hard_rules(plan, ctx, bool(a.growth and a.growth.in_phv_window))
         days = self._plan(ps, ctx, a, goals, 0, "weekly")
         self.decisions["weekly_plan"] += 1
         return self._to_week_plan(days)
+
+    @staticmethod
+    def _within_hard_rules(plan: WeekPlan, ctx: WeekContext, in_phv: bool) -> WeekPlan:
+        """The team template with what the hard rules never allow taken out: no session on
+        exam days (H6), the day before a match at RPE <= 4 (H3), speed at RPE <= 6 in the
+        growth window (H4)."""
+        out: WeekPlan = {}
+        for d, s in plan.items():
+            if d in ctx.exam_days:
+                continue
+            rpe = s.rpe
+            if d + 1 in ctx.match_days:
+                rpe = min(rpe, float(MD_MINUS_1_MAX_RPE))
+            if in_phv and s.kind == SessionType.SPEED:
+                rpe = min(rpe, float(PHV_SPEED_MAX_RPE))
+            out[d] = s if rpe == s.rpe else PlannedSession(s.kind, rpe, s.minutes)
+        return out
 
     def adjust_day(self, ps: PlayerState, ctx: WeekContext, wd: int, plan: WeekPlan, rng) -> WeekPlan:
         """Morning check-in arrived: re-plan the rest of the week if new flags appeared."""

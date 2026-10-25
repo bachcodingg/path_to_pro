@@ -19,6 +19,9 @@ jobs:
       - run: python -m eval --quick --out eval_results
         env:
           PATHTOPRO_LLM: "off"
+      - run: python -m eval.seeds --seeds 2 --quick --out eval_results
+        env:
+          PATHTOPRO_LLM: "off"
 
   frontend:
     runs-on: ubuntu-latest
