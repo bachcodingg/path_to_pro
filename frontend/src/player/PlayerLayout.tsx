@@ -14,7 +14,9 @@ import {
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../shared/auth";
 import { t } from "../shared/i18n";
+import { SkipLink } from "../shared/SkipLink";
 import { cn } from "../shared/ui";
+import { useDocumentTitle } from "../shared/useDocumentTitle";
 
 // Built inside the component so labels follow the current language.
 function navFor(selfGuided: boolean) {
@@ -78,6 +80,7 @@ export function PlayerLayout() {
   const selfGuided = user?.pathway === "amateur";
   const NAV = navFor(selfGuided);
   const EXTRAS = extrasFor(selfGuided);
+  useDocumentTitle([...NAV, ...EXTRAS], "Player");
   const link = ({ isActive }: { isActive: boolean }) =>
     cn(
       "tap flex items-center gap-3 rounded-xl px-3 py-2 font-semibold",
@@ -87,6 +90,7 @@ export function PlayerLayout() {
     );
   return (
     <div className="dark display-headings bg-surface-2 text-ink min-h-full md:flex">
+      <SkipLink />
       <aside className="bg-surface border-line sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r p-4 md:flex">
         <div className="mb-6 flex items-center gap-2">
           <img
@@ -154,7 +158,7 @@ export function PlayerLayout() {
             </button>
           </span>
         </header>
-        <main className="flex-1 px-4 pb-28 md:px-8 md:pt-6 md:pb-10">
+        <main id="main" tabIndex={-1} className="flex-1 px-4 pb-28 outline-none md:px-8 md:pt-6 md:pb-10">
           <Outlet />
         </main>
         <nav

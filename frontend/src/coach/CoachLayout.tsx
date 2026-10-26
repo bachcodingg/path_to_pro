@@ -4,7 +4,9 @@ import { NavLink, Outlet } from "react-router-dom";
 import { api } from "../shared/api";
 import { useAuth } from "../shared/auth";
 import { t } from "../shared/i18n";
+import { SkipLink } from "../shared/SkipLink";
 import { Button, cn } from "../shared/ui";
+import { useDocumentTitle } from "../shared/useDocumentTitle";
 
 // Grouped the way staff think about the week; built per call so labels follow the language
 type NavItem = { to: string; label: string; icon: LucideIcon; end?: boolean; coachOnly?: boolean };
@@ -42,6 +44,7 @@ export function CoachLayout() {
   // club money and opponent analysis are for coaches
   const GROUPS = nav().map((g) => ({ ...g, items: g.items.filter((n) => !n.coachOnly || user?.role !== "physio") }));
   const NAV = GROUPS.flatMap((g) => g.items);
+  useDocumentTitle(NAV, "Staff");
   const initials = (user?.name ?? "?").split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   const [running, setRunning] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -61,6 +64,7 @@ export function CoachLayout() {
 
   return (
     <div className="bg-surface-2 text-ink flex min-h-full">
+      <SkipLink />
       {/* The column runs the page's full height; its contents stay in view while scrolling */}
       <aside className="hidden w-64 shrink-0 bg-[linear-gradient(180deg,#07170f,#0b2a20_600px,#0f3d2e)] text-white md:block">
         <div className="sticky top-0 flex h-screen flex-col px-3 py-4">
@@ -143,7 +147,7 @@ export function CoachLayout() {
             ))}
           </nav>
         </div>
-        <main className="min-w-0 flex-1 p-4 md:p-6">
+        <main id="main" tabIndex={-1} className="min-w-0 flex-1 p-4 outline-none md:p-6">
           <Outlet />
         </main>
       </div>
