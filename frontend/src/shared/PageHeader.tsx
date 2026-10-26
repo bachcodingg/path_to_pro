@@ -27,20 +27,20 @@ export function PageHeader({
     <header
       style={accent ? ({ "--hero-glow": `${accent}80` } as CSSProperties) : undefined}
       // dark: chips, buttons and fields on the band take their dark-theme colours
-      className={cn("hero dark -mx-4 -mt-4 mb-5 px-4 pt-5 md:-mx-6 md:-mt-6 md:mb-6 md:px-6 md:pt-7", !bottom && "pb-5 md:pb-6", className)}
+      className={cn("hero dark -mx-4 -mt-4 mb-4 px-4 pt-4 md:-mx-6 md:-mt-6 md:mb-6 md:px-6 md:pt-7", !bottom && "pb-4 md:pb-6", className)}
     >
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="flex min-w-0 items-center gap-4">
           {leading}
           <div className="min-w-0">
             {eyebrow && <p className="text-pitch-300 text-xs font-bold tracking-[0.14em] uppercase">{eyebrow}</p>}
-            <h1 className="font-display text-[2rem] leading-none font-extrabold tracking-tight uppercase md:text-[2.6rem]">{title}</h1>
-            {subtitle && <div className="mt-1.5 max-w-3xl text-sm text-white/75">{subtitle}</div>}
+            <h1 className="font-display text-[1.75rem] leading-none font-extrabold tracking-tight uppercase md:text-[2.6rem]">{title}</h1>
+            {subtitle && <div className="mt-1.5 max-w-3xl text-[13px] text-white/75 md:text-sm">{subtitle}</div>}
           </div>
         </div>
         {actions && <div className="hero-actions flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
-      {bottom && <div className="mt-4">{bottom}</div>}
+      {bottom && <div className="mt-3 md:mt-4">{bottom}</div>}
     </header>
   );
 }

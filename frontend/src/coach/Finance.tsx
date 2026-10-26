@@ -2,10 +2,11 @@
 // costs, bonuses from match stats and titles, and the ledger.
 import { Trophy } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api, ApiError } from "../shared/api";
 import { BONUS_LABEL, eur, PERIOD } from "../shared/money";
-import { PageHeader } from "../shared/PageHeader";
+import { AXIS, GRID, TOOLTIP } from "../shared/chart";
+import { PageHeader, Tabs } from "../shared/PageHeader";
 import { useApi } from "../shared/useApi";
 import { Button, Card, Chip, ErrorNote, SectionTitle, Spinner, cn, fmtDay } from "../shared/ui";
 
@@ -113,25 +114,43 @@ export function Finance() {
       )}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Income" value={eur(t.income_cents)} tone="text-ready-green" />
-        <Kpi label="Costs" value={eur(t.expense_cents)} tone="text-ready-red" />
-        <Kpi label="Result" value={eur(t.net_cents)} tone={t.net_cents >= 0 ? "text-ready-green" : "text-ready-red"} />
-        <Kpi label="Fees outstanding" value={eur(t.fees_due_cents)} sub={t.overdue_count ? `${t.overdue_count} overdue (${eur(t.fees_overdue_cents)})` : "none overdue"} tone={t.overdue_count ? "text-ready-amber" : ""} />
+        <Kpi label="Income" value={eur(t.income_cents)} tone="text-win" accent="var(--color-win)" />
+        <Kpi label="Costs" value={eur(t.expense_cents)} tone="text-loss" accent="var(--color-loss)" />
+        <Kpi label="Result" value={eur(t.net_cents)} sub={t.net_cents >= 0 ? "Profit so far" : "Loss so far"} tone={t.net_cents >= 0 ? "text-win" : "text-loss"} />
+        <Kpi
+          label="Fees outstanding"
+          value={eur(t.fees_due_cents)}
+          sub={t.overdue_count ? `${t.overdue_count} overdue (${eur(t.fees_overdue_cents)})` : "none overdue"}
+          tone={t.overdue_count ? "text-amber-700 dark:text-ready-amber" : ""}
+          accent={t.overdue_count ? "var(--color-ready-amber)" : undefined}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <Card className="h-72 p-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chart} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-              <CartesianGrid stroke="#e5ece8" vertical={false} />
-              <XAxis dataKey="month" fontSize={11} />
-              <YAxis fontSize={11} tickFormatter={(v) => `€${Math.round(v / 1000)}k`} />
-              <Tooltip formatter={(v: number) => eur(v * 100)} />
-              <Legend />
-              <Bar dataKey="Income" fill="#1fa05a" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Costs" fill="#e5484d" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <Card className="flex h-72 flex-col p-0">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-3">
+            <p className="font-bold">Income and costs by month</p>
+            <p className="text-ink-2 flex gap-4 text-xs">
+              <span className="flex items-center gap-1.5">
+                <span className="bg-win h-2.5 w-2.5 rounded-sm" aria-hidden /> Income
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="bg-loss h-2.5 w-2.5 rounded-sm" aria-hidden /> Costs
+              </span>
+            </p>
+          </div>
+          <div className="min-h-0 flex-1 px-1 pt-2 pb-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chart} margin={{ top: 8, right: 8, left: 4, bottom: 0 }} barGap={4}>
+                <CartesianGrid {...GRID} />
+                <XAxis dataKey="month" {...AXIS} />
+                <YAxis {...AXIS} width={44} tickFormatter={(v) => (v ? `€${Math.round(v / 1000)}k` : "€0")} />
+                <Tooltip {...TOOLTIP} formatter={(v: number) => eur(v * 100)} />
+                <Bar dataKey="Income" fill="var(--color-win)" radius={[4, 4, 0, 0]} maxBarSize={36} />
+                <Bar dataKey="Costs" fill="var(--color-loss)" radius={[4, 4, 0, 0]} maxBarSize={36} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </Card>
         <Card className="max-h-72 overflow-y-auto p-0">
           <table className="w-full text-sm">
@@ -139,7 +158,7 @@ export function Finance() {
               {data.categories.map((c) => (
                 <tr key={c.category + c.direction}>
                   <td className="p-2">{c.label}</td>
-                  <td className={cn("p-2 text-right font-semibold tabular-nums", c.direction === "income" ? "text-ready-green" : "text-ready-red")}>
+                  <td className={cn("p-2 text-right font-semibold tabular-nums", c.direction === "income" ? "text-win" : "text-loss")}>
                     {c.direction === "income" ? "+" : "−"}
                     {eur(c.amount_cents)}
                   </td>
@@ -150,26 +169,18 @@ export function Finance() {
         </Card>
       </div>
 
-      <div className="flex flex-wrap gap-1" role="tablist" aria-label="Finance view">
-        {(
-          [
-            ["contracts", "Contracts"],
-            ["ledger", "Ledger"],
-            ["bonuses", "Bonuses"],
-            ["costs", "Running costs"],
-          ] as const
-        ).map(([k, label]) => (
-          <button
-            key={k}
-            role="tab"
-            aria-selected={tab === k}
-            onClick={() => setTab(k)}
-            className={cn("tap rounded-xl px-4 py-2 text-sm font-semibold", tab === k ? "bg-pitch-600 text-white" : "bg-surface border-line border")}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        label="Finance view"
+        tone="plain"
+        value={tab}
+        onChange={setTab}
+        items={[
+          ["contracts", "Contracts"],
+          ["ledger", "Ledger"],
+          ["bonuses", "Bonuses"],
+          ["costs", "Running costs"],
+        ]}
+      />
 
       {tab === "contracts" && <Contracts data={data} onChange={setData} />}
       {tab === "ledger" && <Ledger data={data} onChange={setData} />}
@@ -195,7 +206,7 @@ export function Finance() {
                 <span className="font-semibold">{r.name}</span>
                 <span className="text-ink-2 block text-xs">{data.categories_all[r.category] ?? r.category}</span>
               </span>
-              <span className={cn("font-bold tabular-nums", r.direction === "income" ? "text-ready-green" : "text-ready-red")}>
+              <span className={cn("font-bold tabular-nums", r.direction === "income" ? "text-win" : "text-loss")}>
                 {r.direction === "income" ? "+" : "−"}
                 {eur(r.amount_cents)} {PERIOD[r.period]}
               </span>
@@ -209,12 +220,13 @@ export function Finance() {
   );
 }
 
-function Kpi({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: string }) {
+function Kpi({ label, value, sub, tone, accent }: { label: string; value: string; sub?: string; tone?: string; accent?: string }) {
   return (
-    <Card>
+    <Card className="relative overflow-hidden">
+      {accent && <span className="absolute inset-y-0 left-0 w-1" style={{ background: accent }} aria-hidden />}
       <p className="text-ink-2 text-xs font-semibold uppercase">{label}</p>
       <p className={cn("font-display mt-1 text-[2rem] leading-none font-bold tabular-nums", tone)}>{value}</p>
-      {sub && <p className="text-ink-2 text-xs">{sub}</p>}
+      {sub && <p className="text-ink-2 mt-1 text-xs">{sub}</p>}
     </Card>
   );
 }
@@ -397,13 +409,13 @@ function Ledger({ data, onChange }: { data: FinanceView; onChange: (v: FinanceVi
                   {e.description}
                   <span className="text-ink-2 block text-xs">{e.category_label}</span>
                 </td>
-                <td className={cn("p-2 text-right font-bold whitespace-nowrap tabular-nums", e.direction === "income" ? "text-ready-green" : "text-ready-red")}>
+                <td className={cn("p-2 text-right font-bold whitespace-nowrap tabular-nums", e.direction === "income" ? "text-win" : "text-loss")}>
                   {e.direction === "income" ? "+" : "−"}
                   {eur(e.amount_cents)}
                 </td>
                 <td className="p-2 text-right">
                   <button onClick={() => toggle(e)} className="tap" aria-label={`Mark ${e.status === "paid" ? "not paid" : "paid"}: ${e.description}`}>
-                    <Chip tone={e.status === "paid" ? "green" : "amber"}>{e.status === "paid" ? "paid" : "due"}</Chip>
+                    <Chip tone={e.status === "paid" ? "win" : "amber"}>{e.status === "paid" ? "paid" : "due"}</Chip>
                   </button>
                 </td>
               </tr>

@@ -50,9 +50,9 @@ export function Matches() {
       <PageHeader
         eyebrow="Matchday"
         title="Match ratings"
-        subtitle="Enter match stats (or import them from your data provider) and every player gets a 3-10 rating with the reasons behind it. Players see it in their career next to their own diary rating."
+        subtitle="Every player gets a 3-10 rating from the match stats, with the reasons. Players see it in their career next to their own diary rating."
       />
-      <div className="max-w-5xl space-y-5">
+      <div className="space-y-5">
         {data.length === 0 && (
           <Card className="text-ink-2">No matches in the last six weeks.</Card>
         )}
@@ -76,7 +76,7 @@ export function Matches() {
                     </span>
                   </span>
                   <span className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
-                    <span className="flex min-w-0 items-center justify-end gap-2 text-right font-semibold">
+                    <span className="text-ink-2 flex min-w-0 items-center justify-end gap-2 text-right text-sm font-medium">
                       <span className="truncate">{m.team}</span>
                       <Crest name={m.team} size={30} />
                     </span>

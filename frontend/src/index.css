@@ -32,6 +32,17 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Theme surfaces as real colours, so every utility and variant works with them (bg-ink-2,
+   ring-ink, divide-line, bg-surface/60, hover:bg-surface-2...). "inline" keeps them pointing at
+   the variables below, which the .dark class (and the page-header band) redefines. */
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+}
+
 :root {
   --surface: #ffffff;
   --surface-2: #f4f7f5;
@@ -71,20 +82,16 @@ body {
   }
 }
 
-.bg-surface {
-  background: var(--surface);
-}
-.bg-surface-2 {
-  background: var(--surface-2);
-}
-.border-line {
-  border-color: var(--line);
-}
-.text-ink {
-  color: var(--ink);
-}
-.text-ink-2 {
-  color: var(--ink-2);
+/* Dropdowns: one chevron and the same padding everywhere, instead of each browser's own arrow.
+   .select-plain opts out (tiny selects inside the week strips). */
+select:not([multiple]):not(.select-plain) {
+  appearance: none;
+  padding-right: 2.25rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237d9187' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  background-size: 1rem;
+  cursor: pointer;
 }
 
 /* 44px minimum tap targets (WCAG 2.2 target size) */
@@ -110,7 +117,7 @@ body {
 /* Form controls and secondary text placed on the band */
 .hero select,
 .hero input:not([type="range"]) {
-  background: rgb(255 255 255 / 0.1);
+  background-color: rgb(255 255 255 / 0.1);
   border-color: rgb(255 255 255 / 0.25);
   color: #fff;
 }

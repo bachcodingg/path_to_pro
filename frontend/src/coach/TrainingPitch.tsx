@@ -185,7 +185,7 @@ export function TrainingPitch() {
       )}
 
       <Card className="overflow-x-auto p-0">
-        <table className="w-full min-w-[900px] border-separate border-spacing-1 text-xs">
+        <table className="w-full min-w-[900px] table-fixed border-separate border-spacing-1 text-xs">
           <thead>
             <tr>
               <th className="text-ink-2 w-44 p-2 text-left font-semibold">Player</th>
@@ -197,14 +197,17 @@ export function TrainingPitch() {
                     onDragOver={(e) => !past && canPlan && (e.preventDefault(), setOver(d))}
                     onDragLeave={() => setOver(null)}
                     onDrop={(e) => !past && canPlan && onDrop(e, d)}
-                    className={cn("rounded-lg p-1 text-center", over === d && "bg-pitch-100", d === data.today && "text-pitch-700")}
+                    className={cn("rounded-lg p-1 text-center align-top", over === d && "bg-pitch-100", d === data.today && "text-pitch-700")}
                   >
                     <div className="font-bold">{fmtDay(d, { weekday: "short", day: "numeric" })}</div>
-                    {canPlan && !past && (
-                      <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" onClick={() => place(d)} disabled={busy} aria-label={`Place on ${fmtDay(d, { weekday: "long" })}`}>
-                        Place
-                      </Button>
-                    )}
+                    {canPlan &&
+                      (past ? (
+                        <div className="text-ink-2 flex h-11 items-center justify-center font-normal">Done</div>
+                      ) : (
+                        <Button variant="ghost" size="sm" className="px-2 text-xs" onClick={() => place(d)} disabled={busy} aria-label={`Place on ${fmtDay(d, { weekday: "long" })}`}>
+                          Place
+                        </Button>
+                      ))}
                   </th>
                 );
               })}

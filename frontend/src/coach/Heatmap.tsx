@@ -8,6 +8,13 @@ import { PageHeader } from "../shared/PageHeader";
 import type { Band } from "../shared/types";
 import { BAND_BG, BAND_TEXT, BandBadge, BandIcon, Card, ErrorNote, PageSkeleton, cn, fmtDay } from "../shared/ui";
 
+// Cells: ready and take-care days are tints, only recover days are solid, so the eye lands on them
+const CELL: Record<Band, string> = {
+  green: "bg-ready-green/15 text-ready-green dark:bg-ready-green/25",
+  amber: "bg-ready-amber/25 text-amber-800 dark:text-ready-amber",
+  red: "bg-ready-red text-white",
+};
+
 export function Heatmap() {
   const [group, setGroup] = useState("");
   const [flag, setFlag] = useState("");
@@ -26,7 +33,9 @@ export function Heatmap() {
         title="Dressing room"
         subtitle={`Readiness over the last 14 days · today ${fmtDay(data.today, { weekday: "long", day: "numeric", month: "short" })}`}
         bottom={<SquadPulse rows={data.players} today={data.today} />}
-        actions={
+      />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Legend />
         <div className="flex gap-2">
           <select className="bg-surface border-line tap rounded-xl border px-3" value={group} onChange={(e) => setGroup(e.target.value)} aria-label="Age group">
             <option value="">All ages</option>
@@ -42,9 +51,7 @@ export function Heatmap() {
             <option value="short_sleep">Short sleep</option>
           </select>
         </div>
-        }
-      />
-      <Legend />
+      </div>
       <Card className="overflow-x-auto p-0">
         <table className="w-full border-collapse text-sm">
           <thead>
@@ -78,9 +85,9 @@ export function Heatmap() {
                     <button
                       onClick={() => setSel({ row, i })}
                       className={cn(
-                        "tap flex h-11 w-full min-w-11 items-center justify-center rounded-md text-xs font-bold text-white",
-                        c.band ? BAND_BG[c.band] : "bg-surface-2 text-ink-2",
-                        sel?.row.id === row.id && sel.i === i && "ring-ink ring-2",
+                        "tap flex h-11 w-full min-w-11 items-center justify-center rounded-md text-xs font-bold transition-shadow hover:ring-2 hover:ring-line",
+                        c.band ? CELL[c.band] : "bg-surface-2 text-ink-2",
+                        sel?.row.id === row.id && sel.i === i && "ring-ink ring-2 hover:ring-ink",
                       )}
                       aria-label={`${row.name} ${c.date}: ${c.score == null ? "no data" : Math.round(c.score)}`}
                     >
@@ -155,7 +162,7 @@ function Legend() {
     <div className="text-ink-2 flex flex-wrap gap-4 text-sm">
       {(["green", "amber", "red"] as const).map((b) => (
         <span key={b} className="flex items-center gap-1">
-          <span className={cn("inline-flex h-5 w-5 items-center justify-center rounded text-white", BAND_BG[b])}>
+          <span className={cn("inline-flex h-5 w-5 items-center justify-center rounded", CELL[b])}>
             <BandIcon band={b} className="h-3.5 w-3.5" />
           </span>
           {b === "green" ? "Ready ≥ 70" : b === "amber" ? "Take care 50-69" : "Recover < 50"}
