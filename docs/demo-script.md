@@ -29,7 +29,7 @@ synthetic season and sets "today" to Thursday of week 12. All passwords: `demo12
    passes in 30 s", log 19: she meets 4 of 6 benchmarks and moves up to level 3. Anyone
    can sign up at `/register`; under-16s get a parent invite code.
 
-5. **Two teams, one plan (1 min)** - sign in as **Player (U19 + men's team)**: My week shows
+5. **Two teams, one plan (1 min)** - sign in as **Dual-squad player**: My week shows
    the U19 match on Saturday at 90 minutes and the men's Kakkonen match on Sunday at 0' (rule
    H8: under-18s play at most 90 minutes over back-to-back days). **Career** shows both
    teams, ratings and the pathway chart; fill in the match diary. As **Coach**: Training

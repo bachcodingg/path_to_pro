@@ -1,7 +1,8 @@
-// Team analysis: overview (standing, strengths, weaknesses, style, league table) and the
+// Team analysis: overview (strengths, weaknesses, style, key numbers, league table) and the
 // measure lists with each team's place in the league's range.
-import { Card, Chip, SectionTitle, cn } from "../../shared/ui";
-import { fmtMeasure, ordinal, rankText, type Measure, type Standing, type StyleProfile } from "./types";
+import { Card, Chip, SectionTitle, StatTile } from "../../shared/ui";
+import { MiniTable } from "./LeagueTable";
+import { fmtMeasure, rankText, type Measure, type Standing, type StyleProfile } from "./types";
 
 const VERDICT: Record<string, { label: string; tone: "green" | "red" | "neutral"; dot: string }> = {
   strength: { label: "Strength", tone: "green", dot: "var(--color-ready-green)" },
@@ -10,95 +11,64 @@ const VERDICT: Record<string, { label: string; tone: "green" | "red" | "neutral"
 };
 const KEY_NUMBERS = ["goals", "conceded", "xg", "xga", "possession", "pass_acc", "ppda", "aerial_win", "conversion", "shots"];
 
-export function Overview({ p, vs, table, onPick }: { p: StyleProfile; vs: StyleProfile | null | undefined; table: Standing[]; onPick: (id: string) => void }) {
+export function Overview({ p, vs, table, onPick, onTable }: { p: StyleProfile; vs: StyleProfile | null | undefined; table: Standing[]; onPick: (id: string) => void; onTable: () => void }) {
   const by = Object.fromEntries(p.measures.map((m) => [m.key, m]));
   const vsBy = vs ? Object.fromEntries(vs.measures.map((m) => [m.key, m])) : {};
-  const s = p.standing;
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
-      <div className="space-y-4">
-        <Card className="flex flex-wrap items-center gap-x-6 gap-y-2">
-          <div>
-            <p className="text-ink-2 text-xs font-semibold uppercase">League position</p>
-            <p className="text-3xl font-extrabold">{ordinal(s.position)}</p>
-          </div>
-          <Fact label="Points" value={String(s.points)} />
-          <Fact label="Won / drawn / lost" value={`${s.won} / ${s.drawn} / ${s.lost}`} />
-          <Fact label="Goals" value={`${s.gf} – ${s.ga}`} />
-          {vs && <p className="text-ink-2 text-sm">Compared with {vs.team} ({ordinal(vs.standing.position)}, {vs.standing.points} pts)</p>}
-        </Card>
-
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
+      <div className="space-y-5">
         <div className="grid gap-4 md:grid-cols-3">
-          <Summary title="Strengths" items={p.summary.strength} empty="Nothing clearly better than the league." />
-          <Summary title="Weaknesses" items={p.summary.weakness} empty="Nothing clearly worse than the league." />
-          <Summary title="How they play" items={p.summary.style} empty="No habit stands out from the league." />
+          <Summary title="Strengths" tone="var(--color-ready-green)" items={p.summary.strength} empty="Nothing clearly better than the league." />
+          <Summary title="Weaknesses" tone="var(--color-ready-red)" items={p.summary.weakness} empty="Nothing clearly worse than the league." />
+          <Summary title="How they play" tone="var(--color-pitch-500)" items={p.summary.style} empty="No habit stands out from the league." />
         </div>
 
         <section>
           <SectionTitle>Key numbers</SectionTitle>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-            {KEY_NUMBERS.filter((k) => by[k]).map((k) => (
-              <Card key={k} className="p-3">
-                <p className="text-ink-2 text-xs leading-tight">{by[k].label}</p>
-                <p className="mt-1 text-xl font-extrabold">{fmtMeasure(by[k], by[k].value)}</p>
-                {vsBy[k] && <p className="text-ink-2 text-xs">{vs?.team}: {fmtMeasure(vsBy[k], vsBy[k].value)}</p>}
-                <p className="text-ink-2 text-xs">
-                  league {fmtMeasure(by[k], by[k].league)} · {rankText(by[k])}
-                </p>
-              </Card>
-            ))}
+            {KEY_NUMBERS.filter((k) => by[k]).map((k) => {
+              const m = by[k];
+              return (
+                <StatTile
+                  key={k}
+                  label={m.label}
+                  value={fmtMeasure(m, m.value)}
+                  accent={m.verdict ? VERDICT[m.verdict].dot : undefined}
+                  sub={
+                    <>
+                      {vsBy[k] && (
+                        <span className="text-ink block font-semibold">
+                          {vs?.team}: {fmtMeasure(vsBy[k], vsBy[k].value)}
+                        </span>
+                      )}
+                      league {fmtMeasure(m, m.league)} · {rankText(m)}
+                    </>
+                  }
+                />
+              );
+            })}
           </div>
         </section>
       </div>
 
-      <Card className="self-start overflow-hidden p-0">
-        <table className="w-full text-sm">
-          <caption className="p-3 text-left font-bold">League table</caption>
-          <thead className="text-ink-2 text-left text-xs">
-            <tr>
-              <th className="px-3 py-1">#</th>
-              <th className="py-1">Team</th>
-              <th className="px-1 py-1 text-right">GD</th>
-              <th className="px-3 py-1 text-right">Pts</th>
-            </tr>
-          </thead>
-          <tbody>
-            {table.map((t) => (
-              <tr key={t.id} className={cn(t.id === p.id && "bg-pitch-500/15 font-bold", t.id === vs?.id && "bg-ready-green/10")}>
-                <td className="px-3 py-1">{t.position}</td>
-                <td className="py-1">
-                  <button className="tap text-left hover:underline" onClick={() => onPick(t.id)}>
-                    {t.team}
-                  </button>
-                </td>
-                <td className="px-1 py-1 text-right">{t.gf - t.ga > 0 ? `+${t.gf - t.ga}` : t.gf - t.ga}</td>
-                <td className="px-3 py-1 text-right">{t.points}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
+      <div className="self-start">
+        <MiniTable rows={table} highlight={p.id} compare={vs?.id} onPick={onPick} onMore={onTable} />
+      </div>
     </div>
   );
 }
 
-function Fact({ label, value }: { label: string; value: string }) {
+function Summary({ title, tone, items, empty }: { title: string; tone: string; items: string[]; empty: string }) {
   return (
-    <div>
-      <p className="text-ink-2 text-xs">{label}</p>
-      <p className="text-lg font-bold">{value}</p>
-    </div>
-  );
-}
-
-function Summary({ title, items, empty }: { title: string; items: string[]; empty: string }) {
-  return (
-    <Card>
-      <h3 className="mb-2 font-bold">{title}</h3>
+    <Card className="border-t-4" style={{ borderTopColor: tone }}>
+      <h3 className="font-display mb-2 text-xl font-bold uppercase">{title}</h3>
       {items.length ? (
-        <ul className="list-disc space-y-1.5 pl-4 text-sm">
+        <ul className="space-y-1.5 text-sm">
           {items.map((i) => (
-            <li key={i}>{i}</li>
+            <li key={i} className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: tone }} aria-hidden />
+              <span>{i}</span>
+            </li>
           ))}
         </ul>
       ) : (

@@ -127,7 +127,7 @@ test("match ratings with a breakdown, and the second team's coach view", async (
   await page.getByRole("link", { name: /PathToPro Academy .* vs/ }).first().click();
   await page.waitForURL(/\/coach\/matches\/[^/]+$/);
   await expect(page.getByRole("tab", { name: "Line-up" })).toBeVisible();
-  await expect(page.getByText(/Player of the match: /)).toBeVisible();
+  await expect(page.getByText("Player of the match", { exact: true })).toBeVisible();
   await expect(page.getByRole("img", { name: /Starting line-up, \d-\d/ })).toBeVisible();
   await expect(page.getByText("Substitutes")).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/coach-match-lineup.png`, fullPage: true });
@@ -169,7 +169,8 @@ test("club finances: fees, salaries, bonuses and the ledger", async ({ page }) =
 test("team analysis: an opponent's style, shots, set pieces and players from real match data", async ({ page }) => {
   await login(page, "coach@demo.pathtopro");
   await page.getByRole("link", { name: "Team analysis" }).click();
-  await expect(page.getByRole("heading", { name: "Team analysis" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Team analysis: Real Madrid" })).toBeVisible();
+  await expect(page.getByLabel("Form, oldest first: won, won, won, won, won").first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "Strengths" })).toBeVisible();
   await expect(page.getByRole("table", { name: "League table" })).toBeVisible();
   await page.getByLabel("Compare with").selectOption("barcelona");
@@ -187,6 +188,7 @@ test("team analysis: an opponent's style, shots, set pieces and players from rea
   await expect(page.getByRole("img", { name: /corner deliveries on the attacking half/ })).toBeVisible();
 
   await page.getByRole("tab", { name: "Players" }).click();
+  await expect(page.getByRole("region", { name: "Squad leaders" })).toContainText("Cristiano Ronaldo");
   await expect(page.getByRole("cell", { name: "Cristiano Ronaldo" })).toBeVisible();
   await page.getByRole("button", { name: "Passing" }).click();
   await expect(page.getByRole("button", { name: /Pass %/ })).toBeVisible();
@@ -194,6 +196,18 @@ test("team analysis: an opponent's style, shots, set pieces and players from rea
   await page.getByLabel("Team", { exact: true }).selectOption("atletico-madrid");
   await expect(page).toHaveURL(/\/coach\/analysis\/atletico-madrid\?/);
   await expect(page.getByRole("cell", { name: "Antoine Griezmann" })).toBeVisible();
+
+  // Full table as on the league site: all / home / away, zones, form; the club strip switches team
+  await page.getByRole("tab", { name: "Table", exact: true }).click();
+  const table = page.getByRole("table", { name: "League table" });
+  await expect(table.getByRole("row")).toHaveCount(21);
+  await expect(page.getByText("Champions League")).toBeVisible();
+  await page.getByRole("tab", { name: "Home" }).click();
+  await expect(table.getByRole("row").nth(1)).toContainText("19");
+  await page.screenshot({ path: `${SHOTS}/coach-league-table.png`, fullPage: true });
+  await page.getByRole("navigation", { name: "Clubs" }).getByRole("button", { name: "Barcelona" }).click();
+  await expect(page).toHaveURL(/\/coach\/analysis\/barcelona\?/);
+  await expect(page.getByRole("heading", { name: "Team analysis: Barcelona" })).toBeVisible();
 });
 
 test("player app on a laptop: sidebar instead of bottom tabs, pages in columns", async ({ page }) => {
@@ -209,4 +223,16 @@ test("player app on a laptop: sidebar instead of bottom tabs, pages in columns",
   await week.getByRole("button").nth(3).click();
   await expect(page.getByRole("dialog", { name: "Day details" })).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/player-desktop-week.png` });
+});
+
+test("sign-in on a laptop: what the app does, demo accounts by role, skip link once inside", async ({ page }) => {
+  await page.goto("login");
+  await expect(page.getByRole("heading", { name: /Train smart/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Coach.*Squad, matches, analysis/ })).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/sign-in.png` });
+  await page.getByRole("button", { name: /Physio.*Escalation queue/ }).click();
+  await expect(page.getByRole("heading", { name: "Escalation queue" })).toBeVisible();
+  await expect(page).toHaveTitle("Physio queue · PathToPro");
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
 });

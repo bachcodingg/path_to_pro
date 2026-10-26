@@ -9,6 +9,7 @@ import { useAuth } from "../shared/auth";
 import { Breakdown, POSITION_LABEL, RatingBadge } from "../shared/Rating";
 import { RatingHistory } from "../shared/RatingHistory";
 import type { AppearanceRow, Career as CareerData } from "../shared/types";
+import { Crest } from "../shared/Club";
 import { useApi } from "../shared/useApi";
 import { Button, Card, Chip, ErrorNote, SectionTitle, Spinner, cn, fmtDay } from "../shared/ui";
 import { ClubHistory, MoneyCard } from "./ClubHistory";
@@ -168,6 +169,7 @@ function MatchRow({ a }: { a: AppearanceRow }) {
     <div>
       <button className="tap flex w-full items-center gap-3 px-4 py-3 text-left" onClick={() => setOpen(!open)} aria-expanded={open}>
         <RatingBadge value={a.rating} estimate={a.rating_source === "diary"} />
+        <Crest name={a.opponent} size={28} />
         <span className="min-w-0 flex-1">
           <span className="block truncate font-semibold">vs {a.opponent}</span>
           <span className="text-ink-2 text-xs">

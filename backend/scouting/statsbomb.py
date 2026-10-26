@@ -187,6 +187,8 @@ def build(competition: int, season: int, cache: Path, workers: int = 16, log=pri
                 for k, v in st.items():
                     if k != "position":
                         agg[k] = round(agg.get(k, 0) + v, 3)
+    # date and matchday give the order of results, for the form guide
+    when = {m["match_id"]: (m["match_date"], m.get("match_week")) for m in matches}
     players = []
     for agg in season_players.values():
         pos = agg.pop("pos")
@@ -201,7 +203,8 @@ def build(competition: int, season: int, cache: Path, workers: int = 16, log=pri
         "corners": [c for r in rows for c in r["corners"]],
         "penalties": [p for r in rows for p in r["penalties"]],
         "free_kicks": [f for r in rows for f in r["free_kicks"]],
-        "team_matches": [{"m": r["match"], "team": t, **st} for r in rows for t, st in r["team_stats"].items()],
+        "team_matches": [{"m": r["match"], "date": when[r["match"]][0], "week": when[r["match"]][1], "team": t, **st}
+                         for r in rows for t, st in r["team_stats"].items()],  # fmt: skip
         "players": sorted(players, key=lambda p: (p["team"], -p["minutes"])),
         "shot_columns": SHOT_COLUMNS,
         "shots": [s for r in rows for s in r["shots"]],

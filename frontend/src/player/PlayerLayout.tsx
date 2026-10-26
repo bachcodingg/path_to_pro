@@ -14,7 +14,9 @@ import {
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../shared/auth";
 import { t } from "../shared/i18n";
+import { SkipLink } from "../shared/SkipLink";
 import { cn } from "../shared/ui";
+import { useDocumentTitle } from "../shared/useDocumentTitle";
 
 // Built inside the component so labels follow the current language.
 function navFor(selfGuided: boolean) {
@@ -78,15 +80,17 @@ export function PlayerLayout() {
   const selfGuided = user?.pathway === "amateur";
   const NAV = navFor(selfGuided);
   const EXTRAS = extrasFor(selfGuided);
+  useDocumentTitle([...NAV, ...EXTRAS], "Player");
   const link = ({ isActive }: { isActive: boolean }) =>
     cn(
       "tap flex items-center gap-3 rounded-xl px-3 py-2 font-semibold",
       isActive
-        ? "bg-white/10 text-pitch-300"
+        ? "relative bg-white/10 text-white before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-full before:bg-pitch-300"
         : "text-ink-2 hover:bg-white/5 hover:text-ink",
     );
   return (
-    <div className="dark bg-surface-2 text-ink min-h-full md:flex">
+    <div className="dark display-headings bg-surface-2 text-ink min-h-full md:flex">
+      <SkipLink />
       <aside className="bg-surface border-line sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r p-4 md:flex">
         <div className="mb-6 flex items-center gap-2">
           <img
@@ -94,7 +98,7 @@ export function PlayerLayout() {
             alt=""
             className="h-8 w-8"
           />
-          <span className="text-lg font-extrabold">PathToPro</span>
+          <span className="font-display text-xl font-extrabold tracking-wide uppercase">PathToPro</span>
         </div>
         <nav
           aria-label="Player navigation"
@@ -134,7 +138,7 @@ export function PlayerLayout() {
               alt=""
               className="h-8 w-8"
             />
-            <span className="text-lg font-extrabold">PathToPro</span>
+            <span className="font-display text-xl font-extrabold tracking-wide uppercase">PathToPro</span>
           </div>
           <span className="flex items-center gap-1">
             <Link
@@ -154,7 +158,7 @@ export function PlayerLayout() {
             </button>
           </span>
         </header>
-        <main className="flex-1 px-4 pb-28 md:px-8 md:pt-6 md:pb-10">
+        <main id="main" tabIndex={-1} className="flex-1 px-4 pb-28 outline-none md:px-8 md:pt-6 md:pb-10">
           <Outlet />
         </main>
         <nav
@@ -174,8 +178,9 @@ export function PlayerLayout() {
                   end={end}
                   className={({ isActive }) =>
                     cn(
-                      "tap flex flex-col items-center justify-center gap-0.5 py-2 text-center text-[10.5px] leading-tight font-semibold",
-                      isActive ? "text-pitch-300" : "text-ink-2",
+                      "tap relative flex flex-col items-center justify-center gap-0.5 py-2 text-center text-[10.5px] leading-tight font-semibold",
+                      // the active tab gets a bar along the top edge, as in the league apps
+                      isActive ? "text-pitch-300 before:bg-pitch-300 before:absolute before:inset-x-3 before:top-0 before:h-[3px] before:rounded-b-full" : "text-ink-2",
                     )
                   }
                 >

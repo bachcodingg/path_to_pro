@@ -282,15 +282,22 @@ def summary(measures: list[dict], limit: int = 6) -> dict[str, list[str]]:
     return out
 
 
-def standings() -> list[dict]:
-    """League table from the match scores: the data check that every match is there."""
+def standings(venue: str = "all") -> list[dict]:
+    """League table from the match scores: the data check that every match is there.
+
+    venue "home" or "away" counts only those matches, as the league's own home / away tables do.
+    form: the last five results, oldest first ("W", "D", "L").
+    """
     table: dict[str, dict] = {}
-    for team, rows in rows_by_team().items():
+    for team, all_rows in rows_by_team().items():
+        rows = [r for r in all_rows if venue == "all" or r["home"] == (venue == "home")]
         w = sum(r["gf"] > r["ga"] for r in rows)
         dr = sum(r["gf"] == r["ga"] for r in rows)
         gf, ga = sum(r["gf"] for r in rows), sum(r["ga"] for r in rows)
+        recent = sorted(rows, key=lambda r: (r.get("date") or "", r["m"]))[-5:]
+        form = ["W" if r["gf"] > r["ga"] else "D" if r["gf"] == r["ga"] else "L" for r in recent]
         table[team] = {"team": team, "id": slug(team), "played": len(rows), "won": w, "drawn": dr,
-                       "lost": len(rows) - w - dr, "gf": gf, "ga": ga, "points": 3 * w + dr}  # fmt: skip
+                       "lost": len(rows) - w - dr, "gf": gf, "ga": ga, "points": 3 * w + dr, "form": form}  # fmt: skip
     ordered = sorted(table.values(), key=lambda t: (-t["points"], -(t["gf"] - t["ga"]), -t["gf"]))
     return [t | {"position": i} for i, t in enumerate(ordered, 1)]
 
