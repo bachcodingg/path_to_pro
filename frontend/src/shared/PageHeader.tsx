@@ -26,7 +26,8 @@ export function PageHeader({
   return (
     <header
       style={accent ? ({ "--hero-glow": `${accent}80` } as CSSProperties) : undefined}
-      className={cn("hero -mx-4 -mt-4 mb-5 px-4 pt-5 md:-mx-6 md:-mt-6 md:mb-6 md:px-6 md:pt-7", !bottom && "pb-5 md:pb-6", className)}
+      // dark: chips, buttons and fields on the band take their dark-theme colours
+      className={cn("hero dark -mx-4 -mt-4 mb-5 px-4 pt-5 md:-mx-6 md:-mt-6 md:mb-6 md:px-6 md:pt-7", !bottom && "pb-5 md:pb-6", className)}
     >
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="flex min-w-0 items-center gap-4">
