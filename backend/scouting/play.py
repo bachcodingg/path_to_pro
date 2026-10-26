@@ -101,8 +101,11 @@ def extract_play(match: dict, events: list[dict], names: dict[int, str]) -> dict
         if ok:
             add(ev, key + "_cmp")
 
+    shootout: Counter = Counter()  # goals in a penalty shoot-out, kept apart from match play
     for ev in events:
         if ev["period"] > 4:  # penalty shoot-outs are not match play
+            if ev["type"]["name"] == "Shot" and ev["shot"]["outcome"]["name"] == "Goal":
+                shootout[ev["team"]["name"]] += 1
             continue
         kind = ev["type"]["name"]
         loc = ev.get("location") or [60.0, 40.0]
@@ -262,6 +265,9 @@ def extract_play(match: dict, events: list[dict], names: dict[int, str]) -> dict
         t: {"opp": opp, "home": t == home, "gf": score[t], "ga": score[opp], **{k: round(v, 3) for k, v in c.items()}}
         for t, opp, c in ((home, away, team_c[home]), (away, home, team_c[away]))
     }
+    if any(ev["period"] == 5 for ev in events):
+        for t, opp in ((home, away), (away, home)):
+            team_stats[t] |= {"so_gf": shootout[t], "so_ga": shootout[opp]}
     players: dict[str, dict[str, dict]] = {home: {}, away: {}}
     for pid in {pid for _, pid in player_c} | set(minutes):
         team = team_of.get(pid)
