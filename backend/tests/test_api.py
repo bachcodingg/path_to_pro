@@ -313,30 +313,50 @@ def test_demo_data_and_sign_up_are_separate_in_production(monkeypatch):
         Settings(env="production", autoseed=True, registration=True)
 
 
-def test_team_analysis_is_for_coaches(demo):
+def test_pro_leagues_are_open_to_every_signed_in_user(demo):
     client, _ = demo
-    coach = login(client, "coach@demo.pathtopro")
-    teams = client.get("/api/coach/analysis/teams", headers=coach).json()
-    assert any(t["id"] == "real-madrid" for t in teams["teams"])
-    r = client.get("/api/coach/analysis/teams/real-madrid", headers=coach)
-    assert r.status_code == 200 and r.json()["team"] == "Real Madrid"
-    assert client.get("/api/coach/analysis/teams/nobody-fc", headers=coach).status_code == 404
-    player = login(client, "p03@demo.pathtopro")
-    assert client.get("/api/coach/analysis/teams", headers=player).status_code == 403
+    comps = client.get("/api/pro/competitions", headers=login(client, "p03@demo.pathtopro")).json()
+    assert [c["id"] for c in comps] == ["la-liga", "premier-league", "ligue-1", "bundesliga", "champions-league"]
+    assert {c["id"]: c["coverage"] for c in comps}["champions-league"] == "finals"
+    for email in ("coach@demo.pathtopro", "mencoach@demo.pathtopro", "physio@demo.pathtopro", "guardian02@demo.pathtopro"):
+        assert client.get("/api/pro/la-liga/teams", headers=login(client, email)).status_code == 200
+    assert client.get("/api/pro/la-liga/teams").status_code == 401  # but not anonymous
+    assert client.get("/api/coach/analysis/teams", headers=login(client, "coach@demo.pathtopro")).status_code == 404
 
 
 def test_team_style_players_and_shots(demo):
     client, _ = demo
-    coach = login(client, "coach@demo.pathtopro")
-    teams = client.get("/api/coach/analysis/teams", headers=coach).json()
+    h = login(client, "p03@demo.pathtopro")
+    teams = client.get("/api/pro/la-liga/teams", headers=h).json()
     assert teams["table"][0]["team"] == "Barcelona" and len(teams["table"]) == 20
-    s = client.get("/api/coach/analysis/teams/atletico-madrid/style", headers=coach).json()
+    r = client.get("/api/pro/la-liga/teams/real-madrid", headers=h)
+    assert r.status_code == 200 and r.json()["team"] == "Real Madrid"
+    s = client.get("/api/pro/la-liga/teams/atletico-madrid/style", headers=h).json()
     assert s["standing"]["position"] == 3 and s["summary"]["strength"]
-    p = client.get("/api/coach/analysis/teams/atletico-madrid/players", headers=coach).json()
+    p = client.get("/api/pro/la-liga/teams/atletico-madrid/players", headers=h).json()
     assert any(r["name"] == "Antoine Griezmann" for r in p["players"])
-    shots = client.get("/api/coach/analysis/teams/atletico-madrid/shots", headers=coach).json()
+    shots = client.get("/api/pro/la-liga/teams/atletico-madrid/shots", headers=h).json()
     assert shots["columns"][:3] == ["x", "y", "xg"] and shots["for"] and shots["against"]
-    for sub in ("style", "players", "shots"):
-        assert client.get(f"/api/coach/analysis/teams/nobody-fc/{sub}", headers=coach).status_code == 404
-    physio = login(client, "physio@demo.pathtopro")
-    assert client.get("/api/coach/analysis/teams/atletico-madrid/style", headers=physio).status_code == 403
+    for sub in ("", "/style", "/players", "/shots"):
+        assert client.get(f"/api/pro/la-liga/teams/nobody-fc{sub}", headers=h).status_code == 404
+    assert client.get("/api/pro/serie-b/teams", headers=h).status_code == 404
+
+
+def test_premier_league_and_club_and_finals_coverage(demo):
+    client, _ = demo
+    h = login(client, "coach@demo.pathtopro")
+    pl = client.get("/api/pro/premier-league/teams", headers=h).json()
+    assert [(t["team"], t["points"]) for t in pl["table"][:2]] == [("Leicester City", 81), ("Arsenal", 71)]
+    # One club's season: Leverkusen only, compared with their opponents and not ranked
+    bl = client.get("/api/pro/bundesliga/teams", headers=h).json()
+    assert [t["name"] for t in bl["teams"]] == ["Bayer Leverkusen"] and "table" not in bl
+    lev = client.get("/api/pro/bundesliga/teams/bayer-leverkusen/style", headers=h).json()
+    assert lev["standing"]["lost"] == 0 and all(m["rank"] is None for m in lev["measures"])
+    # Finals: no team pages, a match centre per final
+    ucl = client.get("/api/pro/champions-league/matches", headers=h).json()["matches"]
+    assert len(ucl) == 14 and ucl[0]["date"] == "2019-06-01"
+    istanbul = next(m for m in ucl if m["date"] == "2005-05-25")
+    assert (istanbul["home_goals"], istanbul["away_goals"]) == (3, 3) and istanbul["away_shootout"] > istanbul["home_shootout"]
+    report = client.get(f"/api/pro/champions-league/matches/{istanbul['id']}", headers=h).json()
+    assert {s["key"] for s in report["stats"]} >= {"xg", "shots", "possession"} and report["shots"]
+    assert client.get("/api/pro/champions-league/matches/1", headers=h).status_code == 404
