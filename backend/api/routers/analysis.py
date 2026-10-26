@@ -20,7 +20,8 @@ def _found(value: dict | None) -> dict:
 
 @router.get("/teams")
 def teams(user: CurrentUser = Depends(require(Role.COACH))):
-    return analysis.teams() | {"table": style.standings()}
+    tables = {"table": style.standings(), "table_home": style.standings("home"), "table_away": style.standings("away")}
+    return analysis.teams() | tables
 
 
 @router.get("/teams/{team_id}")

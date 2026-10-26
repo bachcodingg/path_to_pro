@@ -110,6 +110,18 @@ def test_league_table_matches_the_real_final_standings():
     assert all(t["played"] == 38 for t in table) and len(table) == 20
 
 
+def test_home_and_away_tables_add_up_and_form_is_the_last_five_results():
+    full = {t["team"]: t for t in style.standings()}
+    home = {t["team"]: t for t in style.standings("home")}
+    away = {t["team"]: t for t in style.standings("away")}
+    for team, t in full.items():
+        assert home[team]["played"] == away[team]["played"] == 19
+        assert home[team]["points"] + away[team]["points"] == t["points"]
+        assert len(t["form"]) == 5 and set(t["form"]) <= {"W", "D", "L"}
+    # 2015/16 last five: Barcelona won all five; Real Madrid won their last twelve
+    assert full["Barcelona"]["form"] == ["W"] * 5 and full["Real Madrid"]["form"] == ["W"] * 5
+
+
 def test_style_measures_are_consistent():
     p = style.style_profile("real-madrid")
     assert p["matches"] == 38 and len(p["measures"]) == len(style.METRICS)
