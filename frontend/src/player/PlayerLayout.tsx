@@ -1,8 +1,10 @@
 import {
   CalendarDays,
+  ClipboardCheck,
   Dumbbell,
   Home,
   LogOut,
+  Map,
   Ruler,
   Shield,
   Star,
@@ -58,14 +60,74 @@ function navFor(selfGuided: boolean) {
       ];
 }
 
-// Mobile-first PWA shell; dark by default (players use it in the evening).
+// Pages a phone reaches from inside other pages; the desktop sidebar has room to list them.
+function extrasFor(selfGuided: boolean) {
+  return [
+    { to: "/player/checkin", label: t("nav.checkin"), icon: ClipboardCheck },
+    ...(selfGuided
+      ? []
+      : [{ to: "/player/road", label: t("nav.road"), icon: Map }]),
+    { to: "/player/devices", label: t("nav.devices"), icon: Watch },
+  ];
+}
+
+// Mobile-first PWA shell, dark by default (players use it in the evening). From tablet
+// width up: a sidebar instead of the bottom tabs, and pages lay out in columns.
 export function PlayerLayout() {
   const { user, logout } = useAuth();
-  const NAV = navFor(user?.pathway === "amateur");
+  const selfGuided = user?.pathway === "amateur";
+  const NAV = navFor(selfGuided);
+  const EXTRAS = extrasFor(selfGuided);
+  const link = ({ isActive }: { isActive: boolean }) =>
+    cn(
+      "tap flex items-center gap-3 rounded-xl px-3 py-2 font-semibold",
+      isActive
+        ? "bg-white/10 text-pitch-300"
+        : "text-ink-2 hover:bg-white/5 hover:text-ink",
+    );
   return (
-    <div className="dark bg-surface-2 text-ink min-h-full">
-      <div className="mx-auto flex min-h-screen max-w-md flex-col">
-        <header className="flex items-center justify-between px-4 pt-[max(env(safe-area-inset-top),12px)] pb-2">
+    <div className="dark bg-surface-2 text-ink min-h-full md:flex">
+      <aside className="bg-surface border-line sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r p-4 md:flex">
+        <div className="mb-6 flex items-center gap-2">
+          <img
+            src={`${import.meta.env.BASE_URL}icon.svg`}
+            alt=""
+            className="h-8 w-8"
+          />
+          <span className="text-lg font-extrabold">PathToPro</span>
+        </div>
+        <nav
+          aria-label="Player navigation"
+          className="flex-1 space-y-1 overflow-y-auto"
+        >
+          {NAV.map(({ to, label, icon: Icon, end }) => (
+            <NavLink key={to} to={to} end={end} className={link}>
+              <Icon className="h-5 w-5" aria-hidden /> {label}
+            </NavLink>
+          ))}
+          <div className="border-line my-3 border-t" />
+          {EXTRAS.map(({ to, label, icon: Icon }) => (
+            <NavLink key={to} to={to} className={link}>
+              <Icon className="h-5 w-5" aria-hidden /> {label}
+            </NavLink>
+          ))}
+        </nav>
+        <div className="border-line border-t pt-3 text-sm">
+          <p className="font-semibold">{user?.name}</p>
+          <p className="text-ink-2">
+            {selfGuided ? "Self-guided player" : "Academy player"}
+          </p>
+          <button
+            onClick={logout}
+            className="tap text-ink-2 hover:text-ink mt-1 flex items-center gap-1"
+          >
+            <LogOut className="h-4 w-4" aria-hidden /> {t("common.signout")}
+          </button>
+        </div>
+      </aside>
+
+      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col md:max-w-6xl">
+        <header className="flex items-center justify-between px-4 pt-[max(env(safe-area-inset-top),12px)] pb-2 md:hidden">
           <div className="flex items-center gap-2">
             <img
               src={`${import.meta.env.BASE_URL}icon.svg`}
@@ -92,11 +154,11 @@ export function PlayerLayout() {
             </button>
           </span>
         </header>
-        <main className="flex-1 px-4 pb-28">
+        <main className="flex-1 px-4 pb-28 md:px-8 md:pt-6 md:pb-10">
           <Outlet />
         </main>
         <nav
-          className="bg-surface border-line fixed inset-x-0 bottom-0 border-t pb-[env(safe-area-inset-bottom)]"
+          className="bg-surface border-line fixed inset-x-0 bottom-0 border-t pb-[env(safe-area-inset-bottom)] md:hidden"
           aria-label="Player navigation"
         >
           <ul
