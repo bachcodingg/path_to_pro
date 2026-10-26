@@ -4,7 +4,9 @@ import { api } from "../shared/api";
 import { Link } from "react-router-dom";
 import type { Heatmap as HeatmapData, HeatmapRow } from "../shared/types";
 import { useApi } from "../shared/useApi";
-import { BAND_BG, BandBadge, BandIcon, Card, ErrorNote, Spinner, cn, fmtDay } from "../shared/ui";
+import { PageHeader } from "../shared/PageHeader";
+import type { Band } from "../shared/types";
+import { BAND_BG, BAND_TEXT, BandBadge, BandIcon, Card, ErrorNote, PageSkeleton, cn, fmtDay } from "../shared/ui";
 
 export function Heatmap() {
   const [group, setGroup] = useState("");
@@ -13,17 +15,18 @@ export function Heatmap() {
   const { data, error, loading, reload } = useApi<HeatmapData>(`/api/coach/heatmap${qs ? `?${qs}` : ""}`);
   const [sel, setSel] = useState<{ row: HeatmapRow; i: number } | null>(null);
 
-  if (loading && !data) return <Spinner />;
+  if (loading && !data) return <PageSkeleton label="Loading the dressing room" />;
   if (error || !data) return <ErrorNote message={error ?? "No data"} onRetry={reload} />;
 
   const groups = ["U14", "U15", "U16", "U17", "U18", "U19"];
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold">Dressing room</h1>
-          <p className="text-ink-2 text-sm">Readiness over the last 14 days · today {fmtDay(data.today, { day: "numeric", month: "short" })}</p>
-        </div>
+      <PageHeader
+        eyebrow="Squad"
+        title="Dressing room"
+        subtitle={`Readiness over the last 14 days · today ${fmtDay(data.today, { weekday: "long", day: "numeric", month: "short" })}`}
+        bottom={<SquadPulse rows={data.players} today={data.today} />}
+        actions={
         <div className="flex gap-2">
           <select className="bg-surface border-line tap rounded-xl border px-3" value={group} onChange={(e) => setGroup(e.target.value)} aria-label="Age group">
             <option value="">All ages</option>
@@ -39,7 +42,8 @@ export function Heatmap() {
             <option value="short_sleep">Short sleep</option>
           </select>
         </div>
-      </div>
+        }
+      />
       <Legend />
       <Card className="overflow-x-auto p-0">
         <table className="w-full border-collapse text-sm">
@@ -106,6 +110,42 @@ export function Heatmap() {
           </div>
         </Card>
       )}
+    </div>
+  );
+}
+
+// The squad at a glance, like the match-stats bar on a broadcast: each player's latest
+// reading, one segment per band, and how many have checked in today
+function SquadPulse({ rows, today }: { rows: HeatmapRow[]; today: string }) {
+  const count: Record<Band | "none", number> = { green: 0, amber: 0, red: 0, none: 0 };
+  let checkedIn = 0;
+  for (const r of rows) {
+    const latest = [...r.cells].reverse().find((c) => c.band);
+    count[latest?.band ?? "none"]++;
+    if (r.cells.some((c) => c.date === today && c.band)) checkedIn++;
+  }
+  const parts = (["green", "amber", "red"] as const).map((b) => [b, BAND_TEXT[b], count[b]] as const);
+  const total = rows.length || 1;
+  return (
+    <div className="pb-5">
+      <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
+        <span className="text-xs font-bold tracking-[0.14em] text-white/60 uppercase">Latest reading</span>
+        {parts.map(([k, label, n]) => (
+          <span key={k} className="flex items-center gap-1.5">
+            <span className={cn("h-2.5 w-2.5 self-center rounded-full", BAND_BG[k])} aria-hidden />
+            <span className="font-display text-2xl font-bold">{n}</span>
+            <span className="text-sm text-white/75">{label}</span>
+          </span>
+        ))}
+        <span className="text-sm text-white/75 md:ml-auto">
+          <span className="font-display text-2xl font-bold text-white">{checkedIn}</span> of {rows.length} checked in today
+        </span>
+      </div>
+      <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-white/10" aria-hidden>
+        {parts.map(([k, , n]) => (
+          <span key={k} className={BAND_BG[k]} style={{ width: `${(100 * n) / total}%` }} />
+        ))}
+      </div>
     </div>
   );
 }

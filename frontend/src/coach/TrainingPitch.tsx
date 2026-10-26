@@ -7,6 +7,7 @@ import { Link } from "react-router-dom";
 import { api, ApiError } from "../shared/api";
 import { useAuth } from "../shared/auth";
 import type { PlanDay, SessionKind } from "../shared/types";
+import { PageHeader } from "../shared/PageHeader";
 import { useApi } from "../shared/useApi";
 import { BandBadge, Button, Card, Chip, ErrorNote, Spinner, cn, fmtDay, intensityClass } from "../shared/ui";
 
@@ -99,21 +100,22 @@ export function TrainingPitch() {
   const col = preview ? data.dates.indexOf(preview.day) : -1;
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-extrabold">Training pitch</h1>
-          <p className="text-ink-2 text-sm">Plan a team session; the hard rules are checked for every player.</p>
-        </div>
-        <div className="flex items-center gap-1">
+      <PageHeader
+        eyebrow="Squad"
+        title="Training pitch"
+        subtitle="Plan a team session; the hard rules are checked for every player."
+        actions={
+        <div className="flex items-center gap-1 rounded-xl bg-white/10 p-1">
           <Button variant="ghost" size="sm" aria-label="This week" disabled={offset === 0} onClick={() => (setOffset(0), setPreview(null))}>
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <span className="text-sm font-semibold">{offset === 0 ? "This week" : "Next week"}</span>
+          <span className="font-display min-w-24 text-center text-lg font-bold uppercase">{offset === 0 ? "This week" : "Next week"}</span>
           <Button variant="ghost" size="sm" aria-label="Next week" disabled={offset === 1} onClick={() => (setOffset(1), setPreview(null))}>
             <ChevronRight className="h-5 w-5" />
           </Button>
         </div>
-      </div>
+        }
+      />
 
       {canPlan && (
         <Card className="flex flex-wrap items-center gap-2">
