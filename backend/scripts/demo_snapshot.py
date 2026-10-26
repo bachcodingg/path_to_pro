@@ -88,6 +88,8 @@ def main(out: Path) -> None:
                 "/api/me/gym?offset=1",
                 "/api/me/growth",
                 "/api/me/career",
+                "/api/me/skills",
+                "/api/me/tips",
             ]
             paths += ["/api/me/pathway"] if me["pathway"] == "amateur" else ["/api/me/card", "/api/me/roadmap"]
             paths += ["/api/me/finance"]
