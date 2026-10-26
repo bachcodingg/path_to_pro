@@ -122,6 +122,15 @@ body {
   color: rgb(255 255 255 / 0.75);
 }
 
+/* Player and family apps: page titles in the display face, as the staff band sets them */
+.display-headings h1 {
+  font-family: var(--font-display);
+  font-size: 2.1rem;
+  line-height: 1.02;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+}
+
 .num {
   font-variant-numeric: tabular-nums;
 }

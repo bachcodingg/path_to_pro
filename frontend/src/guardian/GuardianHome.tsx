@@ -30,11 +30,13 @@ export function GuardianHome() {
   const { user, logout } = useAuth();
   const kids = useApi<Child[]>("/api/guardian/children");
   return (
-    <div className="bg-surface-2 min-h-full">
-      <header className="bg-pitch-800 flex items-center justify-between px-4 py-3 text-white">
+    <div className="display-headings bg-surface-2 min-h-full">
+      <header className="hero flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
           <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="h-8 w-8" />
-          <span className="font-extrabold">PathToPro · Family</span>
+          <span className="font-display text-xl font-extrabold tracking-wide uppercase">
+            PathToPro <span className="text-pitch-300">· Family</span>
+          </span>
         </div>
         <button onClick={logout} className="tap flex items-center gap-1 text-sm">
           {user?.name} <LogOut className="h-4 w-4" aria-hidden />
