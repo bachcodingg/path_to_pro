@@ -2,6 +2,7 @@
 import { Download } from "lucide-react";
 import { useState } from "react";
 import { download } from "../shared/api";
+import { PageHeader } from "../shared/PageHeader";
 import { useApi } from "../shared/useApi";
 import { Button, Card, Chip, ErrorNote, Spinner } from "../shared/ui";
 
@@ -26,11 +27,11 @@ export function AgentLog() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold">Match commentary</h1>
-          <p className="text-ink-2 text-sm">Every agent action, newest first.</p>
-        </div>
+      <PageHeader
+        eyebrow="Matchday"
+        title="Match commentary"
+        subtitle="Every agent action, newest first, with the reason and the evidence behind it."
+        actions={
         <div className="flex flex-wrap gap-2">
           <select aria-label="Agent" className="bg-surface border-line tap rounded-xl border px-3" value={agent} onChange={(e) => setAgent(e.target.value)}>
             <option value="">All agents</option>
@@ -50,7 +51,8 @@ export function AgentLog() {
             <Download className="h-4 w-4" aria-hidden /> CSV
           </Button>
         </div>
-      </div>
+        }
+      />
       {loading && !data && <Spinner />}
       {error && <ErrorNote message={error} onRetry={reload} />}
       <ol className="space-y-2">

@@ -1,6 +1,7 @@
 // Readiness calibration: compare the score with staff ratings, review suggested weights, apply.
 import { useState } from "react";
 import { api, ApiError } from "../shared/api";
+import { PageHeader } from "../shared/PageHeader";
 import { useApi } from "../shared/useApi";
 import { useAuth } from "../shared/auth";
 import { Button, Card, ErrorNote, SectionTitle, Spinner, cn } from "../shared/ui";
@@ -56,104 +57,108 @@ export function Calibration() {
 
   const same = (Object.keys(data.current) as (keyof Weights)[]).every((k) => data.current[k] === data.suggested[k]);
   return (
-    <div className="max-w-4xl space-y-4">
-      <div>
-        <h1 className="text-2xl font-extrabold">Readiness calibration</h1>
-        <p className="text-ink-2 text-sm">
-          Rate players in the Dressing room ("How ready does he look?"). Your ratings are compared with the score, and the
-          weights that agree best with staff are suggested. A suggestion is only allowed if it spots at least as many of your red
-          days as today's weights.
-        </p>
-      </div>
-
-      {!data.enough_data && (
-        <Card className="border-ready-amber/50">
-          {data.n} rated days so far. At least {data.min_samples} are needed before suggesting new weights.
-        </Card>
-      )}
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <WeightsCard title="Current weights" w={data.current} />
-        <WeightsCard title="Suggested weights" w={data.suggested} highlight={!same} />
-      </div>
-
-      <section>
-        <SectionTitle>Agreement with staff ({data.n} rated days)</SectionTitle>
-        <Card className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead className="text-ink-2 text-left">
-              <tr>
-                <th className="p-3">Measure</th>
-                <th className="p-3">Current</th>
-                <th className="p-3">Suggested</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[color:var(--line)]">
-              <tr>
-                <td className="p-3">Agreement beyond chance (weighted kappa)</td>
-                <td className="p-3">{k2(data.before.kappa)}</td>
-                <td className="p-3 font-semibold">{k2(data.after.kappa)}</td>
-              </tr>
-              <tr>
-                <td className="p-3">Same on players it wasn't fitted on (cross-validated)</td>
-                <td className="p-3">{k2(data.cv_before)}</td>
-                <td className="p-3 font-semibold">{k2(data.cv_after)}</td>
-              </tr>
-              <tr>
-                <td className="p-3">Same colour as staff</td>
-                <td className="p-3">{pct(data.before.accuracy)}</td>
-                <td className="p-3 font-semibold">{pct(data.after.accuracy)}</td>
-              </tr>
-              <tr>
-                <td className="p-3">Staff red days the score also calls red</td>
-                <td className="p-3">{pct(data.before.red_recall)}</td>
-                <td className="p-3 font-semibold">{pct(data.after.red_recall)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </Card>
-        {data.enough_data && !same && (
-          <Card className={cn("mt-2", data.recommended ? "border-ready-green/50" : "border-ready-amber/50")} role="status">
-            {data.recommended ? (
-              <p>
-                <span className="font-semibold">Recommended.</span> On players the weights were not fitted on, agreement improves by{" "}
-                {k2((data.cv_after ?? 0) - (data.cv_before ?? 0))}, more than twice the fold-to-fold noise (±{k2(data.cv_noise)}).
-              </p>
-            ) : (
-              <p>
-                <span className="font-semibold">Not recommended yet.</span> The held-out gain ({k2((data.cv_after ?? 0) - (data.cv_before ?? 0))}) is
-                not clearly above the noise (±{k2(data.cv_noise)}, minimum {data.min_gain}). The suggestion may only fit these
-                ratings by chance: keep rating players and check again.
-              </p>
-            )}
+    <div className="space-y-4">
+      <PageHeader
+        eyebrow="Club"
+        title="Readiness calibration"
+        subtitle={
+          <>
+            Rate players in the Dressing room ("How ready does he look?"). Your ratings are compared with the score, and the
+            weights that agree best with staff are suggested. A suggestion is only allowed if it spots at least as many of your
+            red days as today's weights.
+          </>
+        }
+      />
+      <div className="max-w-4xl space-y-4">
+        {!data.enough_data && (
+          <Card className="border-ready-amber/50">
+            {data.n} rated days so far. At least {data.min_samples} are needed before suggesting new weights.
           </Card>
         )}
-        <p className="text-ink-2 mt-2 text-xs">
-          Colour buffer: a better colour needs the score {data.hysteresis.up} points past the boundary; a worse colour applies
-          {data.hysteresis.down === 0 ? " immediately" : ` after ${data.hysteresis.down} points`}, so warnings are never delayed.
-        </p>
-      </section>
 
-      {user?.role === "coach" && (
-        <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={() => apply(data.suggested)} disabled={busy || same || !data.enough_data || !data.recommended} loading={busy}>
-            Apply suggested weights
-          </Button>
-          {data.enough_data && !same && !data.recommended && (
-            <Button variant="ghost" onClick={() => apply(data.suggested, true)} disabled={busy}>
-              Apply anyway
-            </Button>
-          )}
-          <Button variant="secondary" onClick={() => apply(null)} disabled={busy}>
-            Reset to defaults
-          </Button>
-          {msg && (
-            <p role="status" className="text-sm font-semibold">
-              {msg}
-            </p>
-          )}
+        <div className="grid gap-4 md:grid-cols-2">
+          <WeightsCard title="Current weights" w={data.current} />
+          <WeightsCard title="Suggested weights" w={data.suggested} highlight={!same} />
         </div>
-      )}
+
+        <section>
+          <SectionTitle>Agreement with staff ({data.n} rated days)</SectionTitle>
+          <Card className="overflow-x-auto p-0">
+            <table className="w-full text-sm">
+              <thead className="text-ink-2 text-left">
+                <tr>
+                  <th className="p-3">Measure</th>
+                  <th className="p-3">Current</th>
+                  <th className="p-3">Suggested</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[color:var(--line)]">
+                <tr>
+                  <td className="p-3">Agreement beyond chance (weighted kappa)</td>
+                  <td className="p-3">{k2(data.before.kappa)}</td>
+                  <td className="p-3 font-semibold">{k2(data.after.kappa)}</td>
+                </tr>
+                <tr>
+                  <td className="p-3">Same on players it wasn't fitted on (cross-validated)</td>
+                  <td className="p-3">{k2(data.cv_before)}</td>
+                  <td className="p-3 font-semibold">{k2(data.cv_after)}</td>
+                </tr>
+                <tr>
+                  <td className="p-3">Same colour as staff</td>
+                  <td className="p-3">{pct(data.before.accuracy)}</td>
+                  <td className="p-3 font-semibold">{pct(data.after.accuracy)}</td>
+                </tr>
+                <tr>
+                  <td className="p-3">Staff red days the score also calls red</td>
+                  <td className="p-3">{pct(data.before.red_recall)}</td>
+                  <td className="p-3 font-semibold">{pct(data.after.red_recall)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </Card>
+          {data.enough_data && !same && (
+            <Card className={cn("mt-2", data.recommended ? "border-ready-green/50" : "border-ready-amber/50")} role="status">
+              {data.recommended ? (
+                <p>
+                  <span className="font-semibold">Recommended.</span> On players the weights were not fitted on, agreement improves by{" "}
+                  {k2((data.cv_after ?? 0) - (data.cv_before ?? 0))}, more than twice the fold-to-fold noise (±{k2(data.cv_noise)}).
+                </p>
+              ) : (
+                <p>
+                  <span className="font-semibold">Not recommended yet.</span> The held-out gain ({k2((data.cv_after ?? 0) - (data.cv_before ?? 0))}) is
+                  not clearly above the noise (±{k2(data.cv_noise)}, minimum {data.min_gain}). The suggestion may only fit these
+                  ratings by chance: keep rating players and check again.
+                </p>
+              )}
+            </Card>
+          )}
+          <p className="text-ink-2 mt-2 text-xs">
+            Colour buffer: a better colour needs the score {data.hysteresis.up} points past the boundary; a worse colour applies
+            {data.hysteresis.down === 0 ? " immediately" : ` after ${data.hysteresis.down} points`}, so warnings are never delayed.
+          </p>
+        </section>
+
+        {user?.role === "coach" && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button onClick={() => apply(data.suggested)} disabled={busy || same || !data.enough_data || !data.recommended} loading={busy}>
+              Apply suggested weights
+            </Button>
+            {data.enough_data && !same && !data.recommended && (
+              <Button variant="ghost" onClick={() => apply(data.suggested, true)} disabled={busy}>
+                Apply anyway
+              </Button>
+            )}
+            <Button variant="secondary" onClick={() => apply(null)} disabled={busy}>
+              Reset to defaults
+            </Button>
+            {msg && (
+              <p role="status" className="text-sm font-semibold">
+                {msg}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

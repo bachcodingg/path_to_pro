@@ -56,7 +56,7 @@ export function CheckIn() {
 
   const q = QUESTIONS[step];
   return (
-    <div className="space-y-4 pt-2">
+    <div className="mx-auto max-w-xl space-y-4 pt-2">
       <div>
         <h1 className="text-2xl font-extrabold">{t("checkin.title")}</h1>
         <p className="text-ink-2">{t("checkin.subtitle")}</p>

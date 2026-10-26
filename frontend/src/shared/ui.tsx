@@ -45,7 +45,10 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
 export function SectionTitle({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
     <div className="mb-2 flex items-center justify-between">
-      <h2 className="text-ink-2 text-sm font-semibold tracking-wide uppercase">{children}</h2>
+      <h2 className="font-display text-ink flex items-center gap-2 text-lg font-bold tracking-wide uppercase">
+        <span className="bg-pitch-500 h-4 w-1 rounded-full" aria-hidden />
+        {children}
+      </h2>
       {action}
     </div>
   );
@@ -103,6 +106,38 @@ export function Spinner({ label = "Loading" }: { label?: string }) {
       <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
       <span>{label}…</span>
     </div>
+  );
+}
+
+// Placeholder in the shape of what is loading, so the page does not jump when it arrives
+export function Skeleton({ className }: { className?: string }) {
+  return <div className={cn("skeleton", className)} aria-hidden />;
+}
+
+export function PageSkeleton({ label = "Loading" }: { label?: string }) {
+  return (
+    <div role="status" aria-label={label} className="space-y-4">
+      <Skeleton className="h-28 rounded-2xl" />
+      <div className="grid gap-4 md:grid-cols-3">
+        <Skeleton className="h-24" />
+        <Skeleton className="h-24" />
+        <Skeleton className="h-24" />
+      </div>
+      <Skeleton className="h-64 rounded-2xl" />
+      <span className="sr-only">{label}…</span>
+    </div>
+  );
+}
+
+// Big-number tile: label, value in the display face, a line of context
+export function StatTile({ label, value, sub, accent, className }: { label: ReactNode; value: ReactNode; sub?: ReactNode; accent?: string; className?: string }) {
+  return (
+    <Card className={cn("relative overflow-hidden p-3", className)}>
+      {accent && <span className="absolute inset-y-0 left-0 w-1" style={{ background: accent }} aria-hidden />}
+      <p className="text-ink-2 text-xs leading-tight font-semibold">{label}</p>
+      <p className="font-display num mt-1 text-[1.9rem] leading-none font-bold">{value}</p>
+      {sub && <p className="text-ink-2 mt-1 text-xs">{sub}</p>}
+    </Card>
   );
 }
 
