@@ -15,7 +15,7 @@ from analytics.norms import NormTable
 from api import clock
 from api.db import get_db
 from api.deps import CurrentUser, age_on, audit, has_consent, require
-from api.services import agent_runner, gym_view, views
+from api.services import agent_runner, gym_view, skills_view, views
 from domain.enums import ConsentDataType, Position, ProposalStatus, Role, SessionType
 from domain.models import (
     AmateurProfile,
@@ -438,6 +438,16 @@ def gym(offset: int = 0, user: CurrentUser = Depends(require(Role.PLAYER)), db: 
     audit(db, user, "read", "weekly_plan", p.id, view="gym")
     db.commit()
     return out
+
+
+@router.get("/skills")
+def skills(user: CurrentUser = Depends(require(Role.PLAYER)), db: Session = Depends(get_db)) -> dict:
+    """Today's ball-skills session for the player's position, and the drill library."""
+    p = _me(user, db)
+    today = clock.today()
+    pathway.ensure_week(db, p, views.week_start(today), today)
+    return skills_view.today_view(db, p, today)
+
 
 
 class PositionBody(BaseModel):

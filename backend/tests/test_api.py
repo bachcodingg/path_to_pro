@@ -360,3 +360,13 @@ def test_premier_league_and_club_and_finals_coverage(demo):
     report = client.get(f"/api/pro/champions-league/matches/{istanbul['id']}", headers=h).json()
     assert {s["key"] for s in report["stats"]} >= {"xg", "shots", "possession"} and report["shots"]
     assert client.get("/api/pro/champions-league/matches/1", headers=h).status_code == 404
+
+
+def test_skills_endpoint(demo):
+    client, _ = demo
+    h = login(client, "p03@demo.pathtopro")
+    s = client.get("/api/me/skills", headers=h).json()
+    positions = {"goalkeeper", "centre_back", "full_back", "midfielder", "winger", "striker"}
+    assert s["session"]["blocks"] and {p["id"] for p in s["positions"]} == positions
+    assert len(s["drills"]) >= 30
+    assert client.get("/api/me/skills", headers=login(client, "coach@demo.pathtopro")).status_code == 403
