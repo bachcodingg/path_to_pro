@@ -21,8 +21,8 @@ app (PWA). Sign-up and plain-words coach instructions need the full system (belo
 
 | Demo account | Shows |
 | --- | --- |
-| Player (tired, growth zone) | Check-in, Today, why-cards, growth zone, position gym session |
-| Player (U19 + men's team) | Dual registration: 90 minutes shared over a Saturday + Sunday double; Career tab with ratings; match diary |
+| Leon, U15 (tired, growth zone) | Check-in, Today, why-cards, growth zone, position gym session |
+| Dual-squad player (U19 + men's team) | Dual registration: 90 minutes shared over a Saturday + Sunday double; Career tab with ratings; match diary |
 | Self-guided player | Levels: log a wall-pass test of 18+ and she moves up to level 3 |
 | Coach | Heatmap, approval inbox, training pitch, match ratings, tactics board, team analysis (how an opponent passes, shoots, defends and takes set pieces, player by player), profile with gym preview and instruction box, calibration |
 | Men's team coach | Second team's view of the dual-registered players (sees, but the primary coach approves) |
