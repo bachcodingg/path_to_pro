@@ -1,9 +1,22 @@
-# Team analysis
+# Pro league analysis
 
-The coach's **Team analysis** page shows how an opponent plays: how they pass, where they
-shoot from, how they do in the air, how hard they press, how they take and defend set
-pieces, and which players do what. It is built on real match events, not on the
-synthetic academy season.
+**Pro leagues** is a section of its own (`/pro`), apart from the staff and player apps and
+open to every signed-in account: it is public match data with nothing about our players
+in it. Coaches use it to study an opponent's style; players to see how the pros in their
+position play. It shows how a team passes, where they shoot from, how they do in the air,
+how hard they press, how they take and defend set pieces, and which players do what, plus
+every result with a match centre. It is built on real match events, not on the synthetic
+academy season.
+
+| Competition | What the open data has | What the section shows |
+| --- | --- | --- |
+| La Liga 2015/16 | all 380 matches | every team, ranked against the rest of the league; table; results |
+| Premier League 2015/16 | all 380 matches (Leicester City's title) | the same |
+| Ligue 1 2015/16 | 377 of 380 (three missing, so a few teams have 37) | the same |
+| Bundesliga 2023/24 | Bayer Leverkusen's 34 matches only (the unbeaten season) | Leverkusen against their opponents in those matches, no ranks and no table; results |
+| Champions League | the final of 14 seasons, 2004-2019 | the finals with a match centre each; no team comparison from one match a year |
+
+A team's page (`/pro/<competition>/teams/<team>`):
 
 | Tab | What it shows |
 | --- | --- |
@@ -26,28 +39,36 @@ clubs' crests, which are their trademarks.
 
 ## Data
 
-[StatsBomb Open Data](https://github.com/statsbomb/open-data), La Liga 2015/16: every one of
-the 380 matches, all 20 teams. StatsBomb make it free "for research projects and genuine
+[StatsBomb Open Data](https://github.com/statsbomb/open-data); the competitions and their
+StatsBomb ids are in `backend/scouting/competitions.py`. StatsBomb make it free "for research projects and genuine
 interest in football analytics"; anyone who publishes analysis based on it must state the
 source as StatsBomb and use their logo (from their media pack). The page credits the
 source in its footer; the logo is not bundled yet (see Limits). Their licence is in the
 open-data repository.
 
-`python -m scouting.statsbomb` downloads each match's events and line-ups (~3.5 MB per
+`python -m scouting.statsbomb --all` (or one key, e.g. `premier-league`) downloads each match's events and line-ups (~3.5 MB per
 match, cached gzipped so a change of definition re-runs offline) and writes two compact
 files, committed so the app needs no network:
 
-- `backend/scouting/data/laliga_2015_16.json`: 3,841 corners, 97 penalties, 409 direct free kicks
-- `backend/scouting/data/laliga_2015_16_play.json`: 760 team-match rows of counts, 547 players' season counts with minutes, 9,168 shots
+- `backend/scouting/data/<file>.json`: corners, penalties and direct free kicks (La Liga: 3,841 / 97 / 409)
+- `backend/scouting/data/<file>_play.json`: team-match rows of counts with the date and matchday, players' season counts with minutes, every shot (La Liga: 760 / 547 / 9,168)
+
+Team names in the events are matched to the match list by team id (some Ligue 1 files say
+"Marseille" in the events and "Olympique Marseille" in the match), and penalty shoot-out
+goals are kept apart from match play.
 
 Pass another `--competition` / `--season` from StatsBomb's `competitions.json` to import
 a different season; only seasons with full coverage give fair league comparisons (most
 other La Liga seasons in the open data contain only Barcelona's matches).
 
 **Checks that the import is complete and right** (in `tests/test_scouting_play.py` and
-by hand): the league table rebuilt from the 380 scores is the real 2015/16 table
+by hand): the La Liga table rebuilt from the 380 scores is the real 2015/16 table
 (Barcelona 91, Real Madrid 90, Atlético 88 points); Cristiano Ronaldo has 35 league goals,
-Benzema 24 and Bale 19, as in the official records; Atlético conceded 18.
+Benzema 24 and Bale 19, as in the official records; Atlético conceded 18. Premier League:
+Leicester 81, Arsenal 71, Tottenham 70; Kane 25 goals, Vardy and Agüero 24. Ligue 1: PSG
+first (93 points from their 37 matches in the data; 96 from 38 in reality). Leverkusen:
+W28 D6 L0, goals 89-24. The 14 finals have the real scores and shoot-outs (Liverpool 3-2
+on penalties in 2005, Chelsea 4-3 in 2012, Real Madrid 5-3 in 2016).
 
 ## Definitions
 
@@ -96,8 +117,11 @@ and highest team, so a label can always be checked against the spread.
 
 ## Limits
 
-- **One season, ten years old.** Squads and coaches change; the method carries over to
-  newer data, the specific tendencies do not.
+- **Mostly one season, ten years old.** Squads and coaches change; the method carries
+  over to newer data, the specific tendencies do not. Newer seasons in the open data
+  (Bundesliga 2023/24) cover one club only.
+- **No match-to-match variation, no label.** A measure that is the same in every match
+  (Leverkusen had no red card) has no interval, so it is never called a strength.
 - **Possession is approximated** by the share of passes; xG is StatsBomb's model.
 - **End point, not intention.** A corner headed away at the near post and one aimed there
   look the same; a blocked shot's location is where it was struck.

@@ -8,7 +8,7 @@ levels, benchmark tests and the same safety engine.
 **Design principle:** code computes, the LLM plans and explains, a fixed policy decides who approves.
 Without an API key the LLM's part is done by rules, which is how every result below was produced.
 
-![Team analysis: club header, badge strip and league table](docs/screenshots/coach-team-analysis.png)
+![Pro league analysis: club header, badge strip and league table](docs/screenshots/coach-team-analysis.png)
 
 ## Try it
 
@@ -21,10 +21,11 @@ app (PWA). Sign-up and plain-words coach instructions need the full system (belo
 
 | Demo account | Shows |
 | --- | --- |
-| Leon, U15 (tired, growth zone) | Check-in, Today, why-cards, growth zone, position gym session |
+| Leon, U15 (tired, growth zone) | Check-in, Today, why-cards, growth zone, position gym session, ball skills for a striker (growth-zone version), match tips |
 | Dual-squad player (U19 + men's team) | Dual registration: 90 minutes shared over a Saturday + Sunday double; Career tab with ratings; match diary |
 | Self-guided player | Levels: log a wall-pass test of 18+ and she moves up to level 3 |
-| Coach | Heatmap, approval inbox, training pitch, match ratings, tactics board, team analysis (how an opponent passes, shoots, defends and takes set pieces, player by player; full league table with form and home / away), profile with gym preview and instruction box, calibration |
+| Coach | Heatmap, approval inbox, training pitch, match ratings, tactics board, profile with gym preview and instruction box, calibration; Pro leagues (below) |
+| Any account | **Pro leagues**, a section of its own: La Liga, Premier League and Ligue 1 2015/16, Leverkusen's 2023/24 Bundesliga season, Champions League finals 2004-2019: how a team passes, shoots, defends and takes set pieces, player by player; tables with form; every result with a match centre |
 | Men's team coach | Second team's view of the dual-registered players (sees, but the primary coach approves) |
 | Physio, Guardian | Escalation queue; consent per data type |
 
@@ -76,18 +77,20 @@ rule-based agents: the LLM's contribution has not been evaluated yet.
 | Sports science engine | `backend/analytics/`: sRPE, EWMA ACWR, monotony, strain, Mirwald, readiness, bio-banded norms |
 | Weekly planner | `backend/planner/`: OR-Tools CP-SAT, hard rules H1-H9, projected ACWR, club training nights, relaxation, safe template |
 | Gym programmes | `backend/gym/` + `config/gym.yaml`: shared injury-prevention work for every player plus a block per position (GK, CB, FB, CM, W, ST), adjusted for growth stage, readiness, match proximity and equipment |
+| Ball skills | `backend/skills/` + `config/skills.yaml`: 38 drills with steps, coaching cues and a harder version; a session per position (warm-up, two position blocks, a game skill, a finish) next to the gym. Growth zone: jumping drills done standing, half the kicking reps; red day: technique only; match tomorrow: short, no sprints; no partner: solo drills |
+| Match tips | `backend/tips/` + `config/tips.yaml`: mindset (resetting after a mistake, nerves, confidence, the bench, after a bad game, talking, focus, penalties) and how to play each position (striker positioning and finishing, left and right back, centre-back, midfield roles, winger, goalkeeper), each linked to a drill; a tip for today that follows the match calendar |
 | Self-guided pathway | `backend/pathway/` + `config/pathway.yaml`: 5 levels, 6 benchmark tests (age- and sex-adjusted), level-ups, solo session content, sign-up with parent invite codes under 16 |
 | Teams, careers, ratings | `backend/performance/` + `config/competitions.yaml`: dual registration with rule H8, league ladder (Finland first), career CV, match diary, 3-10 match ratings with a breakdown, coach training pitch |
 | Club finances | `backend/finance/`: contracts (academy fees, semi-pro/pro salaries, staff), running costs and income, automatic match bonuses and title bonuses, ledger; coach page, player and parent views. See [docs/finances.md](docs/finances.md) |
 | Apple Watch | `backend/devices/`: iPhone Shortcut ingest with write-only device codes, Apple Health export upload (safe streaming XML parser), HRV (SDNN) + sleep + workouts into readiness and load. See [docs/apple-watch.md](docs/apple-watch.md) |
-| User interface | Laid out like the LaLiga and Premier League sites: every page opens with a header band (title in a condensed display face, the page's key number, its tabs), club badges and W/D/L form next to team names, a split-screen sign-in with the demo accounts grouped by role; skip link and a tab title per page. `frontend/`: player PWA (check-in, Today, week pitch, gym, growth, card, season map, levels) for phone and laptop: bottom tabs on a phone, a sidebar and two-column pages from tablet width; coach (heatmap, inbox with A/E/R, tactics board, team analysis, scouting report with instruction box, match commentary, calibration), physio queue, guardian view, sign-up |
+| User interface | Laid out like the LaLiga and Premier League sites: every page opens with a header band (title in a condensed display face, the page's key number, its tabs), club badges and W/D/L form next to team names, a split-screen sign-in with the demo accounts grouped by role; skip link and a tab title per page. `frontend/`: player PWA (check-in, Today, week pitch, gym, growth, card, season map, levels) for phone and laptop: bottom tabs on a phone, a sidebar and two-column pages from tablet width; coach (heatmap, inbox with A/E/R, tactics board, scouting report with instruction box, match commentary, calibration), physio queue, guardian view, sign-up; the Pro leagues section with its own competition switcher |
 | Architecture | FastAPI, SQLAlchemy 2, Alembic, PostgreSQL, APScheduler, JWT + RBAC, `docker-compose.yml` |
 | Simulator | `backend/simulator/`: 25 players x 40 weeks, seeded, 3 injury models, pluggable policy |
 | Evaluation | `backend/eval/`: `python -m eval`, 54-case safety suite, equal-load and heuristic-coach baselines, 10-seed CIs (`python -m eval.seeds`), report in [docs/evaluation/report.md](docs/evaluation/report.md) |
-| Team analysis | `backend/scouting/`: real La Liga 2015/16 event data (StatsBomb Open Data, all 380 matches). Per team, against the rest of the league with a rank: pass accuracy by length (short, medium, long), long-ball share, crosses, through balls, key passes; shots by zone (tap-in range, box, long shots), headers, big chances, counters, conversion, xG; aerial duels, dribbles, tackles; pressing (PPDA, high pressures, counter-pressing), shots and xG conceded; discipline. Set pieces: corner delivery zones, swing, takers, corners defended, penalty and free-kick placement. Shot map, squad leaders and table, league table (form, home / away, European and relegation places), a club badge strip to switch team, side-by-side comparison. A strength, weakness or habit is named only when its 95% interval excludes the league. See [docs/team-analysis.md](docs/team-analysis.md) |
+| Pro league analysis | `backend/scouting/` (+ `scouting/competitions.py`): real event data from StatsBomb Open Data, as much as it covers: La Liga and Premier League 2015/16 (all 380 matches), Ligue 1 2015/16 (377), Leverkusen's 34 Bundesliga matches 2023/24 (compared with their opponents, unranked), the 14 Champions League finals 2004-2019 (match centre only). Per team, against the rest of the league with a rank: pass accuracy by length (short, medium, long), long-ball share, crosses, through balls, key passes; shots by zone (tap-in range, box, long shots), headers, big chances, counters, conversion, xG; aerial duels, dribbles, tackles; pressing (PPDA, high pressures, counter-pressing), shots and xG conceded; discipline. Set pieces: corner delivery zones, swing, takers, corners defended, penalty and free-kick placement. Shot map, squad leaders and table, league table (form, home / away, European and relegation places), a club badge strip to switch team, side-by-side comparison. Every match: result and match centre (both teams' numbers, goals, shot map). A strength, weakness or habit is named only when its 95% interval excludes the league. See [docs/team-analysis.md](docs/team-analysis.md) |
 | Safety and ethics | [docs/safety-case.md](docs/safety-case.md): encryption, audit log, consent, export/delete, escalations |
 
-More: [teams, careers and ratings](docs/teams-careers-ratings.md) · [team analysis](docs/team-analysis.md) · [gym and pathway](docs/gym-and-pathway.md) · [architecture](docs/architecture.md) · [demo script](docs/demo-script.md) · [week-1 decisions](docs/week1-scope.md)
+More: [teams, careers and ratings](docs/teams-careers-ratings.md) · [pro league analysis](docs/team-analysis.md) · [gym and pathway](docs/gym-and-pathway.md) · [architecture](docs/architecture.md) · [demo script](docs/demo-script.md) · [week-1 decisions](docs/week1-scope.md)
 
 ## Results (25 players x 40 weeks, 3 injury models, 10 seeds)
 
@@ -132,14 +135,14 @@ above the fold-to-fold noise. Demo ratings are synthetic.
 ## Tests
 
 ```bash
-cd backend && pytest                      # 210 unit, scenario and API tests
+cd backend && pytest                      # 228 unit, scenario and API tests
 cd backend && python -m eval              # evaluation report (seed 2026) -> eval_results/
 cd backend && python -m eval.seeds        # 10-seed comparison with confidence intervals
 cd frontend && npm test                   # Vitest (8 component tests)
-cd frontend && npx playwright test        # 23 end-to-end tests (API on :8000, web on :5173)
+cd frontend && npx playwright test        # 25 end-to-end tests (API on :8000, web on :5173)
 ```
 
 All academy demo data is synthetic. No real player data is stored. Benchmarks and norms are
-placeholder values until validated against club data. The one exception is Team analysis,
+placeholder values until validated against club data. The one exception is the Pro leagues section,
 which uses published professional match events: data from StatsBomb Open Data
 (https://github.com/statsbomb/open-data), credited as their terms require.
