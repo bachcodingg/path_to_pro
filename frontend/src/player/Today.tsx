@@ -1,5 +1,5 @@
 // "Match day sheet": readiness battery, today's session, recovery tasks, "Why?" cards.
-import { CheckCircle2, ChevronDown, ChevronRight, Circle, Dumbbell, Flame, HeartHandshake, ShieldAlert, TrendingUp } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronRight, Circle, Dumbbell, Flame, Footprints, HeartHandshake, Lightbulb, ShieldAlert, TrendingUp } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { api } from "../shared/api";
@@ -9,6 +9,7 @@ import type { SessionKind, Today, WhyCard } from "../shared/types";
 import { useApi } from "../shared/useApi";
 import { BAND_BG, BAND_TEXT, BandIcon, Button, Card, Chip, ErrorNote, SectionTitle, Spinner, cn, intensityClass } from "../shared/ui";
 import { MatchDiary } from "./MatchDiary";
+import { TipBody, type TipsData } from "./Tips";
 
 export function TodayScreen() {
   const { data, setData, error, loading, reload } = useApi<Today>("/api/me/today");
@@ -141,7 +142,18 @@ export function TodayScreen() {
                 </Card>
               </Link>
             )}
+            <Link to="/player/skills" className="mt-2 block">
+              <Card className="flex items-center gap-3">
+                <Footprints className="text-pitch-300 h-6 w-6 shrink-0" aria-hidden />
+                <div className="flex-1">
+                  <p className="font-bold">Ball skills for your position</p>
+                  <p className="text-ink-2 text-sm">A session to do on your own or with a friend, next to the gym</p>
+                </div>
+                <ChevronRight className="text-ink-2 h-5 w-5" aria-hidden />
+              </Card>
+            </Link>
           </section>
+          <TipOfTheDay />
         </div>
 
         <div className="space-y-5">
@@ -343,6 +355,23 @@ function LogSession({ today, onLogged }: { today: Today; onLogged: (t: Today) =>
             </p>
           )}
         </form>
+      </Card>
+    </section>
+  );
+}
+
+// The match tip picked for today (match day, the day after, or position and mindset in turn)
+function TipOfTheDay() {
+  const { data } = useApi<TipsData>("/api/me/tips");
+  if (!data) return null;
+  return (
+    <section>
+      <SectionTitle action={<Link to="/player/tips" className="text-pitch-300 text-sm font-semibold">All tips →</Link>}>Tip for today</SectionTitle>
+      <Card>
+        <p className="text-pitch-300 flex items-center gap-1.5 text-xs font-bold tracking-wider uppercase">
+          <Lightbulb className="h-4 w-4" aria-hidden /> {data.today.reason}
+        </p>
+        <TipBody t={data.today} />
       </Card>
     </section>
   );

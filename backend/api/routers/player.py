@@ -15,7 +15,7 @@ from analytics.norms import NormTable
 from api import clock
 from api.db import get_db
 from api.deps import CurrentUser, age_on, audit, has_consent, require
-from api.services import agent_runner, gym_view, views
+from api.services import agent_runner, gym_view, skills_view, views
 from domain.enums import ConsentDataType, Position, ProposalStatus, Role, SessionType
 from domain.models import (
     AmateurProfile,
@@ -33,6 +33,8 @@ from domain.models import (
 from pathway import levels
 from pathway import service as pathway
 from performance import service as performance
+from skills.programme import positions as skills_positions
+from tips import library as tips
 
 router = APIRouter(prefix="/api/me", tags=["player"])
 NORMS = NormTable.load()
@@ -438,6 +440,38 @@ def gym(offset: int = 0, user: CurrentUser = Depends(require(Role.PLAYER)), db: 
     audit(db, user, "read", "weekly_plan", p.id, view="gym")
     db.commit()
     return out
+
+
+@router.get("/skills")
+def skills(user: CurrentUser = Depends(require(Role.PLAYER)), db: Session = Depends(get_db)) -> dict:
+    """Today's ball-skills session for the player's position, and the drill library."""
+    p = _me(user, db)
+    today = clock.today()
+    pathway.ensure_week(db, p, views.week_start(today), today)
+    return skills_view.today_view(db, p, today)
+
+
+@router.get("/tips")
+def match_tips(user: CurrentUser = Depends(require(Role.PLAYER)), db: Session = Depends(get_db)) -> dict:
+    """Mindset and position tips, with the one picked for today."""
+    p = _me(user, db)
+    today = clock.today()
+    position = p.position or "midfielder"
+    upcoming = agent_runner.match_days(db, p, today, 7)
+    lib = tips.library()
+    return {
+        "position": position,
+        "today": tips.tip_for_day(
+            position,
+            today,
+            days_to_match=(min(upcoming) - today).days if upcoming else None,
+            match_yesterday=bool(agent_runner.match_days(db, p, today - timedelta(days=1), 1)),
+        ),
+        "mindset": lib["mindset"],
+        "positions": [
+            {"id": k, "label": skills_positions()[k]["label"], "tips": v} for k, v in lib["positions"].items()
+        ],
+    }
 
 
 class PositionBody(BaseModel):

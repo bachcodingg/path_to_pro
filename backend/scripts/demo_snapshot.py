@@ -3,7 +3,9 @@
 Seeds the synthetic season into a throwaway database, signs in as every demo account
 through the real API (FastAPI TestClient) and saves the responses. The frontend's
 demo mode (VITE_DEMO=1) answers API calls from this file in the browser, so the
-website runs without a server. All data is synthetic.
+website runs without a server. All data is synthetic, except the pro-league analysis
+(public StatsBomb match data), which is written to one file per competition next to the
+snapshot (pro/<competition>.json) so the demo only downloads the league someone opens.
 
     python scripts/demo_snapshot.py ../frontend/public/demo/snapshot.json
 """
@@ -86,6 +88,8 @@ def main(out: Path) -> None:
                 "/api/me/gym?offset=1",
                 "/api/me/growth",
                 "/api/me/career",
+                "/api/me/skills",
+                "/api/me/tips",
             ]
             paths += ["/api/me/pathway"] if me["pathway"] == "amateur" else ["/api/me/card", "/api/me/roadmap"]
             paths += ["/api/me/finance"]
@@ -108,12 +112,18 @@ def main(out: Path) -> None:
         }
         for row in heatmap["players"]:
             staff[f"/api/coach/players/{row['id']}"] = get(h, f"/api/coach/players/{row['id']}")
-        # Team analysis is public match data (StatsBomb Open Data), the same for every coach
-        staff["/api/coach/analysis/teams"] = get(h, "/api/coach/analysis/teams")
-        for t in staff["/api/coach/analysis/teams"]["teams"]:
-            for sub in ("", "/style", "/players", "/shots"):
-                path = f"/api/coach/analysis/teams/{t['id']}{sub}"
-                staff[path] = get(h, path)
+        # Pro leagues: public match data, the same for every account
+        snap["pro"] = {"/api/pro/competitions": get(h, "/api/pro/competitions")}
+        pro: dict[str, dict] = {}
+        for comp in snap["pro"]["/api/pro/competitions"]:
+            base = f"/api/pro/{comp['id']}"
+            rec = {f"{base}/teams": get(h, f"{base}/teams"), f"{base}/matches": get(h, f"{base}/matches")}
+            for t in rec[f"{base}/teams"]["teams"]:
+                for sub in ("", "/style", "/players", "/shots"):
+                    rec[f"{base}/teams/{t['id']}{sub}"] = get(h, f"{base}/teams/{t['id']}{sub}")
+            for m in rec[f"{base}/matches"]["matches"]:
+                rec[f"{base}/matches/{m['id']}"] = get(h, f"{base}/matches/{m['id']}")
+            pro[comp["id"]] = rec
 
         def team_views(h: dict) -> dict:
             out = {f"/api/coach/squad-week?offset={o}": get(h, f"/api/coach/squad-week?offset={o}") for o in (0, 1)}
@@ -145,6 +155,11 @@ def main(out: Path) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(snap, separators=(",", ":")), encoding="utf-8")
     print(f"wrote {out} ({out.stat().st_size / 1024:.0f} KB), today={info['today']}")
+    (out.parent / "pro").mkdir(exist_ok=True)
+    for key, rec in pro.items():
+        f = out.parent / "pro" / f"{key}.json"
+        f.write_text(json.dumps(rec, separators=(",", ":")), encoding="utf-8")
+        print(f"wrote {f} ({f.stat().st_size / 1024:.0f} KB)")
 
 
 if __name__ == "__main__":

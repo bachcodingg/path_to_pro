@@ -1,7 +1,8 @@
 // Team analysis, set pieces tab: corners for and against, penalties and direct free kicks.
 import { useState } from "react";
-import { useApi } from "../../shared/useApi";
-import { Card, Chip, ErrorNote, SectionTitle, Spinner, cn } from "../../shared/ui";
+import { useApi } from "../shared/useApi";
+import { Card, Chip, ErrorNote, SectionTitle, Spinner, cn } from "../shared/ui";
+import { usePro } from "./context";
 
 export interface Source {
   source: string;
@@ -105,13 +106,15 @@ const RESULT_COLOUR = { goal: "#e3a008", shot: "#2f7fe0", none: "rgba(255,255,25
 export const pct = (x: number | null | undefined) => (x == null ? "–" : `${Math.round(x)}%`);
 
 export function SetPieces({ teamId }: { teamId: string }) {
-  const { data, error, loading, reload } = useApi<Profile>(`/api/coach/analysis/teams/${encodeURIComponent(teamId)}`);
+  const { base } = usePro();
+  const { data, error, loading, reload } = useApi<Profile>(`${base}/teams/${encodeURIComponent(teamId)}`);
   if (loading && !data) return <Spinner label="Reading match events" />;
   if (error || !data) return <ErrorNote message={error ?? "No data"} onRetry={reload} />;
   return <TeamView p={data} />;
 }
 
 function TeamView({ p }: { p: Profile }) {
+  const { rest } = usePro();
   const c = p.corners;
   return (
     <>
@@ -124,7 +127,7 @@ function TeamView({ p }: { p: Profile }) {
             ))}
           </ul>
         ) : (
-          <p className="text-ink-2 text-sm">No set-piece habit stands out from the rest of the league.</p>
+          <p className="text-ink-2 text-sm">No set-piece habit stands out from {rest}.</p>
         )}
       </Card>
 
@@ -214,6 +217,7 @@ function TeamView({ p }: { p: Profile }) {
 }
 
 function Stats({ items, foot }: { items: [string, string, string | undefined][]; foot: string }) {
+  const pro = usePro();
   return (
     <Card>
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -221,7 +225,7 @@ function Stats({ items, foot }: { items: [string, string, string | undefined][];
           <div key={label}>
             <dt className="text-ink-2 text-xs">{label}</dt>
             <dd className="text-xl font-extrabold">{value}</dd>
-            {league !== undefined && <dd className="text-ink-2 text-xs">league {league}</dd>}
+            {league !== undefined && <dd className="text-ink-2 text-xs">{pro.label} {league}</dd>}
           </div>
         ))}
       </dl>
@@ -231,6 +235,7 @@ function Stats({ items, foot }: { items: [string, string, string | undefined][];
 }
 
 function ShareBars({ rows, labels, minN }: { rows: Share[]; labels?: Record<string, string>; minN: number }) {
+  const { label, rest } = usePro();
   const total = rows.reduce((s, r) => s + r.n, 0);
   return (
     <div className="space-y-2.5">
@@ -239,25 +244,25 @@ function ShareBars({ rows, labels, minN }: { rows: Share[]; labels?: Record<stri
           <div className="flex items-baseline justify-between gap-2 text-sm">
             <span className="font-semibold">{labels?.[r.key] ?? r.label}</span>
             <span>
-              {pct(r.pct)} <span className="text-ink-2 text-xs">({r.n}) · league {pct(r.league_pct)}</span>
+              {pct(r.pct)} <span className="text-ink-2 text-xs">({r.n}) · {label} {pct(r.league_pct)}</span>
             </span>
           </div>
           <div className="bg-surface-2 relative mt-1 h-2.5 rounded-full" aria-hidden>
             <div className="bg-pitch-500 h-full rounded-full" style={{ width: `${r.pct ?? 0}%` }} />
             {r.league_pct != null && (
-              <div className="absolute -top-1 h-[18px] w-0.5" style={{ left: `${r.league_pct}%`, background: "var(--ink)" }} title="Rest of the league" />
+              <div className="absolute -top-1 h-[18px] w-0.5" style={{ left: `${r.league_pct}%`, background: "var(--ink)" }} title={rest} />
             )}
           </div>
           {r.flag && (
             <div className="mt-1">
-              <Chip tone={r.flag === "more" ? "amber" : "neutral"}>{r.flag === "more" ? "More than the league" : "Less than the league"}</Chip>
+              <Chip tone={r.flag === "more" ? "amber" : "neutral"}>{r.flag === "more" ? `More than ${rest}` : `Less than ${rest}`}</Chip>
             </div>
           )}
         </div>
       ))}
       <p className="text-ink-2 text-xs">
-        Black tick: rest of the league.{" "}
-        {total < minN ? `Only ${total} cases: too few to call a tendency.` : "Flagged only when the 95% interval excludes the league."}
+        Black tick: {rest}.{" "}
+        {total < minN ? `Only ${total} cases: too few to call a tendency.` : "Flagged only when the 95% interval excludes that share."}
       </p>
     </div>
   );
@@ -343,6 +348,7 @@ export function Legend({ items, extra }: { items: [string, string][]; extra?: st
 const KICK_COLOUR: Record<string, string> = { Goal: "#e3a008", Saved: "#2f7fe0", "Saved to Post": "#2f7fe0" };
 
 function KickSection({ title, block, minN, showMinute }: { title: string; block: KickBlock; minN: number; showMinute?: boolean }) {
+  const { label } = usePro();
   if (!block.total)
     return (
       <section>
@@ -357,7 +363,7 @@ function KickSection({ title, block, minN, showMinute }: { title: string; block:
         <Card>
           <GoalMouth kicks={block.kicks} />
           <p className="text-ink-2 mt-1 text-xs">
-            {block.total} taken, {block.scored} scored ({pct(block.conversion.pct)}; league {pct(block.conversion.league_pct)}). Seen from
+            {block.total} taken, {block.scored} scored ({pct(block.conversion.pct)}; {label} {pct(block.conversion.league_pct)}). Seen from
             behind the kicker: the kicker's left is the goalkeeper's right.
           </p>
         </Card>

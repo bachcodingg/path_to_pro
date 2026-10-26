@@ -2,7 +2,7 @@
   "source": "StatsBomb Open Data",
   "source_url": "https://github.com/statsbomb/open-data",
   "competition": "La Liga",
-  "season": "2015/2016",
+  "season": "2015/16",
   "matches": 380,
   "matches_played": {"Athletic Club": 38, "Atlético Madrid": 38, "Barcelona": 38, "Celta Vigo": 38, "Eibar": 38, "Espanyol": 38, "Getafe": 38, "Granada": 38, "Las Palmas": 38, "Levante UD": 38, "Málaga": 38, "RC Deportivo La Coruña": 38, "Rayo Vallecano": 38, "Real Betis": 38, "Real Madrid": 38, "Real Sociedad": 38, "Sevilla": 38, "Sporting Gijón": 38, "Valencia": 38, "Villarreal": 38},
   "corners": [

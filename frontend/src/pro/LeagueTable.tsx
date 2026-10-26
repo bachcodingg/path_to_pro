@@ -1,9 +1,9 @@
 // League table in the layout of the LaLiga and Premier League standings pages: all / home /
 // away, a coloured bar for the European and relegation places, badges and the form guide.
 import { useState } from "react";
-import { Crest, FormGuide, clubMeta } from "../../shared/Club";
-import { Tabs } from "../../shared/PageHeader";
-import { Card, cn } from "../../shared/ui";
+import { Crest, FormGuide, clubMeta } from "../shared/Club";
+import { Tabs } from "../shared/PageHeader";
+import { Card, cn } from "../shared/ui";
 import type { Standing } from "./types";
 
 // 2015/16 rules: top four to the Champions League, fifth and sixth to the Europa League,
@@ -70,7 +70,7 @@ export function LeagueTable({ tables, highlight, compare, onPick }: { tables: Ta
           </thead>
           <tbody>
             {rows.map((t) => {
-              const zone = venue === "all" ? zoneOf(t.position, n) : undefined;
+              const zone = venue === "all" ? zoneOf(t.position ?? 0, n) : undefined;
               const mine = t.id === highlight,
                 theirs = t.id === compare;
               return (
@@ -160,7 +160,7 @@ export function MiniTable({ rows, highlight, compare, onPick, onMore }: { rows: 
         </thead>
         <tbody>
           {rows.map((t) => {
-            const zone = zoneOf(t.position, n);
+            const zone = zoneOf(t.position ?? 0, n);
             return (
               <tr key={t.id} className={cn("border-line border-t", t.id === highlight && "bg-pitch-500/12 font-bold", t.id === compare && "bg-ready-green/8")}>
                 <td className="relative py-1 pl-4">

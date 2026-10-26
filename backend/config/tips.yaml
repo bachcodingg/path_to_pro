@@ -1,0 +1,278 @@
+# Match tips for players: mindset (everyone) and how to play each position.
+# Each tip: why it matters, then what to do (steps), and optionally a ball-skills drill
+# (config/skills.yaml) to practise it. The mindset tips use common sport-psychology
+# techniques (reset routines, cue words, breathing, controllables); they are coaching
+# advice, not therapy. A player who feels anxious or low for a long time should talk to
+# someone they trust: a parent, the coach or the club's welfare officer.
+#
+# when: which day the tip is shown as "tip for today" (match | after_match | any)
+
+mindset:
+  - id: mistake-reset
+    title: "After a mistake: reset in five seconds"
+    when: match
+    why: "Every player makes mistakes, the best ones included. What separates them is how fast they are ready for the next action. Thinking about the last mistake makes the next one more likely."
+    steps:
+      - "Name it, don't judge it: 'pass too heavy', not 'I'm useless'."
+      - "Do the same physical reset every time: one long breath out, a clap, or touching your sock. Pick one."
+      - "Say your cue word in your head: 'next', 'reset' or 'go'."
+      - "Do your next job straight away: get back in position, show for the ball, press."
+      - "Ask for the ball again within two minutes. Confidence comes back from good touches, not from hiding."
+    try: "Practise the reset in training: after every bad touch, do your routine before the next rep."
+  - id: confidence
+    title: "Confidence you can take into the game"
+    when: any
+    why: "Confidence isn't a feeling you wait for. It comes from evidence: things you've done well and work you've put in."
+    steps:
+      - "After every match write down three things you did well, even small ones (the match diary has space for it)."
+      - "Before the game, read them. You've done it before, so you can do it again."
+      - "Set goals about what you control: 'win my first header', 'scan before every pass', 'talk to my centre-back'. Not 'score two'."
+      - "Stand tall, keep your head up and talk. Your body language changes how you feel and how the opponent sees you."
+  - id: pre-match-nerves
+    title: "Nerves before a match"
+    when: match
+    why: "Butterflies, a fast heartbeat, needing the toilet: that's your body getting ready to perform. It is the same feeling as excitement."
+    steps:
+      - "Tell yourself 'I'm ready' or 'I'm excited', not 'I'm nervous'."
+      - "Breathe in for 4 seconds, hold for 4, and breathe out for 6. Do it five times; a long breath out calms you down."
+      - "Have the same routine every match day: food, music, kit, warm-up. A routine leaves less to worry about."
+      - "Plan your first three actions: a simple pass, a strong tackle or header, a sprint. Do them and you're in the game."
+  - id: bench
+    title: "Starting on the bench"
+    when: match
+    why: "Coming on and changing a game is a skill. The players who do it best are switched on before they cross the line."
+    steps:
+      - "Watch the player you might replace and the one you'd be up against: their stronger foot, where there's space."
+      - "Warm up properly when you're told, and keep moving so you don't go cold."
+      - "Make your first actions simple and strong: a sure pass, a tackle, a sprint."
+      - "Bring energy: tired players around you will feel it."
+  - id: after-bad-game
+    title: "After a bad game or a loss"
+    when: after_match
+    why: "One bad game doesn't change who you are as a player. How you respond to it does change how good you become."
+    steps:
+      - "Give yourself until the next day: being disappointed is fine, but don't decide anything about yourself tonight."
+      - "Then write one thing to learn and one thing you did well."
+      - "Ask your coach for one thing to work on, and do it in your next skills session."
+      - "Recover like a pro: eat, drink, sleep. Don't read comments or replay mistakes in bed."
+  - id: talk
+    title: "Talk on the pitch"
+    when: any
+    why: "Short, early calls win time for your teammates and keep you switched on. Quiet teams get caught out."
+    steps:
+      - "Use one or two words, early: 'man on', 'time', 'turn', 'away', 'keeper', 'drop'."
+      - "Tell the player in front of you what to do: 'show inside', 'press', 'drop'."
+      - "Praise out loud: 'good ball', 'well done'. It costs nothing and builds the team."
+  - id: focus-90
+    title: "Stay switched on for 90 minutes"
+    when: match
+    why: "Many goals come right after a goal, at set pieces, and in the last minutes of each half, when concentration drops."
+    steps:
+      - "When the ball goes out, scan: where is my player, where's the space, where's the ball going?"
+      - "Set pieces against you: find your player before the kick, not when it's in the air."
+      - "After any goal, for or against, say 'next five minutes' to yourself and your teammates."
+      - "Drink at every break: concentration drops when you're thirsty."
+  - id: decisions
+    title: "When a decision goes against you"
+    when: match
+    why: "You can't change the referee's mind. Arguing gets yellow cards and takes your mind off the game."
+    steps:
+      - "Let the captain speak to the referee; you get back in position."
+      - "Use your reset: breath out, cue word, next action."
+      - "Turn the anger into effort for the next duel, not into a foul."
+  - id: penalty
+    title: "Taking a penalty"
+    when: match
+    why: "Penalties are about a clear decision made early. Changing your mind in the run-up is the most common way to miss."
+    steps:
+      - "Pick your corner before you put the ball down, and don't change it."
+      - "Same routine every time: place the ball, the same number of steps back, one breath out."
+      - "Look at your spot, not at the keeper."
+      - "Strike firmly and low into your corner. Whatever happens, it took courage to take it."
+
+positions:
+  goalkeeper:
+    - id: gk-position
+      title: "Positioning as a goalkeeper"
+      why: "Good positioning makes saves look easy: the shooter sees less goal and you need shorter dives."
+      steps:
+        - "Stand on the line from the ball to the middle of your goal. Move with the ball in small side-steps."
+        - "The closer the ball, the further off your line you come, so the shooter sees less goal."
+        - "Get set, still and on the balls of your feet, just before the shot. Moving while they strike is how goals go in."
+        - "When the ball is in the other half, stand high to sweep up balls played over your defence."
+      drill: gk-angles
+    - id: gk-command
+      title: "Command your area"
+      why: "Defenders play better when the goalkeeper organises them. Loud, early calls stop collisions and mistakes."
+      steps:
+        - "Shout 'keeper!' when you're coming for the ball and 'away!' when you want it cleared. Never change your mind after you've called."
+        - "Organise the wall and the marking before set pieces, by name."
+        - "Tell your defenders who to pick up: 'number 9 is free', 'drop', 'step up'."
+      drill: gk-crosses
+    - id: gk-distribution
+      title: "Start attacks with your distribution"
+      why: "You are often the first player of an attack. A quick, accurate throw can beat the whole opposing team."
+      steps:
+        - "After a catch, look up straight away: is there a full-back or winger free for a quick throw?"
+        - "If not, slow it down and play to the free defender's stronger foot."
+        - "Kick long only when there's a target or space to win, not just to get rid of it."
+      drill: gk-distribution
+    - id: gk-mistakes
+      title: "After conceding or a mistake as a keeper"
+      why: "A goalkeeper's mistakes are seen by everyone. Your next action is what your team needs."
+      steps:
+        - "Do your reset: wipe your gloves, a long breath out, touch the post if that's your thing."
+        - "Get loud straight away: organise your defenders for the restart."
+        - "Your next catch or simple pass is your way back in. Make it safe and clean."
+  centre_back:
+    - id: cb-position
+      title: "Positioning as a centre-back"
+      why: "Centre-backs who are in the right place don't need last-ditch tackles."
+      steps:
+        - "Stand where you can see the ball and your striker at the same time: side-on, not square."
+        - "Stay between your striker and the goal (goal-side), and a step to the side the ball is on."
+        - "When your partner goes to the ball, drop behind them at an angle to cover."
+        - "Move the line together: step up after the ball is cleared, drop when the passer has time to play over you."
+      drill: cb-jockey
+    - id: cb-headers
+      title: "Winning headers"
+      why: "Attacking the ball beats waiting for it, every time."
+      steps:
+        - "Judge the flight early and move to where the ball will land."
+        - "Jump to meet the ball at its highest point; arms out for balance, never the elbow."
+        - "Head it high, far and wide: away from the middle of the pitch."
+        - "In the growth zone, keep heading practice light; it's technique, not repetitions."
+      drill: cb-heading
+    - id: cb-play-out
+      title: "Playing out from the back"
+      why: "A centre-back who passes well gives the team time to build attacks."
+      steps:
+        - "Scan before you receive: where's the pressure, who's free?"
+        - "Open your body and receive on the foot further from the pressure."
+        - "Pass to the free side. If both are covered, a simple pass back to the keeper is fine."
+        - "Don't force it through the middle when you're pressed: losing it there is a chance for them."
+      drill: cb-play-out
+  full_back:
+    - id: lb-defend
+      title: "Defending as a left back"
+      why: "Most goals from wide areas start with a cross or a cut-inside you could have stopped."
+      steps:
+        - "Stand side-on with your body angled towards the touchline, about an arm's length from the winger."
+        - "In the first minutes, find out which foot the winger prefers and show them onto the other one. A left-footed winger on that side wants to cut inside onto their left: show them down the line. A right-footed one wants to go down the line and cross: show them inside, as long as a teammate covers."
+        - "Don't dive in. Tackle when they take a heavy touch; otherwise stay with them."
+        - "When the winger gets to the byline, block the cross: get close and stretch your leg nearest the ball."
+        - "When the ball is on the far side, tuck in towards your centre-back and check over your shoulder for the runner at the back post."
+      drill: fb-1v1-wide
+    - id: lb-attack
+      title: "Getting forward as a left back"
+      why: "Modern full-backs create many chances, but timing matters: go when it helps, recover when it doesn't."
+      steps:
+        - "If your winger cuts inside, overlap around the outside; if they stay wide, run inside them (underlap)."
+        - "Receive on the half-turn with your left foot so you can play forward down the line."
+        - "Cross early from level with the edge of the box, into the space between the keeper and the defenders."
+        - "Normally only one full-back attacks at a time: if the right back is up, you stay back."
+      drill: fb-overlap-cross
+    - id: rb-defend
+      title: "Playing right back"
+      why: "Everything for the left back applies, mirrored: you face the opponent's left winger."
+      steps:
+        - "Body angled to your right touchline, arm's length away; show the winger onto their weaker foot."
+        - "A right-footed winger on that side (an 'inverted' winger) wants to cut inside onto their right foot: show them down the line. A left-footed one wants to go down the line and cross: show them inside, towards your cover."
+        - "Tuck in when the ball's on the left, and be the one who stays back when the left back attacks."
+        - "Practise crossing with your right foot from level with the edge of the box."
+      drill: fb-recovery
+  midfielder:
+    - id: mf-scan
+      title: "Scan before you get the ball"
+      why: "Top midfielders look around many times before every pass reaches them. Knowing where everyone is before the ball arrives is what gives them time."
+      steps:
+        - "Check over both shoulders while the ball is travelling to you, not when it's at your feet."
+        - "Look for three things: the nearest opponent, a free teammate, and the space."
+        - "Decide your next pass before the ball arrives."
+      drill: all-scan
+    - id: mf-half-turn
+      title: "Receive on the half-turn"
+      why: "Receiving side-on lets you see both halves of the pitch and play forward with your first or second touch."
+      steps:
+        - "Stand side-on, with your hips open towards the opponent's goal."
+        - "Receive with your back foot (the one further from the ball)."
+        - "First touch forward or into space, away from pressure."
+      drill: mf-scan-turn
+    - id: mf-defensive
+      title: "As a defensive midfielder"
+      why: "You protect the centre-backs: passes into the striker's feet should have to go around you."
+      steps:
+        - "Stay between the ball and your centre-backs; don't chase the ball across the pitch."
+        - "Block the passing lane into the opponent's striker or number 10."
+        - "When your team wins the ball, show for the first pass and play it forward quickly."
+      drill: cb-play-out
+    - id: mf-attacking
+      title: "As an attacking midfielder"
+      why: "The space between the opponent's defence and midfield is where chances are created."
+      steps:
+        - "Find the pocket between their midfield and defence, where neither line marks you."
+        - "Arrive late in the box: runs from deep are hard to track."
+        - "Shoot when you see the goal from the edge of the box: low and inside the post."
+      drill: mf-late-shot
+  winger:
+    - id: w-1v1
+      title: "Beating a defender 1v1"
+      why: "Wingers who beat their player create overloads and chances. Speed of change matters more than the trick."
+      steps:
+        - "Run at the defender fast, before they're set."
+        - "Attack their front foot: they have to turn to stop you."
+        - "Do your move one stride before them, then accelerate hard for five metres."
+        - "If it doesn't work, keep the ball and try again; going backwards is better than losing it."
+      drill: w-1v1-moves
+    - id: w-width
+      title: "Width and the back post"
+      why: "Staying wide stretches the defence and makes space inside. The back post is where many goals from crosses are scored."
+      steps:
+        - "When your team has the ball, stay wide with your feet near the touchline."
+        - "When the ball's on the other wing, attack the back post: start late and arrive fast."
+        - "When you get to the byline, cut it back to the penalty spot, behind defenders running towards their goal."
+      drill: w-back-post
+    - id: w-defend
+      title: "Tracking back"
+      why: "Your full-back can't defend against two players. Your effort when your team loses the ball wins games."
+      steps:
+        - "When your team loses the ball, sprint back to stop the pass to the opponent's full-back."
+        - "Stay between the ball and your full-back's player."
+        - "Communicate: 'mine', 'yours', 'I've got the runner'."
+  striker:
+    - id: st-position
+      title: "Positioning as a striker"
+      why: "Strikers score most goals from being in the right place at the right time, not from long-range shots."
+      steps:
+        - "Play on the shoulder of the last defender, on their blind side: behind them, where they can't watch you and the ball at once."
+        - "Stand between the two centre-backs to split them; each thinks the other has you."
+        - "Don't stand still: check away from the space, then sprint into it (a double movement)."
+        - "Curve your run along the defensive line to stay onside, and go when the passer can play the ball."
+        - "When the ball's wide, attack one zone: near post, penalty spot or far post. Tell your partner which."
+      drill: st-runs-in-behind
+    - id: st-finishing
+      title: "Finishing in a game"
+      why: "Most goals are scored from inside the box with one or two touches. Accuracy beats power."
+      steps:
+        - "Pick your corner before the ball arrives."
+        - "Low and across the keeper, into the far corner: hard to save, and rebounds land in front of goal."
+        - "Side-foot when you're close; save power for when you have more space."
+        - "Follow every shot, yours and your teammates': rebounds are free goals."
+        - "1v1 with the keeper: shoot early before they set, or take a touch to the side to go round."
+      drill: st-finish-low
+    - id: st-hold-up
+      title: "Holding the ball up"
+      why: "When your team plays a ball into you, keeping it lets the midfield join the attack."
+      steps:
+        - "Feel where the defender is with your arm and body before the ball arrives."
+        - "Get low and side-on, your body between the ball and the defender."
+        - "First touch away from the defender, then lay it off to a supporting player."
+        - "If you're fouled, that's a free kick won: a good outcome too."
+      drill: st-hold-up
+    - id: st-press
+      title: "Pressing from the front"
+      why: "Pressing from the striker is the start of the team's defending; done well, it wins the ball close to goal."
+      steps:
+        - "Curve your run to the centre-back so you block the pass to one side."
+        - "Press on a trigger: a bad touch, a back-pass, or a pass to their weaker foot."
+        - "Don't press alone: check that your teammates are coming with you."

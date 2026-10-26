@@ -18,9 +18,8 @@ import math
 import unicodedata
 from collections import Counter
 from functools import lru_cache
-from pathlib import Path
 
-DATA = Path(__file__).resolve().parent / "data" / "laliga_2015_16.json"
+from scouting.competitions import COMPETITIONS, DEFAULT
 
 BOX_X, BOX_Y0, BOX_Y1 = 102.0, 18.0, 62.0  # penalty area
 SIX_X = 114.0  # six-yard line
@@ -46,9 +45,9 @@ THIRDS = ("left", "centre", "right")
 HEIGHTS = ("low", "middle", "high")
 
 
-@lru_cache(maxsize=1)
-def load(path: Path = DATA) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
+@lru_cache(maxsize=8)
+def load(comp: str = DEFAULT) -> dict:
+    return json.loads(COMPETITIONS[comp].set_piece_path.read_text(encoding="utf-8"))
 
 
 def slug(team: str) -> str:
@@ -287,9 +286,17 @@ def notes(profile: dict) -> list[str]:
     return out
 
 
-@lru_cache(maxsize=1)
-def teams() -> dict:
-    d = load()
+def _listed(comp: str) -> list[str]:
+    """Teams with a page: all of a league, the one club of a club season, none for finals."""
+    c = COMPETITIONS[comp]
+    if c.coverage == "finals":
+        return []
+    return [c.featured] if c.featured else list(load(comp)["matches_played"])
+
+
+@lru_cache(maxsize=8)
+def teams(comp: str = DEFAULT) -> dict:
+    d = load(comp)
     by_team = Counter(c["team"] for c in d["corners"])
     pens = Counter(p["team"] for p in d["penalties"])
     return {
@@ -297,6 +304,7 @@ def teams() -> dict:
         "teams": [
             {"id": slug(t), "name": t, "matches": n, "corners": by_team[t], "penalties": pens[t]}
             for t, n in d["matches_played"].items()
+            if t in _listed(comp)
         ],
     }
 
@@ -311,10 +319,10 @@ def _source(d: dict) -> dict:
     }
 
 
-@lru_cache(maxsize=32)
-def team_profile(team_id: str) -> dict | None:
-    d = load()
-    team = next((t for t in d["matches_played"] if slug(t) == team_id), None)
+@lru_cache(maxsize=128)
+def team_profile(team_id: str, comp: str = DEFAULT) -> dict | None:
+    d = load(comp)
+    team = next((t for t in _listed(comp) if slug(t) == team_id), None)
     if team is None:
         return None
     n_m = d["matches_played"][team]

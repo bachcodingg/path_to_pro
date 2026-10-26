@@ -38,6 +38,53 @@ Exercises rotate week to week, and the same inputs always give the same programm
 Coaches set an academy player's position on the scouting report; self-guided players set
 their own. Doses are defaults for a coach to adjust, not a medical prescription.
 
+## Ball skills (`backend/skills/`, `config/skills.yaml`)
+
+Personal technical training next to the gym session, to do alone, against a wall or with
+a friend (Gym → Ball skills, or the card on Today). 38 drills, each with steps, coaching
+cues and a harder version. A session is a ball-mastery warm-up, two blocks written for the
+player's position, one shared game skill (first touch, scanning, weak foot, wall passes)
+and a finish; drills rotate week to week.
+
+| Position | Drills |
+| --- | --- |
+| Goalkeeper | Set position and handling, narrowing the angle, 1v1s, collapse dives, distribution to targets, claiming crosses |
+| Centre-back | Jockey and show, turn and recover goal-side, defensive heading, receive on the half-turn and play out, long diagonals |
+| Full-back | 1v1 on the flank, recovery and tuck-in, overlap and early cross, controlling a switch, quick throw-ins |
+| Midfielder | Scan-receive-turn, turns under pressure, switching play, wall combinations, arriving late to shoot |
+| Winger | 1v1 moves at speed, first touch in behind, byline cut-backs, cutting inside, back-post runs |
+| Striker | Finishing low and across, first-time finishes, following every shot, timed runs to stay onside, hold-up play, attacking headers |
+
+Safety, as for the gym:
+
+| Situation | Change |
+| --- | --- |
+| Growth zone (PHV) | Jumping drills (heading, claiming crosses) done standing as technique; half the shooting and long-passing reps (kicking volume while growing is linked to sore knees and hips, e.g. Osgood-Schlatter); dives on soft ground, half the reps |
+| Red readiness, rest or recovery day | Technique only, about 20 minutes, nothing flat-out, no shooting volume |
+| Amber readiness or match tomorrow | Short, no sprint drills |
+| Match day | No session, warm-up touches only |
+| No partner (self-guided) | Drills that need a friend are swapped for solo or wall drills |
+
+## Match tips (`backend/tips/`, `config/tips.yaml`)
+
+Mindset tips for everyone: resetting in five seconds after a mistake (name it, a physical
+reset, a cue word, the next job, ask for the ball again), confidence from evidence, nerves
+before a match (a long out-breath, a routine, the first three actions), starting on the
+bench, after a bad game, talking on the pitch, staying switched on for 90 minutes,
+decisions going against you, taking a penalty. Position tips: goalkeeper positioning,
+commanding the area and distribution; centre-back positioning, headers and playing out;
+left back and right back (defending the winger by their stronger foot, tucking in,
+overlapping and underlapping, early crosses); midfield scanning, the half-turn and the
+defensive and attacking roles; winger 1v1s, width and the back post, tracking back;
+striker positioning (on the shoulder, on the blind side, between the centre-backs, curved
+runs to stay onside), finishing, hold-up play and pressing. Each position tip links to the
+drill that practises it.
+
+The **tip for today** on Today follows the calendar: a match-day tip on match day, the
+bad-game tip the day after a match, otherwise a position tip and an everyday mindset tip on
+alternate days. The tips are coaching advice, not therapy; the page says to talk to someone
+trusted when anxiety or low mood lasts beyond games.
+
 ## Self-guided pathway (`backend/pathway/`, `config/pathway.yaml`)
 
 For players aged 13 and over who aren't in an academy. They sign up themselves, enter

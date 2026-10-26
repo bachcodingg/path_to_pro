@@ -7,6 +7,7 @@ import { GymProgrammeView } from "../shared/GymProgramme";
 import type { GymWeek, Position } from "../shared/types";
 import { useApi } from "../shared/useApi";
 import { Button, Card, ErrorNote, SectionTitle, Spinner, fmtDay } from "../shared/ui";
+import { TrainingSwitch } from "./Skills";
 
 const EQUIPMENT_LABEL = { gym: "Full gym", home: "Home: band and dumbbells", none: "No equipment" };
 
@@ -46,6 +47,7 @@ export function Gym() {
           <ChevronRight className="h-5 w-5" />
         </Button>
       </div>
+      <TrainingSwitch active="gym" />
 
       <Card>
         <p className="text-ink-2 text-xs font-semibold uppercase">Your position</p>

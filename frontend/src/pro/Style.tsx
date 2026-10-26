@@ -1,8 +1,9 @@
 // Team analysis: overview (strengths, weaknesses, style, key numbers, league table) and the
 // measure lists with each team's place in the league's range.
-import { Card, Chip, SectionTitle, StatTile } from "../../shared/ui";
+import { Card, Chip, SectionTitle, StatTile, cn } from "../shared/ui";
 import { MiniTable } from "./LeagueTable";
 import { fmtMeasure, rankText, type Measure, type Standing, type StyleProfile } from "./types";
+import { usePro } from "./context";
 
 const VERDICT: Record<string, { label: string; tone: "green" | "red" | "neutral"; dot: string }> = {
   strength: { label: "Strength", tone: "green", dot: "var(--color-ready-green)" },
@@ -12,15 +13,16 @@ const VERDICT: Record<string, { label: string; tone: "green" | "red" | "neutral"
 const KEY_NUMBERS = ["goals", "conceded", "xg", "xga", "possession", "pass_acc", "ppda", "aerial_win", "conversion", "shots"];
 
 export function Overview({ p, vs, table, onPick, onTable }: { p: StyleProfile; vs: StyleProfile | null | undefined; table: Standing[]; onPick: (id: string) => void; onTable: () => void }) {
+  const { label, rest } = usePro();
   const by = Object.fromEntries(p.measures.map((m) => [m.key, m]));
   const vsBy = vs ? Object.fromEntries(vs.measures.map((m) => [m.key, m])) : {};
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
+    <div className={cn("grid gap-4", table.length > 0 && "lg:grid-cols-[minmax(0,1fr)_21rem]")}>
       <div className="space-y-5">
         <div className="grid gap-4 md:grid-cols-3">
-          <Summary title="Strengths" tone="var(--color-ready-green)" items={p.summary.strength} empty="Nothing clearly better than the league." />
-          <Summary title="Weaknesses" tone="var(--color-ready-red)" items={p.summary.weakness} empty="Nothing clearly worse than the league." />
-          <Summary title="How they play" tone="var(--color-pitch-500)" items={p.summary.style} empty="No habit stands out from the league." />
+          <Summary title="Strengths" tone="var(--color-ready-green)" items={p.summary.strength} empty={`Nothing clearly better than ${rest}.`} />
+          <Summary title="Weaknesses" tone="var(--color-ready-red)" items={p.summary.weakness} empty={`Nothing clearly worse than ${rest}.`} />
+          <Summary title="How they play" tone="var(--color-pitch-500)" items={p.summary.style} empty={`No habit stands out from ${rest}.`} />
         </div>
 
         <section>
@@ -41,7 +43,8 @@ export function Overview({ p, vs, table, onPick, onTable }: { p: StyleProfile; v
                           {vs?.team}: {fmtMeasure(vsBy[k], vsBy[k].value)}
                         </span>
                       )}
-                      league {fmtMeasure(m, m.league)} · {rankText(m)}
+                      {label} {fmtMeasure(m, m.league)}
+                      {m.rank ? ` · ${rankText(m)}` : ""}
                     </>
                   }
                 />
@@ -51,9 +54,11 @@ export function Overview({ p, vs, table, onPick, onTable }: { p: StyleProfile; v
         </section>
       </div>
 
-      <div className="self-start">
-        <MiniTable rows={table} highlight={p.id} compare={vs?.id} onPick={onPick} onMore={onTable} />
-      </div>
+      {table.length > 0 && (
+        <div className="self-start">
+          <MiniTable rows={table} highlight={p.id} compare={vs?.id} onPick={onPick} onMore={onTable} />
+        </div>
+      )}
     </div>
   );
 }
@@ -79,6 +84,7 @@ function Summary({ title, tone, items, empty }: { title: string; tone: string; i
 }
 
 export function MeasureList({ p, vs, groups }: { p: StyleProfile; vs: StyleProfile | null | undefined; groups: string[] }) {
+  const { rest } = usePro();
   const vsBy = vs ? Object.fromEntries(vs.measures.map((m) => [m.key, m])) : {};
   return (
     <div className="space-y-4">
@@ -97,15 +103,16 @@ export function MeasureList({ p, vs, groups }: { p: StyleProfile; vs: StyleProfi
         </section>
       ))}
       <p className="text-ink-2 text-xs">
-        Each bar runs from the league's lowest to highest team; where less is better (goals conceded, PPDA, fouls) the best team
-        is on the right. Black tick: rest of the league. A label appears only when the 95% interval over the team's matches
-        excludes the league value.
+        Each bar runs from the lowest to the highest team in the data; where less is better (goals conceded, PPDA, fouls) the
+        best team is on the right. Black tick: {rest}. A label appears only when the 95% interval over the team's matches
+        excludes that value.
       </p>
     </div>
   );
 }
 
 function MeasureRow({ m, vs, vsName }: { m: Measure; vs?: Measure; vsName?: string }) {
+  const { label } = usePro();
   const lo = m.league_min ?? 0,
     hi = m.league_max ?? 1;
   const flip = m.better === "low"; // best on the right
@@ -127,7 +134,8 @@ function MeasureRow({ m, vs, vsName }: { m: Measure; vs?: Measure; vsName?: stri
           {vs && <span className="text-ink-2 ml-1 text-sm font-semibold">vs {fmtMeasure(vs, vs.value)}</span>}
         </p>
         <p className="text-ink-2 text-xs">
-          league {fmtMeasure(m, m.league)} · {rankText(m)}
+          {label} {fmtMeasure(m, m.league)}
+          {m.rank ? ` · ${rankText(m)}` : ""}
         </p>
       </div>
       <div>

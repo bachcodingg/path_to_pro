@@ -1,0 +1,559 @@
+# Ball-skills library: personal technical training to do alone, against a wall or with a
+# friend, next to the gym session. A session = ball-mastery warm-up (everyone), two blocks
+# for the player's position, one shared game skill, and a short finish.
+#
+# Fields:
+#   positions  which positions the drill is written for ("all": everyone)
+#   partner    none (alone or a wall) | optional | needed
+#   minutes    time for the drill as written
+#   reps       the dose as written; growth-zone and readiness rules shorten it
+#   steps      how to do it
+#   cues       what to focus on (coaching points)
+#   harder     a progression once it is easy
+#   tags       striking  many hard kicks: limited in the growth spurt (sore knees and hips,
+#                        e.g. Osgood-Schlatter, come from high kicking volume while growing)
+#              jumping   repeated take-offs and landings: none in the growth spurt
+#              diving    goalkeeper falls: soft ground, fewer reps in the growth spurt
+#              sprint    flat-out efforts: not on a red or amber day, not the day before a match
+#   safe_version  what to do instead in the growth spurt, when the drill is tagged jumping
+# This is coaching content, not a medical prescription; a coach can change any of it.
+
+positions:
+  goalkeeper:
+    label: Goalkeeper
+    focus: "Handling, set position, angles, diving technique and distribution."
+    blocks: [[gk-set-handling, gk-angles, gk-1v1], [gk-collapse-dive, gk-distribution, gk-crosses]]
+    finish: gk-distribution
+  centre_back:
+    label: Centre-back
+    focus: "Defending 1v1, heading, playing out from the back and long passing."
+    blocks: [[cb-jockey, cb-recovery, cb-heading], [cb-play-out, cb-long-pass]]
+    finish: cb-long-pass
+  full_back:
+    label: Full-back
+    focus: "Defending wide 1v1, recovery runs, overlapping and early crosses."
+    blocks: [[fb-1v1-wide, fb-recovery], [fb-overlap-cross, fb-switch-control, fb-throw-in]]
+    finish: fb-overlap-cross
+  midfielder:
+    label: Midfielder
+    focus: "Scanning, receiving on the half-turn, turning under pressure and passing range."
+    blocks: [[mf-scan-turn, mf-tight-turns], [mf-switch, mf-wall-combos, mf-late-shot]]
+    finish: mf-late-shot
+  winger:
+    label: Winger
+    focus: "1v1 moves at speed, crossing and cut-backs, cutting inside to shoot."
+    blocks: [[w-1v1-moves, w-touch-in-behind], [w-cutback, w-cut-inside, w-back-post]]
+    finish: w-cut-inside
+  striker:
+    label: Striker
+    focus: "Finishing, movement in behind, hold-up play and attacking headers."
+    blocks: [[st-runs-in-behind, st-hold-up, st-headers], [st-finish-low, st-first-time, st-rebounds]]
+    finish: st-finish-low
+
+warmup: [all-ball-mastery, all-juggling]
+shared: [all-first-touch, all-scan, all-weak-foot, all-wall-two-touch]
+
+drills:
+  # ----------------------------------------------------------------- everyone
+  - id: all-ball-mastery
+    name: Ball mastery circuit
+    positions: [all]
+    focus: Close control
+    partner: none
+    minutes: 8
+    reps: "6 x 40 s on, 20 s off"
+    steps:
+      - "Mark a 5 x 5 m square. One move per round: sole rolls side to side, inside-outside touches, V pull-backs, Cruyff turns, drag-backs, step-overs."
+      - "Keep the ball within a stride of you the whole time."
+      - "Last round: mix the moves, changing every few seconds."
+    cues: ["Small, quick touches on the balls of your feet", "Lift your eyes between touches", "Both feet, not only the strong one"]
+    harder: "Do it while a friend calls out a move every 5 seconds."
+  - id: all-juggling
+    name: Juggling ladder
+    positions: [all]
+    focus: Touch and coordination
+    partner: none
+    minutes: 6
+    reps: "3 rounds: beat your record"
+    steps:
+      - "Round 1: feet only, alternating left and right."
+      - "Round 2: foot, thigh, foot, other thigh."
+      - "Round 3: foot, thigh, head, and back down."
+    cues: ["Toes up, ankle locked, ball just above knee height", "Relaxed knees", "Write your record in the match diary notes"]
+    harder: "Juggle while walking forward 10 m and back."
+  - id: all-first-touch
+    name: First touch out of your feet
+    positions: [all]
+    focus: First touch
+    partner: optional
+    minutes: 10
+    reps: "3 x 10 each side"
+    steps:
+      - "Put a cone 1 m in front of you as the 'defender'. A friend or a wall plays the ball to you from 8-10 m."
+      - "Take your first touch past the cone at an angle (45 degrees), into space, then pass back with your second touch."
+      - "Change sides every 10 reps; use the inside and the outside of the foot."
+    cues: ["Look where the space is before the ball arrives", "Touch with the foot further from the 'defender'", "Touch it a stride ahead, not under your body"]
+    harder: "A friend steps towards you as you receive: touch away from the side they come from."
+  - id: all-scan
+    name: Scan and receive
+    positions: [all]
+    focus: Scanning
+    partner: needed
+    minutes: 8
+    reps: "3 x 8"
+    steps:
+      - "Stand between a passer in front and a friend (or two coloured cones) behind you."
+      - "As the pass is played, the friend behind holds up fingers or points to a cone."
+      - "Check over your shoulder twice before the ball arrives, call out what you saw, and turn to that side with your first touch."
+    cues: ["Scan before the pass, not when the ball is at your feet", "Quick head turn, eyes back on the ball", "Open your body to the side you want to play"]
+    harder: "Receive one-touch towards the side you saw."
+  - id: all-weak-foot
+    name: Weak-foot 100
+    positions: [all]
+    focus: Weaker foot
+    partner: none
+    minutes: 10
+    reps: "100 passes with your weaker foot"
+    steps:
+      - "Stand 5 m from a wall. 50 passes with the inside of your weaker foot, one or two touches."
+      - "Then 30 driven passes with the laces from 8 m."
+      - "Finish with 20 first-time passes."
+    cues: ["Standing foot next to the ball, pointing at the target", "Lock the ankle", "Follow through towards the target"]
+    harder: "Move back to 10 m, then 15 m, and hit a marked spot on the wall."
+  - id: all-wall-two-touch
+    name: Wall passes, two-touch
+    positions: [all]
+    focus: Passing
+    partner: none
+    minutes: 8
+    reps: "4 x 1 min"
+    steps:
+      - "Stand 5 m from a wall. Control with one foot and pass with the other, as fast as you can stay accurate."
+      - "Rounds 3 and 4: control with the sole, then the outside of the foot."
+    cues: ["Body open, on your toes", "Firm, flat passes", "Count your passes per minute and try to beat it next week"]
+    harder: "One-touch for the last round."
+
+  # ----------------------------------------------------------------- goalkeeper
+  - id: gk-set-handling
+    name: Set position and handling
+    positions: [goalkeeper]
+    focus: Handling
+    partner: needed
+    minutes: 10
+    reps: "3 x 10 (high, middle, low)"
+    steps:
+      - "A friend throws or volleys at you from 8 m: 10 at chest and head height, 10 at the stomach, 10 along the ground."
+      - "High balls: hands behind the ball in a W shape. Stomach: scoop and hug it in. Ground: get your body behind it, hands scoop under."
+    cues: ["Feet set and still as the ball is struck", "Weight on the balls of your feet, hands in front", "Watch the ball into your hands"]
+    harder: "Friend strikes from 12 m with no warning of height."
+  - id: gk-angles
+    name: Narrowing the angle
+    positions: [goalkeeper]
+    focus: Positioning
+    partner: optional
+    minutes: 10
+    reps: "5 positions x 3 reps"
+    steps:
+      - "Put 5 cones in an arc 16 m from goal, from wide left to wide right."
+      - "For each cone, imagine a line from the ball to the middle of the goal. Stand on that line, 1-3 m off your goal line."
+      - "Shuffle to the next cone's line and set your feet before the 'shot' (with a friend: they shoot)."
+    cues: ["Small side-steps, don't cross your feet", "Set before the shot, never move as it's struck", "Further off your line when the shooter is closer"]
+    harder: "The friend dribbles between cones and shoots when they like."
+  - id: gk-1v1
+    name: 1v1 against an attacker
+    positions: [goalkeeper]
+    focus: 1v1s
+    partner: needed
+    minutes: 8
+    reps: "8 reps"
+    steps:
+      - "A friend dribbles at you from 25 m. Come off your line while the ball is far from their feet; stop and set as they take a touch."
+      - "Stay up as long as you can and make yourself big; spread low (a long barrier) only when they shoot or touch it close to you."
+    cues: ["Move when the ball is away from their foot, set when they can strike", "Hands low and wide", "Make them decide first"]
+    harder: "Add a second attacker for a square pass."
+  - id: gk-collapse-dive
+    name: Collapse dives
+    positions: [goalkeeper]
+    focus: Diving technique
+    partner: optional
+    minutes: 10
+    reps: "2 x 6 each side"
+    tags: [diving]
+    steps:
+      - "On grass or a mat. Start kneeling: a ball 1 m to your side. Fall sideways, hands to the ball, land on your side (not stomach), top hand on top, bottom hand behind."
+      - "Then from a crouch, then standing. A friend rolls the ball 1-2 m to your side."
+    cues: ["Lead with your hands, land on the side of your body", "Pin the ball to the ground", "Get up quickly, ready for the next one"]
+    harder: "Friend rolls or kicks to either side without telling you."
+  - id: gk-distribution
+    name: Distribution to targets
+    positions: [goalkeeper]
+    focus: Distribution
+    partner: optional
+    minutes: 10
+    reps: "5 rolls, 5 throws, 10 kicks"
+    tags: [striking]
+    steps:
+      - "Put targets (cones or a friend) at 15, 25 and 40 m."
+      - "Roll to the 15 m target, overarm throw to the 25 m target, side-volley or goal-kick to the 40 m target."
+      - "With a friend: they move and you play to where they are going."
+    cues: ["Quick throws start counter-attacks", "Pick the target before you collect the ball", "Kick through the middle of the ball for a flat, fast pass"]
+    harder: "Distribute within 3 seconds of a save."
+  - id: gk-crosses
+    name: Claiming crosses
+    positions: [goalkeeper]
+    focus: Crosses
+    partner: needed
+    minutes: 10
+    reps: "10 from each side"
+    tags: [jumping]
+    safe_version: "Catch high throws at full stretch without jumping, calling 'keeper!' every time."
+    steps:
+      - "A friend throws or crosses high balls into the six-yard box from the side."
+      - "Call 'keeper!' early and loud, take a step, jump off one leg, and catch at the highest point."
+    cues: ["Call early, then commit", "Lead knee up to protect yourself", "Catch in front of your head, where you can see it"]
+    harder: "A second friend stands in the way (no pushing)."
+
+  # ----------------------------------------------------------------- centre-back
+  - id: cb-jockey
+    name: Jockey and show
+    positions: [centre_back, full_back]
+    focus: Defending 1v1
+    partner: needed
+    minutes: 10
+    reps: "8 x 1v1"
+    steps:
+      - "In a 10 m wide channel, a friend dribbles at you at walking pace, then half pace."
+      - "Stand side-on, about an arm's length away, and show them to one side (the side you choose)."
+      - "Tackle only on a heavy touch; otherwise stay with them until they stop."
+    cues: ["Side-on, knees bent, weight forward", "Watch the ball, not the hips or the feet", "Never dive in: being beaten while standing is worse"]
+    harder: "Full speed, and the friend can score by dribbling over your line."
+  - id: cb-recovery
+    name: Turn and recover goal-side
+    positions: [centre_back, full_back]
+    focus: Recovery runs
+    partner: optional
+    minutes: 8
+    reps: "6 reps, walk back to recover"
+    tags: [sprint]
+    steps:
+      - "A friend plays the ball over your head (or you kick it ahead of yourself)."
+      - "Drop-step: open your hips, turn and sprint on a curve to get between the ball and the goal."
+      - "Get to the ball first and clear it, or get goal-side and slow the attacker down."
+    cues: ["Open your hips, don't turn your back to the ball", "Run to the goal, not to the ball", "Look over your shoulder once while you run"]
+    harder: "A friend chases from 2 m behind you."
+  - id: cb-heading
+    name: Defensive heading
+    positions: [centre_back]
+    focus: Heading
+    partner: needed
+    minutes: 8
+    reps: "3 x 8"
+    tags: [jumping]
+    safe_version: "Standing headers only, from soft throws: technique, not distance."
+    steps:
+      - "A friend throws the ball high from 8 m. Head it back high and far with your forehead."
+      - "Then from a short run, jumping off one leg; then aim wide, away from the middle."
+    cues: ["Eyes open, mouth closed, hit it with your forehead", "Attack the ball: meet it, don't let it hit you", "Arms out for balance, never the elbow"]
+    harder: "Head to a target 10 m away."
+  - id: cb-play-out
+    name: Receive on the half-turn and play out
+    positions: [centre_back, midfielder]
+    focus: Playing out
+    partner: optional
+    minutes: 10
+    reps: "3 x 8 each side"
+    steps:
+      - "A friend (the 'goalkeeper') plays across to you, or use a wall."
+      - "Open your body before the ball arrives, receive with your back foot, and pass through a 2 m cone gate 15 m away (the 'midfielder')."
+      - "Swap sides so you receive on both feet."
+    cues: ["Scan before you receive: where is the free player?", "Receive on the foot furthest from pressure", "Pass to feet, firm and flat"]
+    harder: "A friend presses from one side: pass to the other gate."
+  - id: cb-long-pass
+    name: Long diagonal pass
+    positions: [centre_back, full_back, midfielder]
+    focus: Long passing
+    partner: optional
+    minutes: 10
+    reps: "2 x 8 each foot"
+    tags: [striking]
+    steps:
+      - "Mark a 5 x 5 m target zone 30-35 m away, out wide (where a full-back or winger would be)."
+      - "Driven pass: strike through the middle of the ball, low flight, landing in the zone."
+      - "Lofted pass: lean back slightly and strike lower on the ball for height."
+    cues: ["Approach at an angle", "Standing foot next to the ball", "Follow through towards the target"]
+    harder: "Receive a pass first, then play the diagonal with your second touch."
+
+  # ----------------------------------------------------------------- full-back
+  - id: fb-1v1-wide
+    name: 1v1 on the flank
+    positions: [full_back]
+    focus: Defending wide
+    partner: needed
+    minutes: 10
+    reps: "8 x 1v1"
+    steps:
+      - "Mark a 10 m wide channel along the touchline with a 'cross line' 20 m away."
+      - "A friend dribbles at you; show them down the line, away from goal, and stay between them and the goal."
+      - "If they get to the cross line, block the cross: get close, plant, extend the leg nearest the ball."
+    cues: ["Body angled towards the touchline", "Close the space while the ball is travelling to them", "Stay on your feet; a blocked cross is a win"]
+    harder: "The friend can also cut inside and shoot at a small goal."
+  - id: fb-overlap-cross
+    name: Overlap and early cross
+    positions: [full_back, winger]
+    focus: Crossing
+    partner: optional
+    minutes: 10
+    reps: "2 x 6 from each side"
+    tags: [striking, sprint]
+    steps:
+      - "Pass to a friend (or a cone) 10 m up the line, overlap around the outside, and take the ball in your stride."
+      - "Cross early from level with the edge of the box, into the space between the penalty spot and the six-yard line."
+    cues: ["Look up before the cross: near post, penalty spot or far post?", "Whip it in fast and low, between keeper and defenders", "Across the body, with the inside of the foot"]
+    harder: "Cross first time without stopping the ball."
+  - id: fb-recovery
+    name: Recovery and tuck in
+    positions: [full_back]
+    focus: Recovery runs
+    partner: none
+    minutes: 8
+    reps: "6 reps, walk back"
+    tags: [sprint]
+    steps:
+      - "Start 30 m up the pitch (after an attack). On your own call, sprint back on a curve to a cone level with the penalty spot, inside the touchline."
+      - "Arrive, side-on, and check over your shoulder for a runner."
+    cues: ["Run back to where the goal is threatened, not to your old spot", "Look across while you run", "Arrive ready to defend, not out of breath and square"]
+    harder: "A friend calls 'left' or 'right' halfway: finish at that cone."
+  - id: fb-switch-control
+    name: Control a switch on the front foot
+    positions: [full_back, winger]
+    focus: First touch
+    partner: needed
+    minutes: 8
+    reps: "10 from each side"
+    steps:
+      - "A friend plays long, high passes to you from 30 m."
+      - "Move into the flight of the ball early and take your first touch forward, down the line, with the instep or thigh."
+    cues: ["Decide your touch before the ball lands", "Cushion it: soft ankle, give with the ball", "First touch forward, into space"]
+    harder: "Control with your second-best surface (thigh or chest)."
+  - id: fb-throw-in
+    name: Quick, long throw-ins
+    positions: [full_back]
+    focus: Throw-ins
+    partner: optional
+    minutes: 6
+    reps: "15 throws"
+    steps:
+      - "Both feet on or behind the line and touching the ground; ball from behind your head with both hands."
+      - "Short throws to feet first, then longer to a target 15 m away."
+    cues: ["Throw quickly while the opponent isn't set", "To feet or chest, not to the head of a marked teammate", "Run back on the pitch right away"]
+    harder: "Throw to a friend who is moving."
+
+  # ----------------------------------------------------------------- midfielder
+  - id: mf-scan-turn
+    name: Scan, receive, turn
+    positions: [midfielder]
+    focus: Receiving on the half-turn
+    partner: needed
+    minutes: 10
+    reps: "3 x 8"
+    steps:
+      - "Put two cone gates 10 m behind you, left and right. A friend passes to you from in front."
+      - "Scan both gates before the ball arrives; the friend shouts 'left' or 'right' as they pass."
+      - "Receive on your back foot with an open body and dribble through the called gate in two touches."
+    cues: ["Check over the shoulder twice", "Half-turn: hips open to the pitch", "First touch goes forward through the gate"]
+    harder: "No call: the friend steps into one gate and you go through the other."
+  - id: mf-tight-turns
+    name: Turns under pressure
+    positions: [midfielder, winger, striker]
+    focus: Turning
+    partner: none
+    minutes: 8
+    reps: "4 turns x 6 reps each"
+    steps:
+      - "Dribble at a cone (the 'defender'), and turn away a stride before it."
+      - "Cruyff turn, inside hook, outside hook, drag-back: 6 of each, then accelerate 5 m out of the turn."
+    cues: ["Sell the turn: shape to pass or shoot", "Low centre of gravity", "Explode out of it: the turn is only as good as the burst after it"]
+    harder: "A friend stands at the cone and moves towards you."
+  - id: mf-switch
+    name: Switch the play
+    positions: [midfielder]
+    focus: Passing range
+    partner: optional
+    minutes: 10
+    reps: "2 x 8 each foot"
+    tags: [striking]
+    steps:
+      - "Mark two target zones 25 m apart. Receive from one side (a wall or a friend), take a touch across your body, and play a driven pass to the other zone."
+    cues: ["The first touch sets up the pass", "Driven: through the middle of the ball, low", "Both feet"]
+    harder: "One touch to control, one to switch."
+  - id: mf-wall-combos
+    name: Wall one-twos and combinations
+    positions: [midfielder, striker]
+    focus: Combination play
+    partner: none
+    minutes: 8
+    reps: "4 x 1 min"
+    steps:
+      - "Dribble towards a wall, pass on the move, receive the rebound in stride, and keep going along the wall."
+      - "Alternate feet; use the inside and the outside of the foot."
+    cues: ["Pass and move: never stop after passing", "Weight of pass: firm enough to come back", "Receive across your body"]
+    harder: "One-touch passes only."
+  - id: mf-late-shot
+    name: Arrive late and shoot from the edge
+    positions: [midfielder]
+    focus: Shooting from outside the box
+    partner: optional
+    minutes: 8
+    reps: "2 x 6"
+    tags: [striking]
+    steps:
+      - "Start 30 m out. A friend lays the ball back to the edge of the box as you arrive (or roll it ahead yourself)."
+      - "Shoot first time, low and hard, inside a post."
+    cues: ["Time the run: arrive as the ball does", "Head over the ball keeps it low", "Hit the target first, power second"]
+    harder: "Alternate feet."
+
+  # ----------------------------------------------------------------- winger
+  - id: w-1v1-moves
+    name: 1v1 moves at speed
+    positions: [winger]
+    focus: Beating a defender
+    partner: optional
+    minutes: 10
+    reps: "4 moves x 5 reps each side"
+    tags: [sprint]
+    steps:
+      - "Dribble at a cone or a passive friend at speed. Step-over, scissors, body feint, then drop the shoulder and go."
+      - "After every move, accelerate hard for 5 m: the change of pace beats defenders, not the trick."
+    cues: ["Attack the defender's front foot", "Do the move one stride before them, not on top of them", "Explode out of the move"]
+    harder: "The friend defends at half speed, then full speed."
+  - id: w-touch-in-behind
+    name: First touch in behind
+    positions: [winger, striker]
+    focus: Running in behind
+    partner: needed
+    minutes: 8
+    reps: "8 reps"
+    tags: [sprint]
+    steps:
+      - "Start level with a cone (the last defender). Check towards the passer, then spin and run in behind."
+      - "The friend plays the ball over or past the cone; take your first touch forward into space at speed."
+    cues: ["Check away, then go: the double movement", "Look over your shoulder for the ball", "First touch forward, not across your body"]
+    harder: "Finish with a shot or a cross."
+  - id: w-cutback
+    name: Byline cut-backs
+    positions: [winger]
+    focus: Final ball
+    partner: optional
+    minutes: 8
+    reps: "2 x 6 each side"
+    steps:
+      - "Dribble to the byline inside the box and pull the ball back to the penalty spot (a cone or a friend arriving)."
+      - "Mix: low cut-back along the ground, and a chipped ball to the far post."
+    cues: ["Look up before the final touch", "Pull it back behind the defenders running towards goal", "Pace on the pass"]
+    harder: "Cut-back first time from a pass."
+  - id: w-cut-inside
+    name: Cut inside and bend it far post
+    positions: [winger]
+    focus: Shooting
+    partner: none
+    minutes: 8
+    reps: "2 x 6"
+    tags: [striking]
+    steps:
+      - "Start wide, dribble at a cone at the corner of the box, cut inside onto your stronger foot."
+      - "Curl the ball with the inside of the foot towards the far post."
+    cues: ["Open your body as you cut inside", "Wrap your foot around the ball", "Aim inside the far post: a miss can still be a tap-in for a teammate"]
+    harder: "Shoot with your weaker foot from the other wing."
+  - id: w-back-post
+    name: Back-post run and finish
+    positions: [winger, striker]
+    focus: Finishing crosses
+    partner: needed
+    minutes: 8
+    reps: "10 reps"
+    tags: [striking]
+    steps:
+      - "Start wide on the far side. As the friend crosses from the other wing, attack the back post."
+      - "Finish with a side-foot volley, a header down, or a first-time shot."
+    cues: ["Start your run late, arrive at full speed", "Stay out of the defender's sight", "Side-foot volley: keep it down, hit the target"]
+    harder: "Mix crosses along the ground and in the air."
+
+  # ----------------------------------------------------------------- striker
+  - id: st-finish-low
+    name: Finishing low and across the keeper
+    positions: [striker]
+    focus: Finishing
+    partner: optional
+    minutes: 10
+    reps: "4 x 5"
+    tags: [striking]
+    steps:
+      - "Put cones just inside each post. Shoot from 12-16 m after one touch."
+      - "Side-foot or laces, low, into the far corner from where you shoot."
+    cues: ["Pick the corner before you shoot", "Head and knee over the ball", "Low and across the keeper: hard to save, and rebounds land in front of goal"]
+    harder: "Receive with your back to goal, turn and shoot in two touches."
+  - id: st-first-time
+    name: First-time finishes
+    positions: [striker]
+    focus: Finishing
+    partner: needed
+    minutes: 8
+    reps: "3 x 6"
+    tags: [striking]
+    steps:
+      - "A friend lays the ball into your path from the side, from the front and from behind."
+      - "Finish first time, side-foot, aiming low."
+    cues: ["Adjust your feet early", "Accuracy over power", "Keep your body over the ball"]
+    harder: "Alternate feet on every rep."
+  - id: st-rebounds
+    name: Follow every shot
+    positions: [striker]
+    focus: Reacting
+    partner: needed
+    minutes: 8
+    reps: "10 reps"
+    tags: [striking, sprint]
+    steps:
+      - "Shoot from 16 m at a friend in goal (or at a wall). The friend parries or throws the ball back into play."
+      - "Follow your shot and finish the rebound before it settles."
+    cues: ["Shoot and move: follow in straight after every shot", "Expect the rebound", "Finish with the first touch"]
+    harder: "The friend throws the rebound anywhere in the box."
+  - id: st-runs-in-behind
+    name: Timing runs to stay onside
+    positions: [striker]
+    focus: Movement
+    partner: needed
+    minutes: 10
+    reps: "8 reps"
+    tags: [sprint]
+    steps:
+      - "Two cones are the defenders' line. Start level, check towards the passer, then run in behind as the friend gets their head up to pass."
+      - "Curve your run along the line, so you're still level when the ball is played."
+    cues: ["Go when the passer can play it, not before", "Curve along the line, don't run straight off it", "Look across at the line, then at the ball"]
+    harder: "Finish with a shot within two touches."
+  - id: st-hold-up
+    name: Hold-up play with your back to goal
+    positions: [striker]
+    focus: Hold-up play
+    partner: needed
+    minutes: 8
+    reps: "3 x 6"
+    steps:
+      - "A friend stands behind you with a hand on your back (light contact). A second friend or a wall passes into your feet."
+      - "Feel where the defender is, stay side-on, control away from them and lay it off to the passer."
+    cues: ["Feel the defender, then move to meet the ball", "Low and wide: body between the ball and the defender", "Simple lay-off; don't turn into pressure"]
+    harder: "The defender can try to win the ball."
+  - id: st-headers
+    name: Attacking headers
+    positions: [striker]
+    focus: Heading
+    partner: needed
+    minutes: 8
+    reps: "3 x 6"
+    tags: [jumping]
+    safe_version: "Standing headers from soft throws: aim down at the ground in front of goal."
+    steps:
+      - "A friend throws or crosses from the side. Attack the ball and head it down towards the goal line."
+      - "Mix near-post flicks and far-post headers back across goal."
+    cues: ["Head it down: a bouncing ball is hard to save", "Eyes open, forehead through the ball", "Arms for balance, not the elbow"]
+    harder: "From crosses, with a short run-up."

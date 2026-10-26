@@ -1,4 +1,4 @@
-// Shapes of /api/coach/analysis/teams/{id}/style, /players and /shots (backend/scouting/style.py).
+// Shapes of /api/pro/{comp}/teams/{id}/style, /players and /shots (backend/scouting/style.py).
 
 export interface Measure {
   key: string;
@@ -15,7 +15,7 @@ export interface Measure {
   league_min: number | null;
   league_max: number | null;
   rank: number | null;
-  teams: number;
+  teams: number | null;
   flag: "high" | "low" | null;
   verdict: "strength" | "weakness" | "style" | null;
 }
@@ -23,7 +23,7 @@ export interface Measure {
 export interface Standing {
   team: string;
   id: string;
-  position: number;
+  position: number | null; // null when the data has one club's season, not the league's
   played: number;
   won: number;
   drawn: number;
@@ -66,7 +66,7 @@ export function ordinal(n: number): string {
 // Same wording as rank_text in backend/scouting/style.py.
 export function rankText(m: Measure): string {
   const { rank, teams: n } = m;
-  if (rank == null) return "";
+  if (rank == null || n == null) return "";
   const [top, bottom] = m.better ? ["best", "worst"] : ["highest", "lowest"];
   if (rank === 1) return `${top} in the league`;
   if (rank === n) return `${bottom} in the league`;

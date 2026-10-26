@@ -2,13 +2,16 @@ import {
   CalendarDays,
   ClipboardCheck,
   Dumbbell,
+  Footprints,
   Home,
+  Lightbulb,
   LogOut,
   Map,
   Ruler,
   Shield,
   Star,
   TrendingUp,
+  Trophy,
   Watch,
 } from "lucide-react";
 import { Link, NavLink, Outlet } from "react-router-dom";
@@ -65,11 +68,14 @@ function navFor(selfGuided: boolean) {
 // Pages a phone reaches from inside other pages; the desktop sidebar has room to list them.
 function extrasFor(selfGuided: boolean) {
   return [
+    { to: "/player/skills", label: t("nav.skills"), icon: Footprints },
+    { to: "/player/tips", label: t("nav.tips"), icon: Lightbulb },
     { to: "/player/checkin", label: t("nav.checkin"), icon: ClipboardCheck },
     ...(selfGuided
       ? []
       : [{ to: "/player/road", label: t("nav.road"), icon: Map }]),
     { to: "/player/devices", label: t("nav.devices"), icon: Watch },
+    { to: "/pro", label: t("nav.pro"), icon: Trophy },
   ];
 }
 
@@ -141,6 +147,13 @@ export function PlayerLayout() {
             <span className="font-display text-xl font-extrabold tracking-wide uppercase">PathToPro</span>
           </div>
           <span className="flex items-center gap-1">
+            <Link
+              to="/pro"
+              className="tap text-ink-2 flex h-11 w-11 items-center justify-center"
+              aria-label={t("nav.pro")}
+            >
+              <Trophy className="h-5 w-5" aria-hidden />
+            </Link>
             <Link
               to="/player/devices"
               className="tap text-ink-2 flex h-11 w-11 items-center justify-center"
