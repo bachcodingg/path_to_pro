@@ -24,7 +24,7 @@ const MatchReport = lazy(() => import("./coach/Matches").then((m) => ({ default:
 const Devices = lazy(() => import("./player/Devices").then((m) => ({ default: m.Devices })));
 const MatchView = lazy(() => import("./player/MatchView").then((m) => ({ default: m.MatchView })));
 const Finance = lazy(() => import("./coach/Finance").then((m) => ({ default: m.Finance })));
-const TeamAnalysis = lazy(() => import("./coach/TeamAnalysis").then((m) => ({ default: m.TeamAnalysis })));
+const TeamAnalysis = lazy(() => import("./coach/analysis/TeamAnalysis").then((m) => ({ default: m.TeamAnalysis })));
 const Gym = lazy(() => import("./player/Gym").then((m) => ({ default: m.Gym })));
 const Pathway = lazy(() => import("./player/Pathway").then((m) => ({ default: m.Pathway })));
 const Growth = lazy(() => import("./player/Growth").then((m) => ({ default: m.Growth })));

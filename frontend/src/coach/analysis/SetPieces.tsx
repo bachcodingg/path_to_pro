@@ -1,17 +1,16 @@
-// Team analysis: an opponent's set-piece tendencies from real event data (StatsBomb Open Data).
+// Team analysis, set pieces tab: corners for and against, penalties and direct free kicks.
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { useApi } from "../shared/useApi";
-import { Card, Chip, ErrorNote, SectionTitle, Spinner, cn } from "../shared/ui";
+import { useApi } from "../../shared/useApi";
+import { Card, Chip, ErrorNote, SectionTitle, Spinner, cn } from "../../shared/ui";
 
-interface Source {
+export interface Source {
   source: string;
   source_url: string;
   competition: string;
   season: string;
   matches: number;
 }
-interface TeamRow {
+export interface TeamRow {
   id: string;
   name: string;
   matches: number;
@@ -93,7 +92,6 @@ interface Profile extends Source {
   notes: string[];
 }
 
-const DEFAULT_TEAM = "real-madrid";
 const ZONE_SHORT: Record<string, string> = {
   short: "Short",
   near_post: "Near post",
@@ -104,56 +102,13 @@ const ZONE_SHORT: Record<string, string> = {
 };
 const FOOT: Record<string, string> = { R: "Right", L: "Left", other: "Other" };
 const RESULT_COLOUR = { goal: "#e3a008", shot: "#2f7fe0", none: "rgba(255,255,255,0.6)" };
-const pct = (x: number | null | undefined) => (x == null ? "–" : `${Math.round(x)}%`);
+export const pct = (x: number | null | undefined) => (x == null ? "–" : `${Math.round(x)}%`);
 
-export function TeamAnalysis() {
-  const { teamId = DEFAULT_TEAM } = useParams();
-  const navigate = useNavigate();
-  const list = useApi<Source & { teams: TeamRow[] }>("/api/coach/analysis/teams");
+export function SetPieces({ teamId }: { teamId: string }) {
   const { data, error, loading, reload } = useApi<Profile>(`/api/coach/analysis/teams/${encodeURIComponent(teamId)}`);
-
-  if (list.error) return <ErrorNote message={list.error} onRetry={list.reload} />;
-  return (
-    <div className="max-w-5xl space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-extrabold">Team analysis</h1>
-          <p className="text-ink-2 text-sm">
-            Set-piece habits of an opponent from real match events
-            {list.data && ` (${list.data.competition} ${list.data.season}, ${list.data.matches} matches)`}. Each share is
-            compared with the rest of the league; a tendency is only called out when the gap is bigger than chance.
-          </p>
-        </div>
-        <label className="text-sm font-semibold">
-          Team{" "}
-          <select
-            className="bg-surface ml-1 rounded-lg border border-line px-3 py-2"
-            value={teamId}
-            onChange={(e) => navigate(`/coach/analysis/${e.target.value}`)}
-          >
-            {list.data?.teams.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-
-      {loading && !data ? (
-        <Spinner label="Reading match events" />
-      ) : error || !data ? (
-        <ErrorNote message={error ?? "No data"} onRetry={reload} />
-      ) : (
-        <TeamView p={data} />
-      )}
-
-      <p className="text-ink-2 text-xs">
-        Data: <a className="underline" href={list.data?.source_url ?? "https://github.com/statsbomb/open-data"}>StatsBomb Open Data</a>,
-        used under StatsBomb's open-data terms. Pitch positions are where each delivery or kick ended.
-      </p>
-    </div>
-  );
+  if (loading && !data) return <Spinner label="Reading match events" />;
+  if (error || !data) return <ErrorNote message={error ?? "No data"} onRetry={reload} />;
+  return <TeamView p={data} />;
 }
 
 function TeamView({ p }: { p: Profile }) {
@@ -372,7 +327,7 @@ function CornerMap({ points }: { points: Profile["corner_points"] }) {
   );
 }
 
-function Legend({ items, extra }: { items: [string, string][]; extra?: string }) {
+export function Legend({ items, extra }: { items: [string, string][]; extra?: string }) {
   return (
     <div className="text-ink-2 mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
       {items.map(([label, colour]) => (

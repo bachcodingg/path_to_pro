@@ -166,18 +166,32 @@ test("club finances: fees, salaries, bonuses and the ledger", async ({ page }) =
   await expect(page.getByRole("link", { name: "Club finances" })).toHaveCount(0);
 });
 
-test("team analysis: an opponent's corners and penalties from real match data", async ({ page }) => {
+test("team analysis: an opponent's style, shots, set pieces and players from real match data", async ({ page }) => {
   await login(page, "coach@demo.pathtopro");
   await page.getByRole("link", { name: "Team analysis" }).click();
   await expect(page.getByRole("heading", { name: "Team analysis" })).toBeVisible();
-  await expect(page.getByText("Main corner taker:")).toBeVisible();
-  await expect(page.getByRole("img", { name: /corner deliveries on the attacking half/ })).toBeVisible();
-  await page.getByRole("button", { name: "From left" }).click();
-  await expect(page.getByRole("button", { name: "From left" })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("img", { name: /kicks on the goal mouth/ }).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Strengths" })).toBeVisible();
+  await expect(page.getByRole("table", { name: "League table" })).toBeVisible();
+  await page.getByLabel("Compare with").selectOption("barcelona");
+  await expect(page).toHaveURL(/vs=barcelona/);
   await page.screenshot({ path: `${SHOTS}/coach-team-analysis.png`, fullPage: true });
 
-  await page.getByLabel("Team").selectOption("barcelona");
-  await expect(page).toHaveURL(/\/coach\/analysis\/barcelona$/);
-  await expect(page.getByRole("cell", { name: "Lionel Messi" }).first()).toBeVisible();
+  await page.getByRole("tab", { name: "Attack" }).click();
+  await expect(page.getByRole("img", { name: /shots on the attacking half/ })).toBeVisible();
+  await page.getByRole("button", { name: "Header" }).click();
+  await expect(page.getByRole("button", { name: "Header" })).toHaveAttribute("aria-pressed", "true");
+  await page.screenshot({ path: `${SHOTS}/coach-team-analysis-attack.png`, fullPage: true });
+
+  await page.getByRole("tab", { name: "Set pieces" }).click();
+  await expect(page.getByText("Main corner taker:")).toBeVisible();
+  await expect(page.getByRole("img", { name: /corner deliveries on the attacking half/ })).toBeVisible();
+
+  await page.getByRole("tab", { name: "Players" }).click();
+  await expect(page.getByRole("cell", { name: "Cristiano Ronaldo" })).toBeVisible();
+  await page.getByRole("button", { name: "Passing" }).click();
+  await expect(page.getByRole("button", { name: /Pass %/ })).toBeVisible();
+
+  await page.getByLabel("Team", { exact: true }).selectOption("atletico-madrid");
+  await expect(page).toHaveURL(/\/coach\/analysis\/atletico-madrid\?/);
+  await expect(page.getByRole("cell", { name: "Antoine Griezmann" })).toBeVisible();
 });
