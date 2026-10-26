@@ -201,7 +201,9 @@ def measure(m: Metric, team: str, by_team: dict[str, list[Row]], ranked: bool = 
     value = season_value(m, rows)
     league = season_value(m, rest)
     per_match = [m.num(r) / m.den(r) if m.den else m.num(r) for r in rows if m.den is None or m.den(r) > 0]
-    half = _t95(len(per_match)) * statistics.stdev(per_match) / math.sqrt(len(per_match)) if len(per_match) > 2 else None
+    sd = statistics.stdev(per_match) if len(per_match) > 2 else 0.0
+    # No match-to-match variation (e.g. no red card all season): no interval, so no label
+    half = _t95(len(per_match)) * sd / math.sqrt(len(per_match)) if sd > 0 else None
     lo, hi = (value - half, value + half) if value is not None and half is not None else (None, None)
     flag = None
     if lo is not None and league is not None:
