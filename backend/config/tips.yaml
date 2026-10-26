@@ -61,7 +61,7 @@ mindset:
     why: "Short, early calls win time for your teammates and keep you switched on. Quiet teams get caught out."
     steps:
       - "Use one or two words, early: 'man on', 'time', 'turn', 'away', 'keeper', 'drop'."
-      - "Tell the player in front of you where to go: 'show him inside', 'press'."
+      - "Tell the player in front of you what to do: 'show inside', 'press', 'drop'."
       - "Praise out loud: 'good ball', 'well done'. It costs nothing and builds the team."
   - id: focus-90
     title: "Stay switched on for 90 minutes"
@@ -238,7 +238,7 @@ positions:
       steps:
         - "When your team loses the ball, sprint back to stop the pass to the opponent's full-back."
         - "Stay between the ball and your full-back's player."
-        - "Communicate: 'I've got him', 'yours'."
+        - "Communicate: 'mine', 'yours', 'I've got the runner'."
   striker:
     - id: st-position
       title: "Positioning as a striker"

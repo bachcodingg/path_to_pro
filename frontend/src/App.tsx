@@ -29,6 +29,8 @@ const ProLayout = lazy(() => import("./pro/ProLayout").then((m) => ({ default: m
 const ProHome = lazy(() => import("./pro/ProHome").then((m) => ({ default: m.ProHome })));
 const CompetitionPage = lazy(() => import("./pro/Competition").then((m) => ({ default: m.CompetitionPage })));
 const MatchCentre = lazy(() => import("./pro/Matches").then((m) => ({ default: m.MatchCentre })));
+const Skills = lazy(() => import("./player/Skills").then((m) => ({ default: m.Skills })));
+const Tips = lazy(() => import("./player/Tips").then((m) => ({ default: m.Tips })));
 const Gym = lazy(() => import("./player/Gym").then((m) => ({ default: m.Gym })));
 const Pathway = lazy(() => import("./player/Pathway").then((m) => ({ default: m.Pathway })));
 const Growth = lazy(() => import("./player/Growth").then((m) => ({ default: m.Growth })));
@@ -66,6 +68,8 @@ export function App() {
         <Route path="checkin" element={<CheckIn />} />
         <Route path="week" element={<MyWeek />} />
         <Route path="gym" element={<Gym />} />
+        <Route path="skills" element={<Skills />} />
+        <Route path="tips" element={<Tips />} />
         <Route path="levels" element={<Pathway />} />
         <Route path="career" element={<Career />} />
         <Route path="devices" element={<Devices />} />

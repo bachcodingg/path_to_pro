@@ -13,6 +13,36 @@ test("academy player sees a position-specific gym session", async ({ page }) => 
   await page.screenshot({ path: `${SHOTS}/player-gym.png`, fullPage: true });
 });
 
+test("ball skills for the player's position next to the gym, and match tips", async ({ page }) => {
+  await login(page, "p15@demo.pathtopro"); // a striker in the growth zone
+  await page.getByRole("link", { name: /Ball skills for your position/ }).click();
+  await expect(page.getByRole("heading", { name: "Ball skills" })).toBeVisible();
+  const today = page.getByRole("region", { name: "Today's session" });
+  await expect(today.getByText("Striker skills session")).toBeVisible();
+  await expect(today.getByText(/Growth zone: half the shooting/)).toBeVisible();
+  await today.getByRole("button", { name: /Timing runs|Hold-up|Attacking headers|Finishing|First-time|Follow every/ }).first().click();
+  await expect(today.getByText("Focus on")).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/player-skills.png`, fullPage: true });
+  await page.getByLabel("Drills for position").selectOption("full_back");
+  await expect(page.getByRole("button", { name: /1v1 on the flank/ })).toBeVisible();
+  await page.getByRole("link", { name: "Gym session" }).click();
+  await expect(page.getByRole("heading", { name: "Gym", exact: true })).toBeVisible();
+
+  await page.getByRole("link", { name: "Today" }).click();
+  await expect(page.getByText("Tip for today")).toBeVisible();
+  await page.getByRole("link", { name: "All tips →" }).click();
+  await expect(page.getByRole("heading", { name: "Match tips" })).toBeVisible();
+  await page.getByRole("button", { name: "After a mistake: reset in five seconds" }).click();
+  await expect(page.getByText(/Ask for the ball again within two minutes/)).toBeVisible();
+  await page.getByRole("tab", { name: "Positions" }).click();
+  await page.getByRole("combobox").selectOption("full_back");
+  await page.getByRole("button", { name: "Defending as a left back" }).click();
+  await expect(page.getByText(/tuck in towards your centre-back/)).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/player-tips.png`, fullPage: true });
+  await page.getByRole("link", { name: /Practise it/ }).first().click();
+  await expect(page.getByRole("heading", { name: "Ball skills" })).toBeVisible();
+});
+
 test("self-guided player logs a test and levels up", async ({ page }) => {
   await login(page, "amateur@demo.pathtopro");
   await expect(page.getByText("Level 2: Grassroots")).toBeVisible();
