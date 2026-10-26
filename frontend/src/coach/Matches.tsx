@@ -5,6 +5,8 @@ import { Fragment, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, ApiError } from "../shared/api";
 import { useAuth } from "../shared/auth";
+import { Crest } from "../shared/Club";
+import { PageHeader, Tabs } from "../shared/PageHeader";
 import { Breakdown, POSITION_LABEL, RatingBadge } from "../shared/Rating";
 import { MatchLineup } from "./MatchLineup";
 import type { BreakdownItem, Position } from "../shared/types";
@@ -12,7 +14,6 @@ import { useApi } from "../shared/useApi";
 import {
   Button,
   Card,
-  Chip,
   ErrorNote,
   SectionTitle,
   Spinner,
@@ -38,51 +39,78 @@ export function Matches() {
   if (loading && !data) return <Spinner />;
   if (error || !data)
     return <ErrorNote message={error ?? "No data"} onRetry={reload} />;
+  // Results list as on the league sites: grouped by month, team - badge - badge - team
+  const months = new Map<string, MatchListItem[]>();
+  for (const m of data) {
+    const key = fmtDay(m.date, { month: "long", year: "numeric" });
+    months.set(key, [...(months.get(key) ?? []), m]);
+  }
   return (
-    <div className="max-w-4xl space-y-4">
-      <div>
-        <h1 className="text-2xl font-extrabold">Match ratings</h1>
-        <p className="text-ink-2 text-sm">
-          Enter match stats (or import them from your data provider) and every
-          player gets a 3-10 rating with the reasons behind it. Players see it
-          in their career next to their own diary rating.
-        </p>
-      </div>
-      <Card className="divide-[color:var(--line)] divide-y p-0">
+    <div className="space-y-4">
+      <PageHeader
+        eyebrow="Matchday"
+        title="Match ratings"
+        subtitle="Enter match stats (or import them from your data provider) and every player gets a 3-10 rating with the reasons behind it. Players see it in their career next to their own diary rating."
+      />
+      <div className="max-w-5xl space-y-5">
         {data.length === 0 && (
-          <p className="text-ink-2 p-4">No matches in the last six weeks.</p>
+          <Card className="text-ink-2">No matches in the last six weeks.</Card>
         )}
-        {data.map((m) => (
-          <Link
-            key={m.id}
-            to={`/coach/matches/${m.id}`}
-            className="hover:bg-surface-2 flex items-center gap-3 px-4 py-3"
-          >
-            <RatingBadge value={m.avg_rating} />
-            <span className="min-w-0 flex-1">
-              <span className="block font-semibold">
-                {m.team} vs {m.opponent}
-              </span>
-              <span className="text-ink-2 text-xs">
-                {fmtDay(m.date, {
-                  weekday: "short",
-                  day: "numeric",
-                  month: "short",
-                })}{" "}
-                · {m.competition ?? ""} · {m.rated}/{m.players} rated
-              </span>
-            </span>
-            {m.best && (
-              <span className="text-right text-xs">
-                <span className="text-ink-2 block">Player of the match</span>
-                <span className="font-semibold">
-                  {m.best.name} <RatingBadge value={m.best.rating} size="sm" />
-                </span>
-              </span>
-            )}
-          </Link>
+        {[...months].map(([month, list]) => (
+          <section key={month}>
+            <SectionTitle>{month}</SectionTitle>
+            <Card className="divide-[color:var(--line)] divide-y p-0">
+              {list.map((m) => (
+                <Link
+                  key={m.id}
+                  to={`/coach/matches/${m.id}`}
+                  aria-label={`${m.team} vs ${m.opponent}, ${fmtDay(m.date, { weekday: "long", day: "numeric", month: "long" })}`}
+                  className="hover:bg-surface-2 grid grid-cols-[3.5rem_minmax(0,1fr)] items-center gap-3 px-4 py-3 transition-colors md:grid-cols-[4rem_minmax(0,1fr)_13rem]"
+                >
+                  <span className="text-center leading-none">
+                    <span className="text-ink-2 block text-[11px] font-bold uppercase">
+                      {fmtDay(m.date)}
+                    </span>
+                    <span className="font-display block text-3xl font-bold">
+                      {m.date.slice(8)}
+                    </span>
+                  </span>
+                  <span className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-3 gap-y-1">
+                    <span className="flex min-w-0 items-center justify-end gap-2 text-right font-semibold">
+                      <span className="truncate">{m.team}</span>
+                      <Crest name={m.team} size={30} />
+                    </span>
+                    <span className="flex flex-col items-center">
+                      <RatingBadge value={m.avg_rating} />
+                      <span className="text-ink-2 mt-0.5 text-[10px] font-semibold uppercase">
+                        avg
+                      </span>
+                    </span>
+                    <span className="flex min-w-0 items-center gap-2 font-semibold">
+                      <Crest name={m.opponent} size={30} />
+                      <span className="truncate">{m.opponent}</span>
+                    </span>
+                    <span className="text-ink-2 col-span-3 text-center text-xs">
+                      {m.competition ?? "Match"} · {m.rated}/{m.players} rated
+                    </span>
+                  </span>
+                  {m.best && (
+                    <span className="hidden text-right text-xs md:block">
+                      <span className="text-ink-2 block font-semibold uppercase">
+                        Player of the match
+                      </span>
+                      <span className="font-semibold">
+                        {m.best.name}{" "}
+                        <RatingBadge value={m.best.rating} size="sm" />
+                      </span>
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </Card>
+          </section>
         ))}
-      </Card>
+      </div>
     </div>
   );
 }
@@ -229,53 +257,57 @@ export function MatchReport() {
     "bg-surface-2 border-line h-8 w-12 rounded-md border px-1 text-center tabular-nums";
   return (
     <div className="space-y-4">
-      <Link
-        to="/coach/matches"
-        className="text-pitch-600 text-sm font-semibold hover:underline"
-      >
-        ← Match ratings
-      </Link>
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-extrabold">
-          {data.match.team} vs {data.match.opponent}
-        </h1>
-        <Chip>
-          {fmtDay(data.match.date, {
+      {/* Match-centre header: both badges, the date, the views as tabs */}
+      <PageHeader
+        eyebrow={
+          <Link to="/coach/matches" className="hover:underline">
+            ← Match ratings
+          </Link>
+        }
+        title={`${data.match.team} vs ${data.match.opponent}`}
+        subtitle={[
+          fmtDay(data.match.date, {
             weekday: "long",
             day: "numeric",
             month: "long",
-          })}
-        </Chip>
-        {top && (
-          <Chip tone="green">
-            Player of the match: {top.player.name} {top.rating?.toFixed(1)}
-          </Chip>
-        )}
-      </div>
-
-      <div className="flex gap-1" role="tablist" aria-label="Match view">
-        {(
-          [
-            ["lineup", "Line-up"],
-            ["sheet", "Stat sheet"],
-          ] as const
-        ).map(([k, label]) => (
-          <button
-            key={k}
-            role="tab"
-            aria-selected={tab === k}
-            onClick={() => setTab(k)}
-            className={cn(
-              "tap rounded-xl px-4 py-2 text-sm font-semibold",
-              tab === k
-                ? "bg-pitch-600 text-white"
-                : "bg-surface border-line border",
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+          }),
+          data.match.competition,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+        leading={
+          <span className="hidden items-center gap-1 sm:flex">
+            <Crest name={data.match.team} size={44} />
+            <Crest name={data.match.opponent} size={44} />
+          </span>
+        }
+        actions={
+          top && (
+            <span className="rounded-xl bg-white/10 px-3 py-2 text-sm">
+              <span className="block text-xs font-bold tracking-wider text-white/70 uppercase">
+                Player of the match
+              </span>
+              <span className="font-semibold">
+                {top.player.name}{" "}
+                <span className="font-display text-xl font-bold">
+                  {top.rating?.toFixed(1)}
+                </span>
+              </span>
+            </span>
+          )
+        }
+        bottom={
+          <Tabs
+            label="Match view"
+            value={tab}
+            onChange={setTab}
+            items={[
+              ["lineup", "Line-up"],
+              ["sheet", "Stat sheet"],
+            ]}
+          />
+        }
+      />
 
       {tab === "lineup" && <MatchLineup rows={rows} linkFor={(id) => `/coach/players/${id}`} />}
       {tab === "sheet" && (
