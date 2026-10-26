@@ -195,3 +195,18 @@ test("team analysis: an opponent's style, shots, set pieces and players from rea
   await expect(page).toHaveURL(/\/coach\/analysis\/atletico-madrid\?/);
   await expect(page.getByRole("cell", { name: "Antoine Griezmann" })).toBeVisible();
 });
+
+test("player app on a laptop: sidebar instead of bottom tabs, pages in columns", async ({ page }) => {
+  await login(page, "p15@demo.pathtopro");
+  const nav = page.getByRole("navigation", { name: "Player navigation" });
+  await expect(nav).toHaveCount(1); // the phone tab bar is hidden at this width
+  await expect(nav.getByRole("link", { name: "Road to Pro" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Hi / })).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/player-desktop-today.png` });
+  await nav.getByRole("link", { name: "My week" }).click();
+  const week = page.getByRole("list", { name: "Week at a glance" });
+  await expect(week.getByRole("listitem")).toHaveCount(7);
+  await week.getByRole("button").nth(3).click();
+  await expect(page.getByRole("dialog", { name: "Day details" })).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/player-desktop-week.png` });
+});

@@ -35,120 +35,128 @@ export function Career() {
         </div>
       </div>
 
-      <MatchDiary due={data.diary_due} position={user?.position} onSaved={setData} />
+      {/* Wide screens: this season on the left, matches and history on the right */}
+      <div className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
+        <div className="space-y-5">
+          <MatchDiary due={data.diary_due} position={user?.position} onSaved={setData} />
 
-      <section>
-        <SectionTitle>Season {data.season}</SectionTitle>
-        <Card>
-          <div className="flex items-center gap-4">
-            <RatingBadge value={s.avg_rating} size="lg" />
-            <div className="grid flex-1 grid-cols-4 gap-2 text-center">
-              {[
-                ["Apps", s.apps],
-                ["Min", s.minutes],
-                ["Goals", s.goals],
-                ["Assists", s.assists],
-              ].map(([k, v]) => (
-                <div key={k}>
-                  <p className="text-xl font-extrabold tabular-nums">{v}</p>
-                  <p className="text-ink-2 text-xs">{k}</p>
+          <section>
+            <SectionTitle>Season {data.season}</SectionTitle>
+            <Card>
+              <div className="flex items-center gap-4">
+                <RatingBadge value={s.avg_rating} size="lg" />
+                <div className="grid flex-1 grid-cols-4 gap-2 text-center">
+                  {[
+                    ["Apps", s.apps],
+                    ["Min", s.minutes],
+                    ["Goals", s.goals],
+                    ["Assists", s.assists],
+                  ].map(([k, v]) => (
+                    <div key={k}>
+                      <p className="text-xl font-extrabold tabular-nums">{v}</p>
+                      <p className="text-ink-2 text-xs">{k}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-          <p className="text-ink-2 mt-3 text-sm">
-            Average rating · <span className="text-ink font-semibold">{s.exposure}</span> full matches at top level (minutes
-            weighted by league level)
-          </p>
-          {data.current.length > 1 && (
-            <ul className="border-line mt-3 space-y-1 border-t pt-2 text-sm">
-              {data.current.map((c) => (
-                <li key={c.competition} className="flex justify-between">
-                  <span>{c.competition_label}</span>
-                  <span className="text-ink-2 tabular-nums">
-                    {c.apps} apps · {c.minutes} min · {c.goals}G {c.assists}A
-                  </span>
-                </li>
-              ))}
-            </ul>
+              </div>
+              <p className="text-ink-2 mt-3 text-sm">
+                Average rating · <span className="text-ink font-semibold">{s.exposure}</span> full matches at top level (minutes
+                weighted by league level)
+              </p>
+              {data.current.length > 1 && (
+                <ul className="border-line mt-3 space-y-1 border-t pt-2 text-sm">
+                  {data.current.map((c) => (
+                    <li key={c.competition} className="flex justify-between">
+                      <span>{c.competition_label}</span>
+                      <span className="text-ink-2 tabular-nums">
+                        {c.apps} apps · {c.minutes} min · {c.goals}G {c.assists}A
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          </section>
+
+          <section>
+            <SectionTitle>Rating progress</SectionTitle>
+            <RatingHistory data={data.history} />
+          </section>
+
+          {data.ladder.length > 0 && (
+            <section>
+              <SectionTitle>My pathway</SectionTitle>
+              <Card className="h-48 p-2" aria-label="Pathway chart: highest league level per season">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={data.ladder} margin={{ top: 12, right: 16, left: -16, bottom: 0 }}>
+                    <CartesianGrid stroke="rgba(255,255,255,0.08)" />
+                    <XAxis dataKey="season" fontSize={11} stroke="#a9c2b3" />
+                    <YAxis domain={[0, 100]} fontSize={11} stroke="#a9c2b3" />
+                    <Tooltip
+                      contentStyle={{ background: "#0f2219", border: "1px solid #24402f" }}
+                      formatter={(v: number, _n, p) => [`${p.payload.competition_label} (level ${v})`, "Highest league"]}
+                    />
+                    <Line type="stepAfter" dataKey="level" stroke="#f0a020" strokeWidth={3} dot={{ r: 5 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Card>
+            </section>
           )}
-        </Card>
-      </section>
+        </div>
 
-      <section>
-        <SectionTitle>Rating progress</SectionTitle>
-        <RatingHistory data={data.history} />
-      </section>
-
-      <section>
-        <SectionTitle>Recent matches</SectionTitle>
-        <Card className="divide-[color:var(--line)] divide-y p-0">
-          {data.recent.length === 0 && <p className="text-ink-2 p-4 text-sm">No matches yet this season.</p>}
-          {data.recent.map((a) => (
-            <MatchRow key={a.match_id} a={a} />
-          ))}
-        </Card>
-      </section>
-
-      {data.ladder.length > 0 && (
-        <section>
-          <SectionTitle>My pathway</SectionTitle>
-          <Card className="h-48 p-2" aria-label="Pathway chart: highest league level per season">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.ladder} margin={{ top: 12, right: 16, left: -16, bottom: 0 }}>
-                <CartesianGrid stroke="rgba(255,255,255,0.08)" />
-                <XAxis dataKey="season" fontSize={11} stroke="#a9c2b3" />
-                <YAxis domain={[0, 100]} fontSize={11} stroke="#a9c2b3" />
-                <Tooltip
-                  contentStyle={{ background: "#0f2219", border: "1px solid #24402f" }}
-                  formatter={(v: number, _n, p) => [`${p.payload.competition_label} (level ${v})`, "Highest league"]}
-                />
-                <Line type="stepAfter" dataKey="level" stroke="#f0a020" strokeWidth={3} dot={{ r: 5 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </Card>
-        </section>
-      )}
-
-      <ClubHistory clubs={data.clubs} />
-
-      <MoneyCard />
-
-      <section>
-        <SectionTitle>Past seasons</SectionTitle>
-        <Card className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead className="text-ink-2 text-left text-xs">
-              <tr>
-                <th className="p-2">Season</th>
-                <th className="p-2">Team · league</th>
-                <th className="p-2 text-right">Apps</th>
-                <th className="p-2 text-right">G</th>
-                <th className="p-2 text-right">A</th>
-                <th className="p-2 text-right">Avg</th>
-              </tr>
-            </thead>
-            <tbody className="divide-[color:var(--line)] divide-y">
-              {[...data.past].reverse().map((r) => (
-                <tr key={r.id ?? r.season + r.competition}>
-                  <td className="p-2 font-semibold">{r.season}</td>
-                  <td className="p-2">
-                    {r.team}
-                    <span className="text-ink-2 block text-xs">{r.competition_label}</span>
-                  </td>
-                  <td className="p-2 text-right tabular-nums">{r.apps}</td>
-                  <td className="p-2 text-right tabular-nums">{r.goals}</td>
-                  <td className="p-2 text-right tabular-nums">{r.assists}</td>
-                  <td className="p-2 text-right">
-                    <RatingBadge value={r.avg_rating} size="sm" />
-                  </td>
-                </tr>
+        <div className="space-y-5">
+          <section>
+            <SectionTitle>Recent matches</SectionTitle>
+            <Card className="divide-[color:var(--line)] divide-y p-0">
+              {data.recent.length === 0 && <p className="text-ink-2 p-4 text-sm">No matches yet this season.</p>}
+              {data.recent.map((a) => (
+                <MatchRow key={a.match_id} a={a} />
               ))}
-            </tbody>
-          </table>
-        </Card>
-        <AddSeason data={data} onSaved={setData} />
-      </section>
+            </Card>
+          </section>
+
+          <ClubHistory clubs={data.clubs} />
+
+          <MoneyCard />
+
+          <section>
+            <SectionTitle>Past seasons</SectionTitle>
+            <Card className="overflow-x-auto p-0">
+              <table className="w-full text-sm">
+                <thead className="text-ink-2 text-left text-xs">
+                  <tr>
+                    <th className="p-2">Season</th>
+                    <th className="p-2">Team · league</th>
+                    <th className="p-2 text-right">Apps</th>
+                    <th className="p-2 text-right">G</th>
+                    <th className="p-2 text-right">A</th>
+                    <th className="p-2 text-right">Avg</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-[color:var(--line)] divide-y">
+                  {[...data.past].reverse().map((r) => (
+                    <tr key={r.id ?? r.season + r.competition}>
+                      <td className="p-2 font-semibold">{r.season}</td>
+                      <td className="p-2">
+                        {r.team}
+                        <span className="text-ink-2 block text-xs">{r.competition_label}</span>
+                      </td>
+                      <td className="p-2 text-right tabular-nums">{r.apps}</td>
+                      <td className="p-2 text-right tabular-nums">{r.goals}</td>
+                      <td className="p-2 text-right tabular-nums">{r.assists}</td>
+                      <td className="p-2 text-right">
+                        <RatingBadge value={r.avg_rating} size="sm" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+            <AddSeason data={data} onSaved={setData} />
+          </section>
+        </div>
+      </div>
+
       <p className="text-ink-2 text-center text-xs">{data.note}</p>
     </div>
   );
