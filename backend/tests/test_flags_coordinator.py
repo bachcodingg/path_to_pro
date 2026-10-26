@@ -40,6 +40,13 @@ def test_missed_checkins_need_red_readiness():
     assert FlagKind.MISSED_CHECKINS in kinds(PlayerSnapshot(missed_checkins_in_row=2, readiness_band=Band.RED))
 
 
+def test_silence_with_no_readiness_data_escalates():
+    # No check-in, no sleep, no wearable: readiness is unknown, so silence itself is the flag.
+    assert FlagKind.MISSED_CHECKINS not in kinds(PlayerSnapshot(missed_checkins_in_row=2, readiness_band=None))
+    assert FlagKind.MISSED_CHECKINS in kinds(PlayerSnapshot(missed_checkins_in_row=3, readiness_band=None))
+    assert FlagKind.MISSED_CHECKINS not in kinds(PlayerSnapshot(missed_checkins_in_row=5, readiness_band=Band.GREEN))
+
+
 @pytest.mark.parametrize(
     "proposal,expected",
     [
@@ -52,6 +59,7 @@ def test_missed_checkins_need_red_readiness():
         (Proposal("P01", ActionKind.LOAD_CUT, load_cut_pct=25), Decision.COACH_APPROVAL),
         (Proposal("P01", ActionKind.LOAD_CUT, load_cut_pct=10), Decision.COACH_APPROVAL),
         (Proposal("P01", ActionKind.NEW_GOAL), Decision.COACH_APPROVAL),
+        (Proposal("P01", ActionKind.LOAD_INCREASE), Decision.COACH_APPROVAL),
     ],
 )
 def test_autonomy_policy_table(proposal, expected):
@@ -70,3 +78,19 @@ def test_safety_flags_always_escalate(snapshot):
     flags = evaluate(snapshot)
     # Even an otherwise auto-applied reminder must not go ahead.
     assert decide(Proposal("P01", ActionKind.REMINDER), flags).decision == Decision.ESCALATE
+
+
+def test_a_heavier_week_goes_to_the_coach_even_within_one_rpe():
+    from datetime import date, timedelta
+
+    from agents.orchestrator import diff, to_proposal
+    from domain.enums import SessionType
+    from planner.schema import PlanDay
+
+    start = date(2026, 10, 19)
+    cur = [PlanDay(day=d, date=start + timedelta(days=d), kind=SessionType.TECHNICAL, rpe=4, minutes=75) for d in range(5)]
+    up = [p.model_copy(update={"rpe": 5}) for p in cur]  # +1 RPE every day = +25% load
+    prop = to_proposal("P01", diff(cur, up), "")
+    assert prop.kind == ActionKind.LOAD_INCREASE and decide(prop).decision == Decision.COACH_APPROVAL
+    one = [cur[0].model_copy(update={"rpe": 5}), *cur[1:]]  # +1 RPE on one day = +5%
+    assert decide(to_proposal("P01", diff(cur, one), "")).decision == Decision.AUTO_APPLY_NOTIFY_COACH

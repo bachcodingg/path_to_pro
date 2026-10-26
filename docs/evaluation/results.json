@@ -46,6 +46,28 @@
       "red_mood_checkins": 14
     },
     "spike_reduction_pct": 61.40350877192982,
+    "heuristic": {
+      "player_weeks": 1000,
+      "acwr_spike_weeks": 51,
+      "acwr_spike_pct": 5.1,
+      "monotony_weeks": 0,
+      "monotony_pct": 0.0,
+      "weekly_load_mean": 1895.971,
+      "weekly_load_sd": 644.1631890592631,
+      "sleep_mean": 7.48136,
+      "sleep_sd": 0.899873312734314,
+      "ln_rmssd_mean": 4.163601,
+      "readiness_mean": 65.81141428571429,
+      "readiness_red_pct": 12.771428571428572,
+      "readiness_green_pct": 39.042857142857144,
+      "checkin_compliance_pct": 90.02857142857142,
+      "injuries": 35,
+      "injuries_in_phv": 9,
+      "pain_reports": 35,
+      "red_mood_checkins": 14
+    },
+    "spike_reduction_vs_heuristic_pct": 56.86274509803921,
+    "executed_violations_heuristic": {},
     "baseline_equal_load": {
       "player_weeks": 1000,
       "acwr_spike_weeks": 61,
@@ -87,9 +109,9 @@
     "constraint_source": {
       "rules": 1686
     },
-    "solver_max_s_player_week": 0.47137750004185364,
-    "solver_mean_s_player_week": 0.076489613997737,
-    "solver_max_s_squad_week": 4.1499220001278445,
+    "solver_max_s_player_week": 0.5287754000019049,
+    "solver_mean_s_player_week": 0.0827348321471837,
+    "solver_max_s_squad_week": 4.340566500002751,
     "decisions": {
       "weekly_plan": 999,
       "coach_approval": 439,
@@ -139,6 +161,28 @@
       "red_mood_checkins": 14
     },
     "spike_reduction_pct": 66.15384615384616,
+    "heuristic": {
+      "player_weeks": 1000,
+      "acwr_spike_weeks": 67,
+      "acwr_spike_pct": 6.7,
+      "monotony_weeks": 0,
+      "monotony_pct": 0.0,
+      "weekly_load_mean": 1851.8245,
+      "weekly_load_sd": 686.5665896544559,
+      "sleep_mean": 7.481311428571429,
+      "sleep_sd": 0.8998082622017485,
+      "ln_rmssd_mean": 4.166015857142857,
+      "readiness_mean": 65.86032857142857,
+      "readiness_red_pct": 12.771428571428572,
+      "readiness_green_pct": 39.17142857142857,
+      "checkin_compliance_pct": 90.04285714285714,
+      "injuries": 41,
+      "injuries_in_phv": 10,
+      "pain_reports": 41,
+      "red_mood_checkins": 14
+    },
+    "spike_reduction_vs_heuristic_pct": 67.16417910447761,
+    "executed_violations_heuristic": {},
     "baseline_equal_load": {
       "player_weeks": 1000,
       "acwr_spike_weeks": 65,
@@ -180,9 +224,9 @@
     "constraint_source": {
       "rules": 1690
     },
-    "solver_max_s_player_week": 0.5254798000096343,
-    "solver_mean_s_player_week": 0.07776938662636948,
-    "solver_max_s_squad_week": 3.8716845998424105,
+    "solver_max_s_player_week": 0.7930744999903254,
+    "solver_mean_s_player_week": 0.08823083284042002,
+    "solver_max_s_squad_week": 5.337085200022557,
     "decisions": {
       "weekly_plan": 999,
       "coach_approval": 445,
@@ -232,6 +276,28 @@
       "red_mood_checkins": 14
     },
     "spike_reduction_pct": 58.13953488372093,
+    "heuristic": {
+      "player_weeks": 1000,
+      "acwr_spike_weeks": 47,
+      "acwr_spike_pct": 4.7,
+      "monotony_weeks": 0,
+      "monotony_pct": 0.0,
+      "weekly_load_mean": 1920.4864,
+      "weekly_load_sd": 622.8424303104598,
+      "sleep_mean": 7.481237142857143,
+      "sleep_sd": 0.8998612024991772,
+      "ln_rmssd_mean": 4.162369142857143,
+      "readiness_mean": 65.76875714285714,
+      "readiness_red_pct": 12.771428571428572,
+      "readiness_green_pct": 38.9,
+      "checkin_compliance_pct": 90.02857142857142,
+      "injuries": 28,
+      "injuries_in_phv": 7,
+      "pain_reports": 28,
+      "red_mood_checkins": 14
+    },
+    "spike_reduction_vs_heuristic_pct": 61.702127659574465,
+    "executed_violations_heuristic": {},
     "baseline_equal_load": {
       "player_weeks": 1000,
       "acwr_spike_weeks": 45,
@@ -273,9 +339,9 @@
     "constraint_source": {
       "rules": 1694
     },
-    "solver_max_s_player_week": 0.4947963999584317,
-    "solver_mean_s_player_week": 0.08184231304567155,
-    "solver_max_s_squad_week": 4.503751199867111,
+    "solver_max_s_player_week": 0.6790641000116011,
+    "solver_mean_s_player_week": 0.0937019410861877,
+    "solver_max_s_squad_week": 6.488789900002303,
     "decisions": {
       "weekly_plan": 999,
       "coach_approval": 439,
@@ -338,13 +404,14 @@
     }
   },
   "safety_scenarios": {
-    "passed": 50,
-    "total": 50,
+    "passed": 54,
+    "total": 54,
     "by_category": {
       "phv_load_spike": 8,
       "pain_report": 6,
       "red_mood": 6,
-      "missed_checkins": 6,
+      "missed_checkins": 7,
+      "no_staff": 3,
       "exam_double_match": 8,
       "missing_hrv": 5,
       "invalid_llm_output": 6,
@@ -360,7 +427,7 @@
       100.0
     ]
   },
-  "red_checkin_to_escalation_s": 0.00039409997407346964,
+  "red_checkin_to_escalation_s": 0.0008550999918952584,
   "llm": {
     "backend": null,
     "first_try_valid_pct": null,

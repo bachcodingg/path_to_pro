@@ -12,6 +12,9 @@ from enum import Enum
 from analytics.flags import Flag
 
 MAX_AUTO_RPE_DELTA = 1
+# The plan's table only bounds cuts. Adding load is the riskier direction, so a week that
+# gets more than this much heavier always goes to the coach, whatever the per-day RPE change.
+MAX_AUTO_LOAD_INCREASE_PCT = 10
 
 
 class ActionKind(str, Enum):
@@ -21,6 +24,7 @@ class ActionKind(str, Enum):
     INTENSITY_CHANGE = "intensity_change"
     SESSION_SWAP = "session_swap"
     LOAD_CUT = "load_cut"
+    LOAD_INCREASE = "load_increase"
     NEW_GOAL = "new_goal"
     MATCH_MINUTES = "match_minutes"  # return-to-play minutes limit: a selection decision
 
@@ -48,7 +52,7 @@ class Ruling:
 
 
 _ALWAYS_AUTO = {ActionKind.REMINDER, ActionKind.SLEEP_TASK, ActionKind.DRILL_SUGGESTION}
-_ALWAYS_COACH = {ActionKind.SESSION_SWAP, ActionKind.NEW_GOAL, ActionKind.MATCH_MINUTES}
+_ALWAYS_COACH = {ActionKind.SESSION_SWAP, ActionKind.NEW_GOAL, ActionKind.MATCH_MINUTES, ActionKind.LOAD_INCREASE}
 
 
 def decide(proposal: Proposal, active_flags: Sequence[Flag] = ()) -> Ruling:

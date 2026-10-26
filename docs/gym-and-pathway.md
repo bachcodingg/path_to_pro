@@ -67,7 +67,8 @@ Today screen shows solo drills for them.
 
 **No staff:** re-plans can only make a week easier, so they're applied automatically with
 a why-card. Pain or a red mood shows safety advice in the app (stop, tell an adult, see a
-doctor or physio) instead of going to a physio queue.
+doctor or physio), alerts a linked parent in the family view, and turns the next two days
+into rest (pain, with 0 match minutes) or recovery (red mood).
 
 **Under 16:** sign-up needs a parent's email. The player gets a one-time invite code; the
 parent signs up with it and grants consent per data type. Until then the player gets

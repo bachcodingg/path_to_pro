@@ -1,0 +1,1388 @@
+{
+  "seeds": [
+    2026,
+    2027,
+    2028,
+    2029,
+    2030,
+    2031,
+    2032,
+    2033,
+    2034,
+    2035
+  ],
+  "players": 25,
+  "weeks": 40,
+  "rows": [
+    {
+      "seed": 2026,
+      "variant": "load",
+      "baseline": {
+        "acwr_spike_weeks": 57,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2137.4706,
+        "injuries": 40,
+        "injuries_in_phv": 11,
+        "rule_violations": 376
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 51,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1895.971,
+        "injuries": 35,
+        "injuries_in_phv": 9,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 22,
+        "monotony_weeks": 4,
+        "weekly_load_mean": 1727.4028,
+        "injuries": 36,
+        "injuries_in_phv": 8,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2026,
+      "variant": "readiness",
+      "baseline": {
+        "acwr_spike_weeks": 65,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2098.8835,
+        "injuries": 46,
+        "injuries_in_phv": 11,
+        "rule_violations": 373
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 67,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1851.8245,
+        "injuries": 41,
+        "injuries_in_phv": 10,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 22,
+        "monotony_weeks": 3,
+        "weekly_load_mean": 1708.5878,
+        "injuries": 40,
+        "injuries_in_phv": 9,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2026,
+      "variant": "random",
+      "baseline": {
+        "acwr_spike_weeks": 43,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2189.1971000000003,
+        "injuries": 30,
+        "injuries_in_phv": 8,
+        "rule_violations": 382
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 47,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1920.4864,
+        "injuries": 28,
+        "injuries_in_phv": 7,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 18,
+        "monotony_weeks": 4,
+        "weekly_load_mean": 1794.0621999999998,
+        "injuries": 28,
+        "injuries_in_phv": 6,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2027,
+      "variant": "load",
+      "baseline": {
+        "acwr_spike_weeks": 38,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2225.2896,
+        "injuries": 27,
+        "injuries_in_phv": 11,
+        "rule_violations": 379
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 44,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1941.5164,
+        "injuries": 29,
+        "injuries_in_phv": 11,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 12,
+        "monotony_weeks": 6,
+        "weekly_load_mean": 1810.3683999999998,
+        "injuries": 26,
+        "injuries_in_phv": 10,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2027,
+      "variant": "readiness",
+      "baseline": {
+        "acwr_spike_weeks": 53,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2183.7064,
+        "injuries": 34,
+        "injuries_in_phv": 11,
+        "rule_violations": 373
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 46,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1941.1308000000001,
+        "injuries": 28,
+        "injuries_in_phv": 7,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 19,
+        "monotony_weeks": 6,
+        "weekly_load_mean": 1734.1982,
+        "injuries": 33,
+        "injuries_in_phv": 11,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2027,
+      "variant": "random",
+      "baseline": {
+        "acwr_spike_weeks": 24,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2279.3082999999997,
+        "injuries": 19,
+        "injuries_in_phv": 5,
+        "rule_violations": 383
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 25,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2002.273,
+        "injuries": 18,
+        "injuries_in_phv": 4,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 11,
+        "monotony_weeks": 6,
+        "weekly_load_mean": 1863.2571,
+        "injuries": 22,
+        "injuries_in_phv": 7,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2028,
+      "variant": "load",
+      "baseline": {
+        "acwr_spike_weeks": 29,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2265.6204,
+        "injuries": 22,
+        "injuries_in_phv": 4,
+        "rule_violations": 421
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 34,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1935.8089,
+        "injuries": 20,
+        "injuries_in_phv": 5,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 13,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1871.5583000000001,
+        "injuries": 21,
+        "injuries_in_phv": 6,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2028,
+      "variant": "readiness",
+      "baseline": {
+        "acwr_spike_weeks": 38,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2239.115,
+        "injuries": 28,
+        "injuries_in_phv": 7,
+        "rule_violations": 421
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 39,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1923.3279,
+        "injuries": 24,
+        "injuries_in_phv": 5,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 22,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1821.1386,
+        "injuries": 26,
+        "injuries_in_phv": 7,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2028,
+      "variant": "random",
+      "baseline": {
+        "acwr_spike_weeks": 24,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2290.0222000000003,
+        "injuries": 17,
+        "injuries_in_phv": 3,
+        "rule_violations": 428
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 26,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1955.2578,
+        "injuries": 16,
+        "injuries_in_phv": 3,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 15,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1888.9772,
+        "injuries": 18,
+        "injuries_in_phv": 4,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2029,
+      "variant": "load",
+      "baseline": {
+        "acwr_spike_weeks": 27,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2294.4977000000003,
+        "injuries": 19,
+        "injuries_in_phv": 9,
+        "rule_violations": 444
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 38,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1937.877,
+        "injuries": 19,
+        "injuries_in_phv": 7,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 16,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1847.3116,
+        "injuries": 25,
+        "injuries_in_phv": 9,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2029,
+      "variant": "readiness",
+      "baseline": {
+        "acwr_spike_weeks": 32,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2261.4948999999997,
+        "injuries": 25,
+        "injuries_in_phv": 13,
+        "rule_violations": 429
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 33,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1959.5547,
+        "injuries": 17,
+        "injuries_in_phv": 8,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 16,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1856.0093,
+        "injuries": 26,
+        "injuries_in_phv": 11,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2029,
+      "variant": "random",
+      "baseline": {
+        "acwr_spike_weeks": 12,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2356.1599,
+        "injuries": 7,
+        "injuries_in_phv": 2,
+        "rule_violations": 459
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 17,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1998.6342,
+        "injuries": 7,
+        "injuries_in_phv": 2,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 9,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1950.2697,
+        "injuries": 12,
+        "injuries_in_phv": 2,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2030,
+      "variant": "load",
+      "baseline": {
+        "acwr_spike_weeks": 51,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2156.899,
+        "injuries": 38,
+        "injuries_in_phv": 17,
+        "rule_violations": 347
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 47,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1914.7518,
+        "injuries": 34,
+        "injuries_in_phv": 13,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 12,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1779.0846000000001,
+        "injuries": 31,
+        "injuries_in_phv": 13,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2030,
+      "variant": "readiness",
+      "baseline": {
+        "acwr_spike_weeks": 53,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2154.6614,
+        "injuries": 39,
+        "injuries_in_phv": 17,
+        "rule_violations": 348
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 53,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1904.4627,
+        "injuries": 35,
+        "injuries_in_phv": 15,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 11,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1772.2797,
+        "injuries": 34,
+        "injuries_in_phv": 13,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2030,
+      "variant": "random",
+      "baseline": {
+        "acwr_spike_weeks": 26,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2260.8884,
+        "injuries": 23,
+        "injuries_in_phv": 8,
+        "rule_violations": 371
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 26,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1981.2821999999999,
+        "injuries": 22,
+        "injuries_in_phv": 7,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 4,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1889.9032,
+        "injuries": 22,
+        "injuries_in_phv": 7,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2031,
+      "variant": "load",
+      "baseline": {
+        "acwr_spike_weeks": 39,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2223.9956,
+        "injuries": 27,
+        "injuries_in_phv": 8,
+        "rule_violations": 363
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 49,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1938.2273,
+        "injuries": 29,
+        "injuries_in_phv": 9,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 7,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1864.3765,
+        "injuries": 24,
+        "injuries_in_phv": 7,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2031,
+      "variant": "readiness",
+      "baseline": {
+        "acwr_spike_weeks": 52,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2183.5562999999997,
+        "injuries": 37,
+        "injuries_in_phv": 10,
+        "rule_violations": 351
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 50,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1925.1068,
+        "injuries": 32,
+        "injuries_in_phv": 9,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 8,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1811.7621000000001,
+        "injuries": 31,
+        "injuries_in_phv": 10,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2031,
+      "variant": "random",
+      "baseline": {
+        "acwr_spike_weeks": 34,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2246.7775,
+        "injuries": 22,
+        "injuries_in_phv": 4,
+        "rule_violations": 367
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 38,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1970.3818999999999,
+        "injuries": 21,
+        "injuries_in_phv": 4,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 3,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1934.8411,
+        "injuries": 15,
+        "injuries_in_phv": 3,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2032,
+      "variant": "load",
+      "baseline": {
+        "acwr_spike_weeks": 44,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2192.8251,
+        "injuries": 38,
+        "injuries_in_phv": 8,
+        "rule_violations": 371
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 58,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1907.2695,
+        "injuries": 36,
+        "injuries_in_phv": 8,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 8,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1822.3966,
+        "injuries": 36,
+        "injuries_in_phv": 9,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2032,
+      "variant": "readiness",
+      "baseline": {
+        "acwr_spike_weeks": 57,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2161.3907999999997,
+        "injuries": 43,
+        "injuries_in_phv": 10,
+        "rule_violations": 364
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 65,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1894.1518,
+        "injuries": 39,
+        "injuries_in_phv": 9,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 8,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1748.8928,
+        "injuries": 41,
+        "injuries_in_phv": 9,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2032,
+      "variant": "random",
+      "baseline": {
+        "acwr_spike_weeks": 35,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2241.426,
+        "injuries": 26,
+        "injuries_in_phv": 3,
+        "rule_violations": 374
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 40,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1960.064,
+        "injuries": 25,
+        "injuries_in_phv": 3,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 6,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1870.195,
+        "injuries": 27,
+        "injuries_in_phv": 4,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2033,
+      "variant": "load",
+      "baseline": {
+        "acwr_spike_weeks": 39,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2252.2147,
+        "injuries": 24,
+        "injuries_in_phv": 5,
+        "rule_violations": 419
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 36,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1908.6368,
+        "injuries": 23,
+        "injuries_in_phv": 5,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 1,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1955.7651,
+        "injuries": 15,
+        "injuries_in_phv": 5,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2033,
+      "variant": "readiness",
+      "baseline": {
+        "acwr_spike_weeks": 47,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2213.6041,
+        "injuries": 31,
+        "injuries_in_phv": 7,
+        "rule_violations": 404
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 32,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1916.9433000000001,
+        "injuries": 22,
+        "injuries_in_phv": 6,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 10,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1867.8867,
+        "injuries": 23,
+        "injuries_in_phv": 7,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2033,
+      "variant": "random",
+      "baseline": {
+        "acwr_spike_weeks": 27,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2307.0631000000003,
+        "injuries": 14,
+        "injuries_in_phv": 1,
+        "rule_violations": 429
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 22,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1962.6216000000002,
+        "injuries": 12,
+        "injuries_in_phv": 1,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 1,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1991.422,
+        "injuries": 10,
+        "injuries_in_phv": 1,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2034,
+      "variant": "load",
+      "baseline": {
+        "acwr_spike_weeks": 33,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2244.371,
+        "injuries": 27,
+        "injuries_in_phv": 17,
+        "rule_violations": 388
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 28,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1963.7803999999999,
+        "injuries": 22,
+        "injuries_in_phv": 13,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 11,
+        "monotony_weeks": 1,
+        "weekly_load_mean": 1840.9486000000002,
+        "injuries": 28,
+        "injuries_in_phv": 13,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2034,
+      "variant": "readiness",
+      "baseline": {
+        "acwr_spike_weeks": 40,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2217.7947999999997,
+        "injuries": 32,
+        "injuries_in_phv": 19,
+        "rule_violations": 380
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 28,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1968.8011999999999,
+        "injuries": 21,
+        "injuries_in_phv": 12,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 11,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1843.3616000000002,
+        "injuries": 26,
+        "injuries_in_phv": 15,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2034,
+      "variant": "random",
+      "baseline": {
+        "acwr_spike_weeks": 15,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2320.6863,
+        "injuries": 12,
+        "injuries_in_phv": 4,
+        "rule_violations": 411
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 7,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2031.2641,
+        "injuries": 8,
+        "injuries_in_phv": 2,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 1,
+        "monotony_weeks": 1,
+        "weekly_load_mean": 1995.3386,
+        "injuries": 11,
+        "injuries_in_phv": 2,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2035,
+      "variant": "load",
+      "baseline": {
+        "acwr_spike_weeks": 53,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2143.196,
+        "injuries": 43,
+        "injuries_in_phv": 23,
+        "rule_violations": 315
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 53,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1937.9808,
+        "injuries": 37,
+        "injuries_in_phv": 20,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 25,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1693.5838999999999,
+        "injuries": 37,
+        "injuries_in_phv": 18,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2035,
+      "variant": "readiness",
+      "baseline": {
+        "acwr_spike_weeks": 65,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2117.6986,
+        "injuries": 44,
+        "injuries_in_phv": 25,
+        "rule_violations": 311
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 55,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1914.3468,
+        "injuries": 38,
+        "injuries_in_phv": 22,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 18,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1710.5563,
+        "injuries": 39,
+        "injuries_in_phv": 21,
+        "rule_violations": 0
+      }
+    },
+    {
+      "seed": 2035,
+      "variant": "random",
+      "baseline": {
+        "acwr_spike_weeks": 39,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 2213.8967000000002,
+        "injuries": 26,
+        "injuries_in_phv": 11,
+        "rule_violations": 323
+      },
+      "heuristic": {
+        "acwr_spike_weeks": 34,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1998.1242,
+        "injuries": 21,
+        "injuries_in_phv": 9,
+        "rule_violations": 0
+      },
+      "agents": {
+        "acwr_spike_weeks": 13,
+        "monotony_weeks": 0,
+        "weekly_load_mean": 1816.5952,
+        "injuries": 25,
+        "injuries_in_phv": 10,
+        "rule_violations": 0
+      }
+    }
+  ],
+  "summary": {
+    "load": {
+      "baseline": {
+        "acwr_spike_weeks": {
+          "mean": 41.0,
+          "sd": 10.165300454651272,
+          "lo": 33.728687326211315,
+          "hi": 48.271312673788685,
+          "n": 10
+        },
+        "monotony_weeks": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n": 10
+        },
+        "weekly_load_mean": {
+          "mean": 2213.63797,
+          "sd": 54.09068397938683,
+          "lo": 2174.9465139325853,
+          "hi": 2252.329426067415,
+          "n": 10
+        },
+        "injuries": {
+          "mean": 30.5,
+          "sd": 8.449194570424384,
+          "lo": 24.456230232710716,
+          "hi": 36.543769767289284,
+          "n": 10
+        },
+        "injuries_in_phv": {
+          "mean": 11.3,
+          "sd": 5.982381539896038,
+          "lo": 7.020759371103327,
+          "hi": 15.579240628896674,
+          "n": 10
+        },
+        "rule_violations": {
+          "mean": 382.3,
+          "sd": 38.0206084468235,
+          "lo": 355.1035847737243,
+          "hi": 409.4964152262757,
+          "n": 10
+        }
+      },
+      "heuristic": {
+        "acwr_spike_weeks": {
+          "mean": 43.8,
+          "sd": 9.51957048517538,
+          "lo": 36.99058262697901,
+          "hi": 50.60941737302098,
+          "n": 10
+        },
+        "monotony_weeks": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n": 10
+        },
+        "weekly_load_mean": {
+          "mean": 1928.1819899999998,
+          "sd": 20.63278340782774,
+          "lo": 1913.4232113334797,
+          "hi": 1942.94076866652,
+          "n": 10
+        },
+        "injuries": {
+          "mean": 28.4,
+          "sd": 6.963396361610395,
+          "lo": 23.41903239922201,
+          "hi": 33.380967600777986,
+          "n": 10
+        },
+        "injuries_in_phv": {
+          "mean": 10.0,
+          "sd": 4.521553322083512,
+          "lo": 6.765700323099296,
+          "hi": 13.234299676900704,
+          "n": 10
+        },
+        "rule_violations": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n": 10
+        }
+      },
+      "agents": {
+        "acwr_spike_weeks": {
+          "mean": 12.7,
+          "sd": 7.02456008903365,
+          "lo": 7.675281544205685,
+          "hi": 17.724718455794314,
+          "n": 10
+        },
+        "monotony_weeks": {
+          "mean": 1.1,
+          "sd": 2.1317702607092643,
+          "lo": -0.42487063057821395,
+          "hi": 2.624870630578214,
+          "n": 10
+        },
+        "weekly_load_mean": {
+          "mean": 1821.27964,
+          "sd": 74.94882708644468,
+          "lo": 1767.668203849099,
+          "hi": 1874.891076150901,
+          "n": 10
+        },
+        "injuries": {
+          "mean": 27.9,
+          "sd": 7.187179944564875,
+          "lo": 22.758958389586795,
+          "hi": 33.0410416104132,
+          "n": 10
+        },
+        "injuries_in_phv": {
+          "mean": 9.8,
+          "sd": 3.910100879630715,
+          "lo": 7.003076661758497,
+          "hi": 12.596923338241504,
+          "n": 10
+        },
+        "rule_violations": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n": 10
+        }
+      },
+      "spike_reduction_vs_baseline_pct": {
+        "mean": 68.30105208239203,
+        "sd": 16.69631826939027,
+        "lo": 56.358055298437954,
+        "hi": 80.24404886634612,
+        "n": 10
+      },
+      "injury_diff_vs_baseline": {
+        "mean": -2.6,
+        "sd": 4.2998707990925595,
+        "lo": -5.675728570599167,
+        "hi": 0.4757285705991676,
+        "n": 10
+      },
+      "monotony_diff_vs_baseline": {
+        "mean": 1.1,
+        "sd": 2.1317702607092643,
+        "lo": -0.42487063057821395,
+        "hi": 2.624870630578214,
+        "n": 10
+      },
+      "spike_reduction_vs_heuristic_pct": {
+        "mean": 70.64054245379162,
+        "sd": 15.062544978380492,
+        "lo": 59.86619547905997,
+        "hi": 81.41488942852328,
+        "n": 10
+      },
+      "injury_diff_vs_heuristic": {
+        "mean": -0.5,
+        "sd": 4.453463071962463,
+        "lo": -3.685594230281063,
+        "hi": 2.685594230281063,
+        "n": 10
+      },
+      "monotony_diff_vs_heuristic": {
+        "mean": 1.1,
+        "sd": 2.1317702607092643,
+        "lo": -0.42487063057821395,
+        "hi": 2.624870630578214,
+        "n": 10
+      }
+    },
+    "readiness": {
+      "baseline": {
+        "acwr_spike_weeks": {
+          "mean": 50.2,
+          "sd": 11.043348928452616,
+          "lo": 42.300612925042856,
+          "hi": 58.09938707495715,
+          "n": 10
+        },
+        "monotony_weeks": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n": 10
+        },
+        "weekly_load_mean": {
+          "mean": 2183.19058,
+          "sd": 51.712849302616284,
+          "lo": 2146.2000062132915,
+          "hi": 2220.1811537867084,
+          "n": 10
+        },
+        "injuries": {
+          "mean": 35.9,
+          "sd": 7.093815773067568,
+          "lo": 30.8257424543092,
+          "hi": 40.9742575456908,
+          "n": 10
+        },
+        "injuries_in_phv": {
+          "mean": 13.0,
+          "sd": 5.715476066494082,
+          "lo": 8.91167877974345,
+          "hi": 17.08832122025655,
+          "n": 10
+        },
+        "rule_violations": {
+          "mean": 375.4,
+          "sd": 35.63144678510824,
+          "lo": 349.91256932839246,
+          "hi": 400.8874306716075,
+          "n": 10
+        }
+      },
+      "heuristic": {
+        "acwr_spike_weeks": {
+          "mean": 46.8,
+          "sd": 13.660974424330872,
+          "lo": 37.02820654332072,
+          "hi": 56.57179345667927,
+          "n": 10
+        },
+        "monotony_weeks": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n": 10
+        },
+        "weekly_load_mean": {
+          "mean": 1919.96505,
+          "sd": 33.38083657114427,
+          "lo": 1896.0874970339812,
+          "hi": 1943.8426029660188,
+          "n": 10
+        },
+        "injuries": {
+          "mean": 29.7,
+          "sd": 8.48593607748203,
+          "lo": 23.629948767926255,
+          "hi": 35.77005123207375,
+          "n": 10
+        },
+        "injuries_in_phv": {
+          "mean": 10.3,
+          "sd": 5.034326612809745,
+          "lo": 6.69890989282412,
+          "hi": 13.901090107175882,
+          "n": 10
+        },
+        "rule_violations": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n": 10
+        }
+      },
+      "agents": {
+        "acwr_spike_weeks": {
+          "mean": 14.5,
+          "sd": 5.54276304943863,
+          "lo": 10.535221645539313,
+          "hi": 18.464778354460687,
+          "n": 10
+        },
+        "monotony_weeks": {
+          "mean": 0.9,
+          "sd": 2.024845673131659,
+          "lo": -0.5483867025073105,
+          "hi": 2.3483867025073106,
+          "n": 10
+        },
+        "weekly_load_mean": {
+          "mean": 1787.46731,
+          "sd": 60.28357237409893,
+          "lo": 1744.3460362333722,
+          "hi": 1830.5885837666278,
+          "n": 10
+        },
+        "injuries": {
+          "mean": 31.9,
+          "sd": 6.573515886579351,
+          "lo": 27.19791671277507,
+          "hi": 36.60208328722493,
+          "n": 10
+        },
+        "injuries_in_phv": {
+          "mean": 11.3,
+          "sd": 4.2176876234364356,
+          "lo": 8.283057647219623,
+          "hi": 14.316942352780378,
+          "n": 10
+        },
+        "rule_violations": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n": 10
+        }
+      },
+      "spike_reduction_vs_baseline_pct": {
+        "mean": 69.5766729185933,
+        "sd": 14.402796885589833,
+        "lo": 59.27424850926124,
+        "hi": 79.87909732792536,
+        "n": 10
+      },
+      "injury_diff_vs_baseline": {
+        "mean": -4.0,
+        "sd": 2.8284271247461903,
+        "lo": -6.02319430604181,
+        "hi": -1.9768056939581902,
+        "n": 10
+      },
+      "monotony_diff_vs_baseline": {
+        "mean": 0.9,
+        "sd": 2.024845673131659,
+        "lo": -0.5483867025073105,
+        "hi": 2.3483867025073106,
+        "n": 10
+      },
+      "spike_reduction_vs_heuristic_pct": {
+        "mean": 66.86393300814743,
+        "sd": 14.009482031892079,
+        "lo": 56.84284954817936,
+        "hi": 76.8850164681155,
+        "n": 10
+      },
+      "injury_diff_vs_heuristic": {
+        "mean": 2.2,
+        "sd": 3.2591750830880843,
+        "lo": -0.13131142492803782,
+        "hi": 4.531311424928038,
+        "n": 10
+      },
+      "monotony_diff_vs_heuristic": {
+        "mean": 0.9,
+        "sd": 2.024845673131659,
+        "lo": -0.5483867025073105,
+        "hi": 2.3483867025073106,
+        "n": 10
+      }
+    },
+    "random": {
+      "baseline": {
+        "acwr_spike_weeks": {
+          "mean": 27.9,
+          "sd": 9.960477453973335,
+          "lo": 20.77519869470032,
+          "hi": 35.024801305299675,
+          "n": 10
+        },
+        "monotony_weeks": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n": 10
+        },
+        "weekly_load_mean": {
+          "mean": 2270.54255,
+          "sd": 50.51552044242877,
+          "lo": 2234.40843417581,
+          "hi": 2306.6766658241904,
+          "n": 10
+        },
+        "injuries": {
+          "mean": 19.6,
+          "sd": 7.167829363048327,
+          "lo": 14.472800000000001,
+          "hi": 24.727200000000003,
+          "n": 10
+        },
+        "injuries_in_phv": {
+          "mean": 4.9,
+          "sd": 3.142893217686178,
+          "lo": 2.651865831405964,
+          "hi": 7.148134168594037,
+          "n": 10
+        },
+        "rule_violations": {
+          "mean": 392.7,
+          "sd": 39.21748476268093,
+          "lo": 364.6474505194269,
+          "hi": 420.75254948057307,
+          "n": 10
+        }
+      },
+      "heuristic": {
+        "acwr_spike_weeks": {
+          "mean": 28.2,
+          "sd": 11.811482172492626,
+          "lo": 19.751161679852075,
+          "hi": 36.648838320147924,
+          "n": 10
+        },
+        "monotony_weeks": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n": 10
+        },
+        "weekly_load_mean": {
+          "mean": 1978.03894,
+          "sd": 31.107353119058153,
+          "lo": 1955.7876261316399,
+          "hi": 2000.29025386836,
+          "n": 10
+        },
+        "injuries": {
+          "mean": 17.8,
+          "sd": 7.0206045956804095,
+          "lo": 12.778110937107432,
+          "hi": 22.82188906289257,
+          "n": 10
+        },
+        "injuries_in_phv": {
+          "mean": 4.2,
+          "sd": 2.616188916046478,
+          "lo": 2.328621214184579,
+          "hi": 6.071378785815421,
+          "n": 10
+        },
+        "rule_violations": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n": 10
+        }
+      },
+      "agents": {
+        "acwr_spike_weeks": {
+          "mean": 8.1,
+          "sd": 6.026792034094276,
+          "lo": 3.788992224548882,
+          "hi": 12.411007775451118,
+          "n": 10
+        },
+        "monotony_weeks": {
+          "mean": 1.1,
+          "sd": 2.1317702607092643,
+          "lo": -0.42487063057821395,
+          "hi": 2.624870630578214,
+          "n": 10
+        },
+        "weekly_load_mean": {
+          "mean": 1899.48613,
+          "sd": 68.17195533262525,
+          "lo": 1850.7222390536915,
+          "hi": 1948.2500209463085,
+          "n": 10
+        },
+        "injuries": {
+          "mean": 19.0,
+          "sd": 6.749485577105529,
+          "lo": 14.172044324975634,
+          "hi": 23.827955675024366,
+          "n": 10
+        },
+        "injuries_in_phv": {
+          "mean": 4.6,
+          "sd": 2.836272984824353,
+          "lo": 2.5711934937012844,
+          "hi": 6.628806506298715,
+          "n": 10
+        },
+        "rule_violations": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "lo": 0.0,
+          "hi": 0.0,
+          "n": 10
+        }
+      },
+      "spike_reduction_vs_baseline_pct": {
+        "mean": 68.97514959074466,
+        "sd": 24.802600993853147,
+        "lo": 51.23367035419068,
+        "hi": 86.71662882729865,
+        "n": 10
+      },
+      "injury_diff_vs_baseline": {
+        "mean": -0.6,
+        "sd": 3.4058772731852804,
+        "lo": -3.0362485587476495,
+        "hi": 1.8362485587476494,
+        "n": 10
+      },
+      "monotony_diff_vs_baseline": {
+        "mean": 1.1,
+        "sd": 2.1317702607092643,
+        "lo": -0.42487063057821395,
+        "hi": 2.624870630578214,
+        "n": 10
+      },
+      "spike_reduction_vs_heuristic_pct": {
+        "mean": 71.17228283211419,
+        "sd": 19.534068683316374,
+        "lo": 57.19942272617748,
+        "hi": 85.1451429380509,
+        "n": 10
+      },
+      "injury_diff_vs_heuristic": {
+        "mean": 1.2,
+        "sd": 3.32665998663324,
+        "lo": -1.1795838627793727,
+        "hi": 3.579583862779373,
+        "n": 10
+      },
+      "monotony_diff_vs_heuristic": {
+        "mean": 1.1,
+        "sd": 2.1317702607092643,
+        "lo": -0.42487063057821395,
+        "hi": 2.624870630578214,
+        "n": 10
+      }
+    }
+  }
+}

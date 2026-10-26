@@ -45,10 +45,10 @@ def _squad_players(db: Session, user: CurrentUser) -> list[Player]:
     from domain.models import Registration
 
     staff = staff_of(user, db)
-    q = select(Player).order_by(Player.display_name)
-    if staff.squad_id:
-        dual = select(Registration.player_id).where(Registration.squad_id == staff.squad_id)
-        q = q.where((Player.squad_id == staff.squad_id) | Player.id.in_(dual))
+    if not staff.squad_id:
+        return []  # staff without a squad see nobody (fail closed)
+    dual = select(Registration.player_id).where(Registration.squad_id == staff.squad_id)
+    q = select(Player).where((Player.squad_id == staff.squad_id) | Player.id.in_(dual)).order_by(Player.display_name)
     return list(db.scalars(q))
 
 
@@ -681,8 +681,9 @@ def _team_matches(db: Session, user: CurrentUser) -> list[Match]:
         Match.kickoff < datetime.combine(today + timedelta(days=1), datetime.min.time()),
         Match.kickoff >= datetime.combine(today - timedelta(days=182), datetime.min.time()),
     )
-    if staff.squad_id:
-        q = q.where(Match.squad_id == staff.squad_id)
+    if not staff.squad_id:
+        return []
+    q = q.where(Match.squad_id == staff.squad_id)
     return list(db.scalars(q.order_by(Match.kickoff.desc())))
 
 

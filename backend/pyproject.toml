@@ -27,7 +27,7 @@ dev = ["pytest>=8", "ruff>=0.5", "httpx>=0.27"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-testpaths = ["tests", "analytics"]
+testpaths = ["tests", "analytics", "scouting"]
 addopts = "--doctest-modules --ignore=.venv"
 
 [tool.ruff]
@@ -40,7 +40,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["analytics*", "agents*", "domain*", "simulator*", "eval*", "planner*", "api*", "gym*", "pathway*", "performance*", "devices*", "finance*"]
+include = ["analytics*", "agents*", "domain*", "simulator*", "eval*", "planner*", "api*", "gym*", "pathway*", "performance*", "devices*", "finance*", "scouting*"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP"]

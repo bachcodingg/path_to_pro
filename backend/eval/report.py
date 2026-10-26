@@ -13,7 +13,9 @@ def _fmt(x, digits=1, suffix=""):
     return f"{x}{suffix}"
 
 
-def _status(ok: bool | None) -> str:
+def _status(ok: bool | str | None) -> str:
+    if isinstance(ok, str):
+        return ok
     return {True: "PASS", False: "FAIL", None: "not measured"}[ok]
 
 
@@ -21,6 +23,7 @@ def markdown(r: dict) -> str:
     v = {k: r[k] for k in VARIANTS}
     spike = [v[k]["spike_reduction_pct"] for k in VARIANTS]
     spike_eq = [v[k].get("spike_reduction_equal_load_pct") for k in VARIANTS]
+    spike_h = [v[k].get("spike_reduction_vs_heuristic_pct") for k in VARIANTS]
     mono = [v[k]["monotony_reduction_pct"] for k in VARIANTS]
     dev = [v[k]["dev_delivery_pct"] for k in VARIANTS]
     hard = sum(v[k]["plan_hard_violations"] for k in VARIANTS)
@@ -31,7 +34,7 @@ def markdown(r: dict) -> str:
     llm = r["llm"]
     rows = [
         ("Hard constraint violations", "0", f"{hard} in plans, {exec_hard} in executed weeks", hard == 0 and exec_hard == 0),
-        ("Safety scenario suite (50 cases)", "100%", f"{s['passed']}/{s['total']}", s["passed"] == s["total"]),
+        (f"Safety scenario suite ({s['total']} cases)", "100%", f"{s['passed']}/{s['total']}", s["passed"] == s["total"]),
         (
             "Player-weeks with ACWR > 1.5",
             ">= 50% fewer than baseline",
@@ -51,10 +54,30 @@ def markdown(r: dict) -> str:
             None if any(x is None for x in spike_eq) else all(x > 0 for x in spike_eq),
         ),
         (
+            "Same, against a rule-of-thumb heuristic coach",
+            "fewer spikes than the same rules as if-statements (what the planner adds)",
+            ", ".join(
+                f"{k}: {v[k]['heuristic']['acwr_spike_weeks']} -> {v[k]['agents']['acwr_spike_weeks']} ({_fmt(x, 0, '%')} fewer)"
+                for k, x in zip(VARIANTS, spike_h)
+            )
+            if all("heuristic" in v[k] for k in VARIANTS)
+            else "n/a",
+            None if any(x is None for x in spike_h) else all(x > 0 for x in spike_h),
+        ),
+        (
             "Weeks with monotony > 2",
             ">= 40% fewer than baseline",
-            ", ".join(f"{k}: {v[k]['baseline']['monotony_weeks']} -> {v[k]['agents']['monotony_weeks']}" for k in VARIANTS),
-            None if any(x is None for x in mono) else all(x >= 40 for x in mono),
+            ", ".join(f"{k}: {v[k]['baseline']['monotony_weeks']} -> {v[k]['agents']['monotony_weeks']}" for k in VARIANTS)
+            + (
+                ": the baseline never exceeds 2, so the target can't be met, and the agents add weeks above 2"
+                if any(v[k]["agents"]["monotony_weeks"] > v[k]["baseline"]["monotony_weeks"] for k in VARIANTS)
+                else ""
+            ),
+            "WORSE"
+            if any(v[k]["agents"]["monotony_weeks"] > v[k]["baseline"]["monotony_weeks"] for k in VARIANTS)
+            else None
+            if any(x is None for x in mono)
+            else all(x >= 40 for x in mono),
         ),
         (
             "Planned development sessions delivered",
@@ -68,7 +91,14 @@ def markdown(r: dict) -> str:
             _fmt(llm["first_try_valid_pct"], 1, "%") if llm["backend"] else "LLM not used (rule-based run)",
             None if llm["first_try_valid_pct"] is None else llm["first_try_valid_pct"] >= 95,
         ),
-        ("LLM valid after retry or fallback", "100%", "100% (every run produced a plan)", True),
+        (
+            "Every run ends in a valid plan (LLM, retry or rule fallback)",
+            "100%",
+            "100% (every run produced a plan)"
+            if llm["backend"]
+            else "100%, all from the rule fallback: the LLM retry path was not exercised",
+            True,
+        ),
         (
             "Planner consistency (20 runs)",
             ">= 80% identical",
@@ -86,8 +116,9 @@ def markdown(r: dict) -> str:
         (
             "Red check-in to staff notification",
             "< 5 min",
-            f"agent decision {r['red_checkin_to_escalation_s'] * 1000:.0f} ms (end-to-end measured in API tests)",
-            r["red_checkin_to_escalation_s"] < 300,
+            f"escalation decided and queued in-app in {r['red_checkin_to_escalation_s'] * 1000:.0f} ms; there is no "
+            "push, email or SMS channel, so the time until a person actually sees it is not measured",
+            None,
         ),
         ("Expert rating of 10 plans", ">= 3.5 / 5", "pending: needs 2+ reviewers", None),
         ("SUS score", ">= 70", "pending: usability tests in week 10", None),
@@ -118,7 +149,10 @@ def markdown(r: dict) -> str:
             f"kappa {cal['before']['kappa']:.2f} -> {cal['after']['kappa']:.2f} "
             f"(held-out {cal['cv_kappa_before']:.2f} -> {cal['cv_kappa_after']:.2f}), red recall "
             f"{cal['before']['red_recall']:.0%} -> {cal['after']['red_recall']:.0%}, n={cal['n']} synthetic ratings",
-            cal["after"]["kappa"] >= cal["before"]["kappa"] and cal["after"]["red_recall"] >= cal["before"]["red_recall"],
+            # Ratings come from the simulator's own staff model: this checks the method, not agreement with people.
+            "method only (synthetic)"
+            if cal["after"]["kappa"] >= cal["before"]["kappa"] and cal["after"]["red_recall"] >= cal["before"]["red_recall"]
+            else False,
         ),
     ]
     out = [
@@ -136,7 +170,7 @@ def markdown(r: dict) -> str:
         "| --- | --- | --- | --- | --- | --- | --- |",
     ]
     for k in VARIANTS:
-        for pol in ("baseline", "baseline_equal_load", "agents"):
+        for pol in ("baseline", "baseline_equal_load", "heuristic", "agents"):
             if pol not in v[k]:
                 continue
             m = v[k][pol]
@@ -149,7 +183,9 @@ def markdown(r: dict) -> str:
         "",
         "Executed-week rule checks (planned RPE): "
         + "; ".join(
-            f"{k}: agents {v[k]['executed_violations_agents'] or 'none'}, baseline {v[k]['executed_violations_baseline'] or 'none'}"
+            f"{k}: agents {v[k]['executed_violations_agents'] or 'none'}, "
+            f"heuristic {v[k].get('executed_violations_heuristic') or 'none'}, "
+            f"baseline {v[k]['executed_violations_baseline'] or 'none'}"
             for k in VARIANTS
         ),
         "",
@@ -160,6 +196,13 @@ def markdown(r: dict) -> str:
         + ", ".join(f"{k} x{v[k]['equal_load_minutes_scale']:.2f}" for k in VARIANTS if "equal_load_minutes_scale" in v[k])
         + " so its mean weekly load matches the agents'. Spikes it still has come from how load is spread, not how much.",
         "",
-        "Injuries are a secondary result: the injury model is synthetic, so process metrics are primary.",
+        "Heuristic: the fixed template plus a coach's rules of thumb as if-statements (no session on exam days, "
+        "easy day before and rest after a match, speed capped in the growth window, minutes cut 10-20% when ACWR "
+        "is high, recovery on pain / red mood / red readiness). The plain baseline is blind to exams and fixtures, "
+        "so its rule violations show that the rules exist, not that the planner is needed.",
+        "",
+        "Caveats: the planner penalises projected ACWR directly, so fewer ACWR spikes is partly the objective "
+        "being met. Injuries are a secondary result: the injury model is synthetic, so process metrics are primary. "
+        "One seed only here; see [seeds.md](seeds.md) for 10 seeds with confidence intervals.",
     ]
     return "\n".join(out) + "\n"

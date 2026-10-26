@@ -36,7 +36,7 @@ runs everything (PostgreSQL, API, web) and seeds the synthetic demo season.
    recovery or load flag; it re-plans the rest of the week with a per-day RPE ceiling,
    so a re-plan can only make days easier.
 3. **Coordinator** compares the proposed days with the current plan, classifies the
-   change (intensity, load cut, session swap, match minutes) and applies the policy
+   change (intensity, load cut, load increase > 10%, session swap, match minutes) and applies the policy
    table: auto-apply, auto-apply + notify, coach approval, or escalate.
 4. **Development Coach** runs after a test day: weakest bio-banded KPIs become 4-week
    goals (coach approves); drill suggestions are auto-applied.
@@ -71,7 +71,9 @@ and `AuditLog` rows; the coach's "Match commentary" renders them in plain langua
 through `messages.parse` with Pydantic output models, server-side refusal fallbacks,
 and a manual tool loop for the Development Coach. Every answer is validated; one
 retry with the validation error, then rules. A disk cache (`backend/llm_cache/`)
-stores answers so demo scenarios replay offline. `PATHTOPRO_LLM=off` runs pure rules.
+stores answers from runs with an API key, keyed by the full prompt, so only an identical
+rerun replays them. No answers are committed: the offline demo, the tests and every
+evaluation result use the rule-based fallbacks. `PATHTOPRO_LLM=off` runs pure rules.
 
 ## Data and security
 

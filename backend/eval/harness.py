@@ -1,7 +1,10 @@
 """Evaluation harness (plan section 9).
 
-Baseline: the fixed weekly template. Every season metric runs on the simulated
-season under 3 injury-model variants (load-, readiness-driven, random).
+Baselines: the fixed weekly template (the plan's baseline, blind to exams and fixtures)
+and a rule-of-thumb heuristic coach (the same template plus the safety rules as
+if-statements), so the comparison shows what the planner adds beyond the rules. Every
+season metric runs on the simulated season under 3 injury-model variants (load-,
+readiness-driven, random). `eval.seeds` repeats the comparison over several seeds.
 """
 
 from __future__ import annotations
@@ -28,7 +31,7 @@ from eval.scenarios import inp as scenario_inp
 from eval.scenarios import run_all as run_scenarios
 from planner.model import MD_MINUS_1_MAX_RPE
 from simulator.agent_policy import AgentPolicy
-from simulator.policies import BaselinePolicy
+from simulator.policies import BaselinePolicy, HeuristicPolicy
 from simulator.season import SeasonResult, SeasonSimulator, load_config
 
 VARIANTS = ("load", "readiness", "random")
@@ -295,8 +298,9 @@ def run(quick: bool = False, llm: LLMBackend | None = None, out_dir: Path | None
         base = SeasonSimulator(copy.deepcopy(cfg), injury_variant=variant).run()
         policy = AgentPolicy(llm=llm)
         agent = SeasonSimulator(copy.deepcopy(cfg), policy=policy, injury_variant=variant).run()
+        heur = SeasonSimulator(copy.deepcopy(cfg), policy=HeuristicPolicy(), injury_variant=variant).run()
         seasons[variant] = (base, agent, policy)
-        mb, ma = season_metrics(base), season_metrics(agent)
+        mb, ma, mh = season_metrics(base), season_metrics(agent), season_metrics(heur)
         eq, eq_scale = equal_load_baseline(cfg, variant, ma["weekly_load_mean"], mb["weekly_load_mean"])
         me = season_metrics(eq)
         st = [o["solve_seconds"] for o in policy.outcomes]
@@ -308,6 +312,9 @@ def run(quick: bool = False, llm: LLMBackend | None = None, out_dir: Path | None
             "baseline": mb,
             "agents": ma,
             "spike_reduction_pct": _reduction(mb["acwr_spike_weeks"], ma["acwr_spike_weeks"]),
+            "heuristic": mh,
+            "spike_reduction_vs_heuristic_pct": _reduction(mh["acwr_spike_weeks"], ma["acwr_spike_weeks"]),
+            "executed_violations_heuristic": dict(executed_violations(heur)),
             "baseline_equal_load": me,
             "equal_load_minutes_scale": eq_scale,
             "spike_reduction_equal_load_pct": _reduction(me["acwr_spike_weeks"], ma["acwr_spike_weeks"]),

@@ -29,6 +29,10 @@ services:
         generateValue: true
       - key: PATHTOPRO_AUTOSEED
         value: "on"
+      # A demo deployment: demo accounts share a published password, so real players can't
+      # sign up here. Run a separate deployment (AUTOSEED off, REGISTRATION on) for real use.
+      - key: PATHTOPRO_REGISTRATION
+        value: "off"
       - key: PATHTOPRO_SCHEDULER
         value: "off"
       - key: PATHTOPRO_LLM

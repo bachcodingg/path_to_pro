@@ -8,7 +8,17 @@ import { GymProgrammeView } from "../shared/GymProgramme";
 import { RatingHistory, type RatingHistoryData } from "../shared/RatingHistory";
 import type { Card as CardData, GymProgramme, PlanDay, Position, Roadmap, Status } from "../shared/types";
 import { useApi } from "../shared/useApi";
-import { BandBadge, Button, Card, Chip, ErrorNote, SectionTitle, Spinner, cn, fmtDay, intensityClass } from "../shared/ui";
+import { PageHeader } from "../shared/PageHeader";
+import { BAND_TEXT, BandIcon, Button, Card, Chip, ErrorNote, SectionTitle, Spinner, cn, fmtDay, intensityClass } from "../shared/ui";
+
+const BAND_RING = { green: "ring-ready-green", amber: "ring-ready-amber", red: "ring-ready-red" } as const;
+const initials = (name: string) =>
+  name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
 interface Profile {
   player: { id: string; name: string; age: number; position: Position };
@@ -45,34 +55,63 @@ export function PlayerProfile() {
   const s = data.status;
   return (
     <div className="space-y-4">
-      <Link to="/coach" className="text-pitch-600 text-sm font-semibold hover:underline">
-        ← Dressing room
-      </Link>
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-extrabold">{data.player.name}</h1>
-        <span className="text-ink-2">{data.player.age} y</span>
-        <BandBadge band={s?.band ?? null} score={s?.score} />
-        {s?.in_phv_window && <Chip tone="amber">Growth zone ({s.maturity_offset?.toFixed(1)} y)</Chip>}
-        {s?.acwr != null && <Chip tone={s.acwr > 1.5 ? "red" : "neutral"}>ACWR {s.acwr.toFixed(2)}</Chip>}
-        <label className="flex items-center gap-2 text-sm">
-          <span className="text-ink-2">Position</span>
-          <select
-            aria-label="Position"
-            className="bg-surface border-line h-9 rounded-lg border px-2 font-semibold"
-            value={data.player.position}
-            onChange={async (e) => {
-              await api(`/api/coach/players/${id}/position`, { method: "PUT", json: { position: e.target.value } });
-              void reload();
-            }}
+      {/* Player-profile header, as on the league sites: portrait (initials), name, key facts */}
+      <PageHeader
+        eyebrow={
+          <Link to="/coach" className="hover:underline">
+            ← Dressing room
+          </Link>
+        }
+        title={data.player.name}
+        subtitle={`${data.player.age} years · ${data.positions.find((p) => p.id === data.player.position)?.label ?? data.player.position}`}
+        leading={
+          <span
+            className={cn(
+              "font-display flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-white/10 text-2xl font-bold ring-4 md:h-20 md:w-20 md:text-3xl",
+              s?.band ? BAND_RING[s.band] : "ring-white/20",
+            )}
+            aria-hidden
           >
-            {data.positions.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+            {initials(data.player.name)}
+          </span>
+        }
+        actions={
+          <>
+            <span className="text-right">
+              <span className="font-display block text-5xl leading-none font-bold">{s?.score != null ? Math.round(s.score) : "–"}</span>
+              <span className="flex items-center justify-end gap-1 text-xs font-bold tracking-wider text-white/75 uppercase">
+                <BandIcon band={s?.band ?? null} className="h-3.5 w-3.5" /> {s?.band ? BAND_TEXT[s.band] : "No reading"}
+              </span>
+            </span>
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-white/75">Position</span>
+              <select
+                aria-label="Position"
+                className="h-9 rounded-lg border px-2 font-semibold"
+                value={data.player.position}
+                onChange={async (e) => {
+                  await api(`/api/coach/players/${id}/position`, { method: "PUT", json: { position: e.target.value } });
+                  void reload();
+                }}
+              >
+                {data.positions.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
+        }
+        bottom={
+          (s?.in_phv_window || s?.acwr != null) && (
+            <div className="flex flex-wrap gap-2 pb-5">
+              {s?.in_phv_window && <Chip tone="amber">Growth zone ({s.maturity_offset?.toFixed(1)} y)</Chip>}
+              {s?.acwr != null && <Chip tone={s.acwr > 1.5 ? "red" : "neutral"}>ACWR {s.acwr.toFixed(2)}</Chip>}
+            </div>
+          )
+        }
+      />
 
       <InstructionBox playerId={id!} name={data.player.name.split(" ")[0]} onApplied={reload} />
 

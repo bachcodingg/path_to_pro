@@ -87,3 +87,37 @@ def test_all_injury_variants_run(small_cfg, variant):
 def test_unknown_variant_rejected(small_cfg):
     with pytest.raises(ValueError):
         SeasonSimulator(copy.deepcopy(small_cfg), injury_variant="magic")
+
+
+def test_heuristic_coach_follows_the_rules_the_baseline_ignores(small_cfg, season):
+    from eval.harness import executed_violations
+    from simulator.policies import HeuristicPolicy
+
+    heur = SeasonSimulator(copy.deepcopy(small_cfg), policy=HeuristicPolicy()).run()
+    assert sum(executed_violations(season).values()) > 0  # blind template: sessions on exam days, hard MD-1
+    assert not executed_violations(heur)
+    assert heur.fixtures == season.fixtures  # same world, only the plans differ
+
+
+def test_seed_summary_is_paired_with_confidence_intervals():
+    from eval.seeds import summarise
+
+    rows = [
+        {
+            "seed": s,
+            "variant": v,
+            **{
+                p: {"acwr_spike_weeks": spikes, "monotony_weeks": 0, "weekly_load_mean": 2000.0, "injuries": inj,
+                    "injuries_in_phv": 0, "rule_violations": 0}
+                for p, spikes, inj in (("baseline", 50 + s, 40), ("heuristic", 40 + s, 38), ("agents", 20 + s, 37 + s % 2))
+            },
+        }
+        for s in range(4)
+        for v in ("load", "readiness", "random")
+    ]  # fmt: skip
+    s = summarise(rows)["load"]
+    assert s["agents"]["acwr_spike_weeks"]["mean"] == 21.5
+    red = s["spike_reduction_vs_heuristic_pct"]
+    assert red["lo"] < red["mean"] < red["hi"] and 45 < red["mean"] < 50
+    inj = s["injury_diff_vs_heuristic"]
+    assert inj["lo"] < 0 < inj["hi"] or inj["hi"] < 0  # a CI, not a single number

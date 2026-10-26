@@ -5,17 +5,23 @@ import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "../shared/api";
 import { t } from "../shared/i18n";
 import type { PlanDay, Proposal, SessionKind } from "../shared/types";
+import { PageHeader } from "../shared/PageHeader";
 import { useApi } from "../shared/useApi";
 import { Button, Card, Chip, ErrorNote, Spinner, cn, fmtDay, intensityClass } from "../shared/ui";
 
 const KIND_TITLE: Record<string, string> = {
   session_swap: "Session swap",
   load_cut: "Load cut",
+  load_increase: "Load increase",
   intensity_change: "Intensity change",
   match_minutes: "Match minutes limit",
   new_goal: "New development goal",
 };
 const EDITABLE: SessionKind[] = ["rest", "recovery", "technical", "tactical", "strength", "speed"];
+
+function Kbd({ children }: { children: string }) {
+  return <kbd className="rounded border border-white/30 bg-white/10 px-1.5 py-0.5 font-mono text-xs text-white">{children}</kbd>;
+}
 
 export function Inbox() {
   const { data, setData, error, loading, reload } = useApi<Proposal[]>("/api/coach/inbox");
@@ -67,20 +73,23 @@ export function Inbox() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-extrabold">Substitution board</h1>
-          <p className="text-ink-2 text-sm">
-            {data.length} waiting · keys: <kbd className="font-mono">A</kbd> approve, <kbd className="font-mono">E</kbd> edit,{" "}
-            <kbd className="font-mono">R</kbd> reject, <kbd className="font-mono">J/K</kbd> next/previous
-          </p>
-        </div>
-        {msg && (
-          <p role="status" className="text-sm font-semibold">
-            {msg}
-          </p>
-        )}
-      </div>
+      <PageHeader
+        eyebrow="Squad"
+        title="Substitution board"
+        subtitle={
+          <>
+            <span className="font-display mr-1 text-xl font-bold text-white">{data.length}</span> waiting for you · keys:{" "}
+            <Kbd>A</Kbd> approve, <Kbd>E</Kbd> edit, <Kbd>R</Kbd> reject, <Kbd>J/K</Kbd> next/previous
+          </>
+        }
+        actions={
+          msg && (
+            <p role="status" className="text-sm font-semibold">
+              {msg}
+            </p>
+          )
+        }
+      />
       {data.length === 0 && <Card className="text-ink-2">Nothing to decide. The agents will post here when a plan needs your approval.</Card>}
       {data.map((p, idx) => (
         <Card

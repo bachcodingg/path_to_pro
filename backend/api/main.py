@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from api import clock
 from api.db import SessionLocal, get_db, init_db
 from api.deps import CurrentUser, require
-from api.routers import auth, coach, devices, finance, guardian, physio, player
+from api.routers import analysis, auth, coach, devices, finance, guardian, physio, player
 from api.settings import settings
 from domain.enums import Role
 from domain.models import AppSetting, Squad
@@ -101,7 +101,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-for r in (auth.router, player.router, coach.router, physio.router, guardian.router, devices.router, finance.router):
+for r in (auth.router, player.router, coach.router, analysis.router, physio.router, guardian.router, devices.router, finance.router):
     app.include_router(r)
 
 

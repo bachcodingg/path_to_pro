@@ -2,7 +2,7 @@
 
 The LLM is used only where judgment or language is needed. Every call returns a
 Pydantic model; callers handle `LLMError` by falling back to rules, so the system
-works with no API key and the demo works offline from the cache.
+works with no API key (the offline demo runs on those rule-based fallbacks).
 """
 
 from __future__ import annotations
@@ -181,7 +181,9 @@ class LLMValidationError(LLMError):
 class CachedBackend:
     """Replays stored answers; on a miss, asks `inner` (if any) and stores the answer.
 
-    Cache files are committed for the demo scenarios so the demo runs offline.
+    No answers are committed (`llm_cache/` holds only .gitkeep): a run without an API key
+    misses the cache and every agent uses its rule-based fallback. The key includes the
+    full prompt (dates, loads), so a cache only replays the exact runs that recorded it.
     """
 
     name = "cached"

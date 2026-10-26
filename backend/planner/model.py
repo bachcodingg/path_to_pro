@@ -9,6 +9,7 @@ Hard rules (always enforced, never from the LLM):
   H6 no session on exam evenings
   H7 each session type stays inside its RPE range
   H8 under 18: at most 90 match minutes over two consecutive days (dual registration)
+  H9 match minutes at most the protective cap (pain report with no staff to decide)
 
 Soft constraints are weighted penalties. LLM constraints with weight >= 8 are first
 imposed as hard; if that is infeasible they are dropped lowest weight first, and if
@@ -143,6 +144,9 @@ class _Model:
             for d in matches:
                 if d + 1 in matches:
                     m.Add(self.match_min[d] + self.match_min[d + 1] <= BACK_TO_BACK_MATCH_MINUTES)
+        for d, cap in inp.match_minutes_cap.items():  # H9
+            if d in self.match_min:
+                m.Add(self.match_min[d] <= cap)
         if inp.rpe_ceiling is not None:  # a re-plan never adds load to a day
             for d, ceiling in enumerate(inp.rpe_ceiling[:n]):
                 if d not in matches:
@@ -311,7 +315,10 @@ def safe_template(inp: PlannerInput) -> list[PlanDay]:
         else:
             kind, rpe = (SessionType.TECHNICAL, 4) if toggle else (SessionType.RECOVERY, 3)
             toggle = not toggle
-        days.append(PlanDay(day=d, date=dt, kind=kind, rpe=rpe, minutes=SESSION_MINUTES[kind]))
+        minutes = SESSION_MINUTES[kind]
+        if kind == SessionType.MATCH and d in inp.match_minutes_cap:
+            minutes = max(m for m in MATCH_MINUTE_OPTIONS if m <= inp.match_minutes_cap[d])
+        days.append(PlanDay(day=d, date=dt, kind=kind, rpe=rpe, minutes=minutes))
     cap = weekly_cap(inp)
     if cap is not None:
         for pd in days:
@@ -364,7 +371,7 @@ def plan_week(inp: PlannerInput, cs: ConstraintSet | None = None) -> PlanResult:
 
 
 def hard_violations(result: PlanResult, inp: PlannerInput) -> list[str]:
-    """Independent check of H1-H7, used by tests and the evaluation harness.
+    """Independent check of H1-H9, used by tests and the evaluation harness.
 
     The template may exceed the ACWR cap only when the fixtures alone exceed it.
     """
@@ -383,6 +390,8 @@ def hard_violations(result: PlanResult, inp: PlannerInput) -> list[str]:
             out.append(f"H4 day {d}")
         if d in inp.exam_days and d not in matches and pd.kind != SessionType.REST:
             out.append(f"H6 day {d}")
+        if pd.kind == SessionType.MATCH and d in inp.match_minutes_cap and pd.minutes > inp.match_minutes_cap[d]:
+            out.append(f"H9 day {d}: {pd.minutes} match minutes > cap {inp.match_minutes_cap[d]}")
     if inp.under_18:
         for d in matches:
             if d + 1 in matches and d in days and d + 1 in days:

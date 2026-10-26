@@ -3,6 +3,7 @@
 import { Minus, Plus, Trophy } from "lucide-react";
 import { useState } from "react";
 import { api, ApiError } from "../shared/api";
+import { Crest } from "../shared/Club";
 import { POSITION_LABEL } from "../shared/Rating";
 import type { Career, DiaryDue, Position } from "../shared/types";
 import { Button, Card, cn, fmtDay } from "../shared/ui";
@@ -76,10 +77,13 @@ export function MatchDiary({ due, position, onSaved }: { due: DiaryDue[]; positi
                     setMinutes(d.minutes ?? 90);
                   }}
                 >
-                  <span>
-                    <span className="block font-semibold">vs {d.opponent}</span>
-                    <span className="text-ink-2 text-xs">
-                      {fmtDay(d.date, { weekday: "short", day: "numeric", month: "short" })} · {d.team}
+                  <span className="flex items-center gap-3">
+                    <Crest name={d.opponent} size={30} />
+                    <span>
+                      <span className="block font-semibold">vs {d.opponent}</span>
+                      <span className="text-ink-2 text-xs">
+                        {fmtDay(d.date, { weekday: "short", day: "numeric", month: "short" })} · {d.team}
+                      </span>
                     </span>
                   </span>
                   <span className="text-pitch-300 text-sm font-semibold">Fill in</span>

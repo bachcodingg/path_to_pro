@@ -5,6 +5,7 @@ import { useState, type FormEvent } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api, ApiError } from "../shared/api";
 import { BONUS_LABEL, eur, PERIOD } from "../shared/money";
+import { PageHeader } from "../shared/PageHeader";
 import { useApi } from "../shared/useApi";
 import { Button, Card, Chip, ErrorNote, SectionTitle, Spinner, cn, fmtDay } from "../shared/ui";
 
@@ -82,12 +83,12 @@ export function Finance() {
     Costs: m.expense / 100,
   }));
   return (
-    <div className="max-w-6xl space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-extrabold">Club finances</h1>
-          <p className="text-ink-2 text-sm">Season {data.season}: academy fees, salaries and bonuses, staff, pitches, sponsors and prize money.</p>
-        </div>
+    <div className="space-y-4">
+      <PageHeader
+        eyebrow="Club"
+        title="Club finances"
+        subtitle={`Season ${data.season}: academy fees, salaries and bonuses, staff, pitches, sponsors and prize money.`}
+        actions={
         <div className="flex flex-wrap gap-2">
           <Button
             variant="secondary"
@@ -103,7 +104,8 @@ export function Finance() {
           </Button>
           <TitleButton onSave={(title, prize) => act("/api/coach/finance/titles", { title, prize_cents: prize }, (v) => `Title recorded: ${v.booked} entries booked.`)} />
         </div>
-      </div>
+        }
+      />
       {msg && (
         <p role="status" className="text-sm font-semibold">
           {msg}
@@ -211,7 +213,7 @@ function Kpi({ label, value, sub, tone }: { label: string; value: string; sub?: 
   return (
     <Card>
       <p className="text-ink-2 text-xs font-semibold uppercase">{label}</p>
-      <p className={cn("text-2xl font-extrabold tabular-nums", tone)}>{value}</p>
+      <p className={cn("font-display mt-1 text-[2rem] leading-none font-bold tabular-nums", tone)}>{value}</p>
       {sub && <p className="text-ink-2 text-xs">{sub}</p>}
     </Card>
   );

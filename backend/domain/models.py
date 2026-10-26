@@ -346,6 +346,18 @@ class Escalation(Base):
     acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class GuardianAlert(Base):
+    """A safety flag for a player with no staff (self-guided): the linked parent is the named adult."""
+
+    __tablename__ = "guardian_alerts"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    player_id: Mapped[str] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    guardian_id: Mapped[str] = mapped_column(ForeignKey("guardians.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(30))  # analytics.flags.FlagKind (safety)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class AuditLog(Base):
     __tablename__ = "audit_log"
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)

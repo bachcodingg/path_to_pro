@@ -1,6 +1,8 @@
 // "Line-up readiness": next match formation, each dot coloured by readiness.
 // Drag a bench player onto a position (or select + click) to compare/swap.
 import { useEffect, useState } from "react";
+import { Crest } from "../shared/Club";
+import { PageHeader } from "../shared/PageHeader";
 import { Pitch } from "../shared/Pitch";
 import type { Band } from "../shared/types";
 import { useApi } from "../shared/useApi";
@@ -68,15 +70,35 @@ export function TacticsBoard() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-extrabold">Line-up readiness</h1>
-        <p className="text-ink-2 text-sm">
-          {data.match
-            ? `Next: ${data.match.competition ?? "Match"} vs ${data.match.opponent}, ${fmtDay(data.match.date, { weekday: "long", day: "numeric", month: "short" })}`
-            : "No upcoming match"}{" "}
-          · starting XI average readiness {avg(xi) ?? "–"}
-        </p>
-      </div>
+      {/* Next-fixture header, as on a match preview: opponent badge, date, the XI's readiness */}
+      <PageHeader
+        eyebrow="Squad"
+        title="Line-up readiness"
+        subtitle="Drag a bench player onto a position (or select, then click) to see how ready the starting XI is."
+        bottom={
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pb-5">
+            {data.match ? (
+              <span className="flex items-center gap-3">
+                <Crest name="PathToPro Academy" size={36} />
+                <span className="font-display text-xl font-bold uppercase">vs</span>
+                <Crest name={data.match.opponent} size={36} />
+                <span>
+                  <span className="block font-bold">Next: {data.match.opponent}</span>
+                  <span className="text-sm text-white/75">
+                    {data.match.competition ?? "Match"} · {fmtDay(data.match.date, { weekday: "long", day: "numeric", month: "short" })}
+                  </span>
+                </span>
+              </span>
+            ) : (
+              <span className="text-white/75">No upcoming match</span>
+            )}
+            <span className="md:ml-auto">
+              <span className="font-display text-4xl leading-none font-bold">{avg(xi) ?? "–"}</span>
+              <span className="ml-2 text-sm text-white/75">starting XI average readiness</span>
+            </span>
+          </div>
+        }
+      />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,420px)_1fr]">
         <Card className="p-2">
           <Pitch label="Formation" className="w-full">

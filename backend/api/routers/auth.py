@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import threading
+import time
+from collections import defaultdict, deque
 from datetime import date
 from typing import Literal
 
@@ -41,11 +44,34 @@ def _profile(db: Session, acc: UserAccount) -> dict:
     return {"id": acc.id, "email": acc.email, "role": acc.role.value, "name": name, "player_id": acc.player_id, **extra}
 
 
+# Failed sign-ins per email within a sliding window (in memory: one API process).
+MAX_FAILED_LOGINS = 10
+FAILED_LOGIN_WINDOW_S = 15 * 60
+_failed: dict[str, deque[float]] = defaultdict(deque)
+_failed_lock = threading.Lock()
+
+
+def _recent_failures(email: str, now: float) -> deque[float]:
+    q = _failed[email]
+    while q and q[0] < now - FAILED_LOGIN_WINDOW_S:
+        q.popleft()
+    return q
+
+
 @router.post("/login")
 def login(body: Login, db: Session = Depends(get_db)) -> dict:
-    acc = db.scalars(select(UserAccount).where(UserAccount.email == body.email.strip().lower())).first()
+    email = body.email.strip().lower()
+    now = time.monotonic()
+    with _failed_lock:
+        if len(_recent_failures(email, now)) >= MAX_FAILED_LOGINS:
+            raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Too many attempts. Try again in 15 minutes")
+    acc = db.scalars(select(UserAccount).where(UserAccount.email == email)).first()
     if acc is None or not acc.active or not verify_password(body.password, acc.password_hash):
+        with _failed_lock:
+            _recent_failures(email, now).append(now)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Wrong email or password")
+    with _failed_lock:
+        _failed.pop(email, None)
     audit(db, CurrentUser(acc, acc.role), "login", "user_account", acc.id)
     db.commit()
     return {"token": create_token(acc.id, acc.role.value), "user": _profile(db, acc)}

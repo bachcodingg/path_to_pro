@@ -13,7 +13,7 @@ import { MatchDiary } from "./MatchDiary";
 export function TodayScreen() {
   const { data, setData, error, loading, reload } = useApi<Today>("/api/me/today");
   const { user } = useAuth();
-  const escalated = (useLocation().state as { escalated?: boolean } | null)?.escalated;
+  const checkin = useLocation().state as { escalated?: boolean; notified?: "staff" | "guardian" | null; flagged?: boolean } | null;
 
   if (loading && !data) return <Spinner />;
   if (error || !data) return <ErrorNote message={error ?? "No data"} onRetry={reload} />;
@@ -40,15 +40,17 @@ export function TodayScreen() {
         )}
       </div>
 
-      {escalated && (
+      {checkin?.flagged && (
         <Card className="border-pitch-400 flex gap-3">
           <HeartHandshake className="text-pitch-300 h-6 w-6 shrink-0" aria-hidden />
-          <p>Thanks for your honest check-in. Someone from the staff will talk to you today. You don't need to do anything else.</p>
+          <p>
+            {checkin.escalated && checkin.notified === "guardian"
+              ? "Thanks for your honest check-in. We've let your parent know, and your next two days are now rest or easy recovery. You don't need to do anything else."
+              : checkin.escalated || checkin.notified === "staff"
+                ? "Thanks for your honest check-in. Someone from the staff will talk to you today. You don't need to do anything else."
+                : "Thanks for your honest check-in. Your next two days are now rest or easy recovery. Please tell an adult you trust how you feel."}
+          </p>
         </Card>
-      )}
-
-      {data.consent?.wellness !== false && (
-        <MatchDiary due={data.diary_due ?? []} position={user?.position} onSaved={() => void reload()} />
       )}
 
       {data.safety?.map((msg) => (
@@ -58,135 +60,146 @@ export function TodayScreen() {
         </Card>
       ))}
 
-      {data.consent && !data.consent.wellness ? (
-        <Link to="/player/levels">
-          <Card className="border-ready-amber/50">
-            <p className="font-bold">Check-ins are waiting for a parent</p>
-            <p className="text-ink-2 text-sm">You're under 16: a parent links with your invite code first. Tap to see the code.</p>
-          </Card>
-        </Link>
-      ) : !data.checked_in && (
-        <Link to="/player/checkin">
-          <Card className="bg-pitch-700 border-pitch-500 text-white">
-            <p className="text-lg font-bold">{t("checkin.title")}</p>
-            <p className="text-pitch-100 text-sm">{t("checkin.subtitle")} Tap to start.</p>
-          </Card>
-        </Link>
-      )}
+      {/* Wide screens: today's plan on the left, progress and to-dos on the right */}
+      <div className="space-y-5 lg:grid lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-start lg:gap-6 lg:space-y-0">
+        <div className="space-y-5">
+          {data.consent?.wellness !== false && (
+            <MatchDiary due={data.diary_due ?? []} position={user?.position} onSaved={() => void reload()} />
+          )}
 
-      <Battery
-        score={r?.score ?? null}
-        band={r?.band ?? null}
-        stale={!data.readiness_is_today}
-        hrv={r?.components ? "hrv" in r.components : true}
-      />
+          {data.consent && !data.consent.wellness ? (
+            <Link to="/player/levels" className="block">
+              <Card className="border-ready-amber/50">
+                <p className="font-bold">Check-ins are waiting for a parent</p>
+                <p className="text-ink-2 text-sm">You're under 16: a parent links with your invite code first. Tap to see the code.</p>
+              </Card>
+            </Link>
+          ) : !data.checked_in && (
+            <Link to="/player/checkin" className="block">
+              <Card className="bg-pitch-700 border-pitch-500 text-white">
+                <p className="text-lg font-bold">{t("checkin.title")}</p>
+                <p className="text-pitch-100 text-sm">{t("checkin.subtitle")} Tap to start.</p>
+              </Card>
+            </Link>
+          )}
 
-      {data.flags.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {data.flags.map((f) => (
-            <Chip key={f.kind}>{f.text}</Chip>
-          ))}
-        </div>
-      )}
+          <Battery
+            score={r?.score ?? null}
+            band={r?.band ?? null}
+            stale={!data.readiness_is_today}
+            hrv={r?.components ? "hrv" in r.components : true}
+          />
 
-      <section>
-        <SectionTitle>{t("today.session")}</SectionTitle>
-        <Card className="flex items-center gap-4">
-          <div className={cn("flex h-14 w-14 items-center justify-center rounded-xl text-lg font-extrabold", intensityClass(data.session.kind, data.session.rpe))}>
-            {data.session.kind === "rest" ? "–" : data.session.rpe}
-          </div>
-          <div>
-            <p className="text-lg font-bold">{data.session.label}</p>
-            <p className="text-ink-2 text-sm">
-              {data.session.kind === "rest"
-                ? "Recover and enjoy your day off"
-                : `${data.session.minutes} min · effort ${data.session.rpe}/10`}
-            </p>
-          </div>
-        </Card>
-        {data.content && (
-          <Card className="mt-2">
-            <p className="font-bold">{data.content.title}</p>
-            <ul className="mt-1 space-y-2">
-              {data.content.items.map((it) => (
-                <li key={it.name} className="text-sm">
-                  <span className="font-semibold">{it.name}</span>
-                  {it.minutes != null && <span className="text-ink-2"> · {it.minutes} min</span>}
-                  <span className="text-ink-2 block">{it.how}</span>
-                </li>
+          {data.flags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {data.flags.map((f) => (
+                <Chip key={f.kind}>{f.text}</Chip>
               ))}
-            </ul>
-          </Card>
-        )}
-        {data.gym && (
-          <Link to="/player/gym" className="mt-2 block">
-            <Card className="flex items-center gap-3">
-              <Dumbbell className="text-pitch-300 h-6 w-6 shrink-0" aria-hidden />
-              <div className="flex-1">
-                <p className="font-bold">{data.gym.title}</p>
+            </div>
+          )}
+
+          <section>
+            <SectionTitle>{t("today.session")}</SectionTitle>
+            <Card className="flex items-center gap-4">
+              <div className={cn("flex h-14 w-14 items-center justify-center rounded-xl text-lg font-extrabold", intensityClass(data.session.kind, data.session.rpe))}>
+                {data.session.kind === "rest" ? "–" : data.session.rpe}
+              </div>
+              <div>
+                <p className="text-lg font-bold">{data.session.label}</p>
                 <p className="text-ink-2 text-sm">
-                  {data.gym.minutes} min · {data.gym.blocks.reduce((n, b) => n + b.items.length, 0)} exercises · {data.gym.stage_label}
+                  {data.session.kind === "rest"
+                    ? "Recover and enjoy your day off"
+                    : `${data.session.minutes} min · effort ${data.session.rpe}/10`}
                 </p>
               </div>
-              <ChevronRight className="text-ink-2 h-5 w-5" aria-hidden />
             </Card>
-          </Link>
-        )}
-      </section>
+            {data.content && (
+              <Card className="mt-2">
+                <p className="font-bold">{data.content.title}</p>
+                <ul className="mt-1 space-y-2">
+                  {data.content.items.map((it) => (
+                    <li key={it.name} className="text-sm">
+                      <span className="font-semibold">{it.name}</span>
+                      {it.minutes != null && <span className="text-ink-2"> · {it.minutes} min</span>}
+                      <span className="text-ink-2 block">{it.how}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
+            {data.gym && (
+              <Link to="/player/gym" className="mt-2 block">
+                <Card className="flex items-center gap-3">
+                  <Dumbbell className="text-pitch-300 h-6 w-6 shrink-0" aria-hidden />
+                  <div className="flex-1">
+                    <p className="font-bold">{data.gym.title}</p>
+                    <p className="text-ink-2 text-sm">
+                      {data.gym.minutes} min · {data.gym.blocks.reduce((n, b) => n + b.items.length, 0)} exercises · {data.gym.stage_label}
+                    </p>
+                  </div>
+                  <ChevronRight className="text-ink-2 h-5 w-5" aria-hidden />
+                </Card>
+              </Link>
+            )}
+          </section>
+        </div>
 
-      {data.pathway && (
-        <Link to="/player/levels" className="block">
-          <Card className="flex items-center gap-3">
-            <TrendingUp className="text-pitch-300 h-6 w-6 shrink-0" aria-hidden />
-            <div className="flex-1">
-              <p className="font-bold">
-                Level {data.pathway.level}: {data.pathway.name}
-              </p>
-              <p className="text-ink-2 text-sm">
-                {data.pathway.next
-                  ? `${data.pathway.next.tests_met} of ${data.pathway.next.tests_needed} benchmarks for ${data.pathway.next.name}`
-                  : "Top level reached"}
-                {data.pathway.focus.length > 0 && ` · focus: ${data.pathway.focus.join(", ")}`}
-              </p>
-            </div>
-            <ChevronRight className="text-ink-2 h-5 w-5" aria-hidden />
-          </Card>
-        </Link>
-      )}
+        <div className="space-y-5">
+          {data.pathway && (
+            <Link to="/player/levels" className="block">
+              <Card className="flex items-center gap-3">
+                <TrendingUp className="text-pitch-300 h-6 w-6 shrink-0" aria-hidden />
+                <div className="flex-1">
+                  <p className="font-bold">
+                    Level {data.pathway.level}: {data.pathway.name}
+                  </p>
+                  <p className="text-ink-2 text-sm">
+                    {data.pathway.next
+                      ? `${data.pathway.next.tests_met} of ${data.pathway.next.tests_needed} benchmarks for ${data.pathway.next.name}`
+                      : "Top level reached"}
+                    {data.pathway.focus.length > 0 && ` · focus: ${data.pathway.focus.join(", ")}`}
+                  </p>
+                </div>
+                <ChevronRight className="text-ink-2 h-5 w-5" aria-hidden />
+              </Card>
+            </Link>
+          )}
 
-      {data.pathway && data.consent?.wellness && <LogSession today={data} onLogged={(t) => setData(t)} />}
+          {data.pathway && data.consent?.wellness && <LogSession today={data} onLogged={(t) => setData(t)} />}
 
-      <section>
-        <SectionTitle>{t("today.tasks")}</SectionTitle>
-        <Card className="divide-[color:var(--line)] divide-y p-0">
-          {data.tasks.map((task) => (
-            <button
-              key={task.id}
-              onClick={() => toggle(task.id)}
-              className="tap flex w-full items-center gap-3 px-4 py-3 text-left"
-              aria-pressed={task.done}
-            >
-              {task.done ? (
-                <CheckCircle2 className="text-pitch-300 h-6 w-6" aria-hidden />
-              ) : (
-                <Circle className="text-ink-2 h-6 w-6" aria-hidden />
-              )}
-              <span className={cn(task.done && "text-ink-2 line-through")}>{task.label}</span>
-            </button>
-          ))}
-        </Card>
-      </section>
+          <section>
+            <SectionTitle>{t("today.tasks")}</SectionTitle>
+            <Card className="divide-[color:var(--line)] divide-y p-0">
+              {data.tasks.map((task) => (
+                <button
+                  key={task.id}
+                  onClick={() => toggle(task.id)}
+                  className="tap flex w-full items-center gap-3 px-4 py-3 text-left"
+                  aria-pressed={task.done}
+                >
+                  {task.done ? (
+                    <CheckCircle2 className="text-pitch-300 h-6 w-6" aria-hidden />
+                  ) : (
+                    <Circle className="text-ink-2 h-6 w-6" aria-hidden />
+                  )}
+                  <span className={cn(task.done && "text-ink-2 line-through")}>{task.label}</span>
+                </button>
+              ))}
+            </Card>
+          </section>
 
-      {data.why.length > 0 && (
-        <section>
-          <SectionTitle>{t("today.why")}</SectionTitle>
-          <div className="space-y-2">
-            {data.why.map((w) => (
-              <WhyCardView key={w.id} card={w} />
-            ))}
-          </div>
-        </section>
-      )}
+          {data.why.length > 0 && (
+            <section>
+              <SectionTitle>{t("today.why")}</SectionTitle>
+              <div className="space-y-2">
+                {data.why.map((w) => (
+                  <WhyCardView key={w.id} card={w} />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

@@ -33,8 +33,8 @@ def queue(user: CurrentUser = Depends(require(Role.PHYSIO, Role.COACH)), db: Ses
         select(Escalation).where(Escalation.acknowledged_at.is_(None)).order_by(Escalation.created_at)
     ):
         p = db.get(Player, e.player_id)
-        if staff.squad_id and p.squad_id != staff.squad_id:
-            continue
+        if not staff.squad_id or p.squad_id != staff.squad_id:
+            continue  # own squad only; staff without a squad see nothing
         created = e.created_at if e.created_at.tzinfo else e.created_at.replace(tzinfo=UTC)
         notified = e.notified_at if e.notified_at is None or e.notified_at.tzinfo else e.notified_at.replace(tzinfo=UTC)
         st = views.latest_status(db, p.id, clock.today())

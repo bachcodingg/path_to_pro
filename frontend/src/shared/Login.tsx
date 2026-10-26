@@ -1,18 +1,39 @@
+import { Battery, CalendarDays, ClipboardList, Compass, Heart, ShieldCheck, Star, Stethoscope, Users } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { ApiError } from "./api";
 import { homeFor, useAuth } from "./auth";
 import { Button, Card } from "./ui";
 
+// The demo story's accounts, grouped by who uses the app, each with what it shows
 const DEMO = [
-  { label: "Player (tired, growth zone)", email: "p15@demo.pathtopro" },
-  { label: "Player", email: "p03@demo.pathtopro" },
-  { label: "Player (U19 + men's team)", email: "dual@demo.pathtopro" },
-  { label: "Self-guided player", email: "amateur@demo.pathtopro" },
-  { label: "Coach", email: "coach@demo.pathtopro" },
-  { label: "Men's team coach", email: "mencoach@demo.pathtopro" },
-  { label: "Physio", email: "physio@demo.pathtopro" },
-  { label: "Guardian", email: "guardian02@demo.pathtopro" },
+  {
+    group: "Players",
+    accounts: [
+      { label: "Leon, U15", note: "Tired, in the growth zone", email: "p15@demo.pathtopro", icon: Battery },
+      { label: "Academy player", note: "A normal week", email: "p03@demo.pathtopro", icon: CalendarDays },
+      { label: "Dual-squad player", note: "U19 + men's team", email: "dual@demo.pathtopro", icon: Users },
+      { label: "Self-guided player", note: "No club, own plan", email: "amateur@demo.pathtopro", icon: Compass },
+    ],
+  },
+  {
+    group: "Staff",
+    accounts: [
+      { label: "Coach", note: "Squad, matches, analysis", email: "coach@demo.pathtopro", icon: ClipboardList },
+      { label: "Men's team coach", note: "Senior squad", email: "mencoach@demo.pathtopro", icon: Star },
+      { label: "Physio", note: "Escalation queue", email: "physio@demo.pathtopro", icon: Stethoscope },
+    ],
+  },
+  {
+    group: "Family",
+    accounts: [{ label: "Guardian", note: "A parent's view", email: "guardian02@demo.pathtopro", icon: Heart }],
+  },
+];
+
+const PITCH = [
+  { icon: Battery, title: "Readiness every morning", text: "Sleep, heart-rate variability and a 30-second check-in become one battery score." },
+  { icon: ShieldCheck, title: "Safe through growth spurts", text: "Hard limits for the growth zone and load spikes, checked on every plan change." },
+  { icon: ClipboardList, title: "Coaches stay in charge", text: "Every plan change comes with its reason. Small ones apply and the coach is told; bigger ones wait for approval." },
 ];
 
 export function Login() {
@@ -39,65 +60,113 @@ export function Login() {
     }
   }
 
+  // Laptop: what the app does on the left, sign-in and the demo accounts on the right. Phone: stacked.
   return (
-    <main className="dark flex min-h-full items-center justify-center bg-pitch-950 p-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-6 text-center text-white">
-          <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="mx-auto mb-3 h-14 w-14" />
-          <h1 className="text-3xl font-extrabold tracking-tight">PathToPro</h1>
-          <p className="mt-1 text-pitch-200">Train smart. Grow safe. Get better.</p>
+    <main className="dark bg-pitch-950 min-h-full lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <section className="hero flex flex-col justify-between gap-8 px-6 py-8 lg:px-14 lg:py-12">
+        <div className="flex items-center gap-3">
+          <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="h-11 w-11" />
+          <span className="font-display text-2xl font-extrabold tracking-wide uppercase">PathToPro</span>
         </div>
-        <Card>
-          <form onSubmit={submit} className="space-y-3">
-            <label className="block">
-              <span className="text-ink-2 text-sm font-medium">Email</span>
-              <input
-                className="bg-surface-2 border-line text-ink mt-1 h-12 w-full rounded-xl border px-3 text-base"
-                type="email"
-                autoComplete="username"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </label>
-            <label className="block">
-              <span className="text-ink-2 text-sm font-medium">Password</span>
-              <input
-                className="bg-surface-2 border-line text-ink mt-1 h-12 w-full rounded-xl border px-3 text-base"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </label>
-            {error && (
-              <p role="alert" className="text-ready-red text-sm font-medium">
-                {error}
-              </p>
-            )}
-            <Button type="submit" className="w-full" loading={busy}>
-              Sign in
-            </Button>
-          </form>
-          <div className="border-line mt-4 border-t pt-3">
-            <p className="text-ink-2 mb-2 text-xs font-semibold uppercase">Demo accounts (synthetic data)</p>
-            <div className="flex flex-wrap gap-2">
-              {DEMO.map((d) => (
-                <Button key={d.email} variant="secondary" size="sm" disabled={busy} onClick={(e) => submit(e, d.email)}>
-                  {d.label}
-                </Button>
+        <div>
+          <p className="text-pitch-300 text-xs font-bold tracking-[0.16em] uppercase">For academy players aged 13 to 18</p>
+          <h1 className="font-display mt-2 text-5xl leading-[0.95] font-extrabold uppercase lg:text-7xl">
+            Train smart.
+            <br />
+            Grow safe.
+            <br />
+            <span className="text-pitch-300">Get better.</span>
+          </h1>
+          <ul className="mt-8 hidden max-w-lg space-y-4 lg:block">
+            {PITCH.map(({ icon: Icon, title, text }) => (
+              <li key={title} className="flex gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10">
+                  <Icon className="text-pitch-300 h-5 w-5" aria-hidden />
+                </span>
+                <span>
+                  <span className="block font-bold">{title}</span>
+                  <span className="text-sm text-white/70">{text}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <p className="hidden text-xs text-white/50 lg:block">Demo with synthetic players. Team analysis uses StatsBomb Open Data.</p>
+      </section>
+
+      <section className="flex items-center justify-center px-4 py-8 lg:px-10">
+        <div className="w-full max-w-md">
+          <h2 className="font-display mb-3 text-3xl font-bold text-white uppercase">Sign in</h2>
+          <Card>
+            <form onSubmit={submit} className="space-y-3">
+              <label className="block">
+                <span className="text-ink-2 text-sm font-medium">Email</span>
+                <input
+                  className="bg-surface-2 border-line text-ink mt-1 h-12 w-full rounded-xl border px-3 text-base"
+                  type="email"
+                  autoComplete="username"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </label>
+              <label className="block">
+                <span className="text-ink-2 text-sm font-medium">Password</span>
+                <input
+                  className="bg-surface-2 border-line text-ink mt-1 h-12 w-full rounded-xl border px-3 text-base"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </label>
+              {error && (
+                <p role="alert" className="text-ready-red text-sm font-medium">
+                  {error}
+                </p>
+              )}
+              <Button type="submit" className="w-full" loading={busy}>
+                Sign in
+              </Button>
+            </form>
+          </Card>
+
+          <div className="mt-6">
+            <p className="text-pitch-200 mb-2 text-xs font-bold tracking-[0.14em] uppercase">Or try the demo as (synthetic data)</p>
+            <div className="space-y-3">
+              {DEMO.map(({ group, accounts }) => (
+                <div key={group}>
+                  <p className="mb-1.5 text-xs font-semibold text-white/50">{group}</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {accounts.map(({ label, note, email: demoEmail, icon: Icon }) => (
+                      <button
+                        key={demoEmail}
+                        disabled={busy}
+                        onClick={(e) => submit(e, demoEmail)}
+                        className="tap bg-surface border-line hover:border-pitch-400 flex items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors disabled:opacity-50"
+                      >
+                        <Icon className="text-pitch-300 h-5 w-5 shrink-0" aria-hidden />
+                        <span className="min-w-0">
+                          <span className="text-ink block text-sm font-bold">{label}</span>
+                          <span className="text-ink-2 block truncate text-xs">{note}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
-        </Card>
-        <p className="text-pitch-200 mt-4 text-center text-sm">
-          Not in an academy?{" "}
-          <Link to="/register" className="font-semibold text-white underline">
-            Create a free plan
-          </Link>
-        </p>
-      </div>
+
+          <p className="text-pitch-200 mt-6 text-center text-sm">
+            Not in an academy?{" "}
+            <Link to="/register" className="font-semibold text-white underline">
+              Create a free plan
+            </Link>
+          </p>
+        </div>
+      </section>
     </main>
   );
 }
