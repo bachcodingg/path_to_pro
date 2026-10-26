@@ -13,10 +13,16 @@ synthetic academy season.
 | Duels & headers | Aerial duels won, dribbles completed, tackles won |
 | Defending | Pressing (PPDA, pressures, counter-pressing, high recoveries), shots and xG conceded, how far out opponents are kept, discipline |
 | Set pieces | Corners (delivery map, zones, swing, takers), corners defended, penalties and direct free kicks (goal-mouth map, placement by kicker) |
-| Players | The squad, sortable, in four views: shooting (tap-ins, headers, long shots, xG, conversion), passing (accuracy by length, key passes, assists), duels (aerial %, dribbles), defending (tackles + interceptions, pressures, cards) |
+| Players | Squad leaders (goals, assists, key passes, aerial duels won, tackles + interceptions), then the squad, sortable, in four views: shooting (tap-ins, headers, long shots, xG, conversion), passing (accuracy by length, key passes, assists), duels (aerial %, dribbles), defending (tackles + interceptions, pressures, cards) |
+| Table | The league table as on laliga.com: Pl, W, D, L, GF, GA, GD, Pts and the last five results; all matches, home only or away only; the 2015/16 Champions League (1-4), Europa League (5-6) and relegation (18-20) places |
 
 Pick a second team under **Compare with** to see it next to the first: as a hollow ring
 on every bar and as "vs" numbers.
+
+The page is laid out like a league website's club page: a strip of every club's badge to
+switch team, then a header in the club's colour with its position, points, record and form.
+The badges are drawn from the clubs' colours with LaLiga's three-letter codes, not from the
+clubs' crests, which are their trademarks.
 
 ## Data
 
@@ -65,6 +71,8 @@ y = 0 on the attacking team's left. Code: `backend/scouting/play.py`.
 | Corner zones | Measured from the corner's own touchline, so "near post" means the same from both flags. In the box: **near post** (up to 37 yards in, the near post is at 36), **far post** (43+ yards in, far post at 44), between the posts **six-yard box** or **penalty spot area**. Outside: **short** (within 25 yards of the flag) or **edge of the box** |
 | Corner ends in a shot | The same team shoots within 15 seconds of the corner, in the same possession |
 | Penalty / free-kick placement | Thirds of the goal mouth where the ball ended, **from the kicker's view** (the kicker's left is the goalkeeper's right). Only kicks on target count, since a miss shows where the ball went, not where it was aimed |
+| Form | The last five league results in date order (the import keeps each match's date and matchday) |
+| Home / away table | Only the 19 home or 19 away matches; home and away points add up to the full table |
 | Player minutes | Starters from 0, substitutes from their entry, a red card ends a player's match. Per-90 rates need 450 minutes, accuracies a minimum number of attempts |
 
 ## When something is called a strength, weakness or habit
