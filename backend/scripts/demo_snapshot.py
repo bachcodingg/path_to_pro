@@ -111,7 +111,9 @@ def main(out: Path) -> None:
         # Team analysis is public match data (StatsBomb Open Data), the same for every coach
         staff["/api/coach/analysis/teams"] = get(h, "/api/coach/analysis/teams")
         for t in staff["/api/coach/analysis/teams"]["teams"]:
-            staff[f"/api/coach/analysis/teams/{t['id']}"] = get(h, f"/api/coach/analysis/teams/{t['id']}")
+            for sub in ("", "/style", "/players", "/shots"):
+                path = f"/api/coach/analysis/teams/{t['id']}{sub}"
+                staff[path] = get(h, path)
 
         def team_views(h: dict) -> dict:
             out = {f"/api/coach/squad-week?offset={o}": get(h, f"/api/coach/squad-week?offset={o}") for o in (0, 1)}

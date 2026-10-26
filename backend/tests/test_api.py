@@ -323,3 +323,20 @@ def test_team_analysis_is_for_coaches(demo):
     assert client.get("/api/coach/analysis/teams/nobody-fc", headers=coach).status_code == 404
     player = login(client, "p03@demo.pathtopro")
     assert client.get("/api/coach/analysis/teams", headers=player).status_code == 403
+
+
+def test_team_style_players_and_shots(demo):
+    client, _ = demo
+    coach = login(client, "coach@demo.pathtopro")
+    teams = client.get("/api/coach/analysis/teams", headers=coach).json()
+    assert teams["table"][0]["team"] == "Barcelona" and len(teams["table"]) == 20
+    s = client.get("/api/coach/analysis/teams/atletico-madrid/style", headers=coach).json()
+    assert s["standing"]["position"] == 3 and s["summary"]["strength"]
+    p = client.get("/api/coach/analysis/teams/atletico-madrid/players", headers=coach).json()
+    assert any(r["name"] == "Antoine Griezmann" for r in p["players"])
+    shots = client.get("/api/coach/analysis/teams/atletico-madrid/shots", headers=coach).json()
+    assert shots["columns"][:3] == ["x", "y", "xg"] and shots["for"] and shots["against"]
+    for sub in ("style", "players", "shots"):
+        assert client.get(f"/api/coach/analysis/teams/nobody-fc/{sub}", headers=coach).status_code == 404
+    physio = login(client, "physio@demo.pathtopro")
+    assert client.get("/api/coach/analysis/teams/atletico-madrid/style", headers=physio).status_code == 403
