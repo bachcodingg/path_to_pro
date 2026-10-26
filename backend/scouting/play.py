@@ -51,8 +51,11 @@ def in_six(x: float, y: float) -> bool:
 
 
 def shot_zone(x: float, y: float) -> str:
-    """>>> shot_zone(116, 40), shot_zone(108, 40), shot_zone(95, 40)
-    ('six', 'box', 'out')"""
+    """Six-yard box, rest of the penalty area, or outside it.
+
+    >>> shot_zone(116, 40), shot_zone(108, 40), shot_zone(95, 40)
+    ('six', 'box', 'out')
+    """
     return "six" if in_six(x, y) else "box" if in_box(x, y) else "out"
 
 
