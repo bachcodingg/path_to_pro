@@ -1,10 +1,11 @@
 // Shot map: every shot a team took (or conceded), filtered by body part and situation,
 // with tap-in / box / long-shot totals computed from what is shown.
 import { useState } from "react";
-import { useApi } from "../../shared/useApi";
-import { Card, ErrorNote, Spinner, cn } from "../../shared/ui";
+import { useApi } from "../shared/useApi";
+import { Card, ErrorNote, Spinner, cn } from "../shared/ui";
 import { Legend } from "./SetPieces";
 import type { Shots } from "./types";
+import { usePro } from "./context";
 
 type Side = "for" | "against";
 const BODY = { all: "Any", foot: "Foot", head: "Header" } as const;
@@ -34,7 +35,8 @@ interface Shot {
 }
 
 export function ShotMap({ teamId }: { teamId: string }) {
-  const { data, error, loading, reload } = useApi<Shots>(`/api/coach/analysis/teams/${encodeURIComponent(teamId)}/shots`);
+  const { base } = usePro();
+  const { data, error, loading, reload } = useApi<Shots>(`${base}/teams/${encodeURIComponent(teamId)}/shots`);
   const [side, setSide] = useState<Side>("for");
   const [body, setBody] = useState<keyof typeof BODY>("all");
   const [sit, setSit] = useState<keyof typeof SITUATION>("all");

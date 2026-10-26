@@ -1,8 +1,9 @@
 // Players tab: the opponent's squad with shooting, passing, duel and defending numbers; sortable.
 import { useState } from "react";
-import { useApi } from "../../shared/useApi";
-import { Card, ErrorNote, Spinner, cn } from "../../shared/ui";
+import { useApi } from "../shared/useApi";
+import { Card, ErrorNote, Spinner, cn } from "../shared/ui";
 import type { PlayerRow } from "./types";
+import { usePro } from "./context";
 
 type Kind = "int" | "num" | "pct";
 const CATEGORIES: Record<string, { label: string; cols: [string, string, Kind][] }> = {
@@ -69,8 +70,9 @@ function fmt(v: unknown, kind: Kind): string {
 }
 
 export function Players({ teamId }: { teamId: string }) {
+  const { base } = usePro();
   const { data, error, loading, reload } = useApi<{ team: string; min_minutes: number; players: PlayerRow[] }>(
-    `/api/coach/analysis/teams/${encodeURIComponent(teamId)}/players`,
+    `${base}/teams/${encodeURIComponent(teamId)}/players`,
   );
   const [cat, setCat] = useState("shooting");
   const [lineFilter, setLine] = useState<keyof typeof LINES>("all");

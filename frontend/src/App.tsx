@@ -24,7 +24,11 @@ const MatchReport = lazy(() => import("./coach/Matches").then((m) => ({ default:
 const Devices = lazy(() => import("./player/Devices").then((m) => ({ default: m.Devices })));
 const MatchView = lazy(() => import("./player/MatchView").then((m) => ({ default: m.MatchView })));
 const Finance = lazy(() => import("./coach/Finance").then((m) => ({ default: m.Finance })));
-const TeamAnalysis = lazy(() => import("./coach/analysis/TeamAnalysis").then((m) => ({ default: m.TeamAnalysis })));
+const TeamAnalysis = lazy(() => import("./pro/TeamAnalysis").then((m) => ({ default: m.TeamAnalysis })));
+const ProLayout = lazy(() => import("./pro/ProLayout").then((m) => ({ default: m.ProLayout })));
+const ProHome = lazy(() => import("./pro/ProHome").then((m) => ({ default: m.ProHome })));
+const CompetitionPage = lazy(() => import("./pro/Competition").then((m) => ({ default: m.CompetitionPage })));
+const MatchCentre = lazy(() => import("./pro/Matches").then((m) => ({ default: m.MatchCentre })));
 const Gym = lazy(() => import("./player/Gym").then((m) => ({ default: m.Gym })));
 const Pathway = lazy(() => import("./player/Pathway").then((m) => ({ default: m.Pathway })));
 const Growth = lazy(() => import("./player/Growth").then((m) => ({ default: m.Growth })));
@@ -85,7 +89,8 @@ export function App() {
         <Route path="matches/:id" element={<MatchReport />} />
         <Route path="finance" element={<Finance />} />
         <Route path="tactics" element={<TacticsBoard />} />
-        <Route path="analysis/:teamId?" element={<TeamAnalysis />} />
+        {/* Team analysis moved to its own section, /pro */}
+        <Route path="analysis/*" element={<Navigate to="/pro/la-liga" replace />} />
         <Route path="players/:id" element={<PlayerProfile />} />
         <Route path="log" element={<AgentLog />} />
         <Route path="calibration" element={<Calibration />} />
@@ -99,6 +104,20 @@ export function App() {
         }
       >
         <Route index element={<PhysioHome />} />
+      </Route>
+      {/* Pro league analysis: its own section, open to every signed-in account (public match data) */}
+      <Route
+        path="/pro"
+        element={
+          <Guard roles={["player", "coach", "physio", "guardian"]}>
+            <ProLayout />
+          </Guard>
+        }
+      >
+        <Route index element={<ProHome />} />
+        <Route path=":comp" element={<CompetitionPage />} />
+        <Route path=":comp/teams/:teamId" element={<TeamAnalysis />} />
+        <Route path=":comp/matches/:matchId" element={<MatchCentre />} />
       </Route>
       <Route
         path="/guardian"

@@ -1,11 +1,14 @@
-// Team analysis: how an opponent plays, from real match events (StatsBomb Open Data).
-// Laid out like a league website's club page: a strip of club badges to switch team, a
-// header in the club's colours with its record and form, then the sections as tabs.
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Crest, FormGuide, clubMeta } from "../../shared/Club";
-import { PageHeader, Tabs } from "../../shared/PageHeader";
-import { useApi } from "../../shared/useApi";
-import { ErrorNote, PageSkeleton, cn } from "../../shared/ui";
+// A club's page in the pro-league section: how the team plays, from real match events
+// (StatsBomb Open Data). Laid out like a league website's club page: a strip of club badges
+// to switch team, a header in the club's colours with its record and form, then the
+// sections as tabs. For one club's season (Bundesliga: Leverkusen) the club is compared with
+// its opponents and there is no table, ranking or second team to compare.
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Crest, FormGuide, clubMeta } from "../shared/Club";
+import { PageHeader, Tabs } from "../shared/PageHeader";
+import { useApi } from "../shared/useApi";
+import { ErrorNote, PageSkeleton, cn } from "../shared/ui";
+import { usePro, type Competition } from "./context";
 import { LeagueTable, type Tables } from "./LeagueTable";
 import { Players } from "./Players";
 import { SetPieces, type Source, type TeamRow } from "./SetPieces";
@@ -13,7 +16,6 @@ import { ShotMap } from "./ShotMap";
 import { MeasureList, Overview } from "./Style";
 import { ordinal, type StyleProfile } from "./types";
 
-const DEFAULT_TEAM = "real-madrid";
 const TABS = [
   ["overview", "Overview"],
   ["attack", "Attack"],
@@ -26,15 +28,20 @@ const TABS = [
 ] as const;
 type Tab = (typeof TABS)[number][0];
 
+export type TeamList = Source & Tables & { teams: TeamRow[]; competition: Competition };
+
 export function TeamAnalysis() {
-  const { teamId = DEFAULT_TEAM } = useParams();
+  const { teamId = "" } = useParams();
+  const { comp, base, label } = usePro();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
-  const tab = (TABS.find(([k]) => k === params.get("tab"))?.[0] ?? "overview") as Tab;
-  const vsId = params.get("vs");
-  const list = useApi<Source & Tables & { teams: TeamRow[] }>("/api/coach/analysis/teams");
-  const style = useApi<StyleProfile>(`/api/coach/analysis/teams/${encodeURIComponent(teamId)}/style`);
-  const vs = useApi<StyleProfile>(vsId && vsId !== teamId ? `/api/coach/analysis/teams/${encodeURIComponent(vsId)}/style` : null);
+  const list = useApi<TeamList>(`${base}/teams`);
+  const style = useApi<StyleProfile>(`${base}/teams/${encodeURIComponent(teamId)}/style`);
+  const league = list.data?.competition.coverage !== "club";
+  const tabs = TABS.filter(([k]) => league || k !== "table");
+  const tab = (tabs.find(([k]) => k === params.get("tab"))?.[0] ?? "overview") as Tab;
+  const vsId = league ? params.get("vs") : null;
+  const vs = useApi<StyleProfile>(vsId && vsId !== teamId ? `${base}/teams/${encodeURIComponent(vsId)}/style` : null);
 
   function set(key: string, value: string | null) {
     const next = new URLSearchParams(params);
@@ -42,7 +49,7 @@ export function TeamAnalysis() {
     else next.delete(key);
     setParams(next, { replace: true });
   }
-  const pickTeam = (id: string) => navigate(`/coach/analysis/${id}${params.size ? `?${params}` : ""}`);
+  const pickTeam = (id: string) => navigate(`/pro/${comp}/teams/${id}${params.size ? `?${params}` : ""}`);
 
   if (list.error) return <ErrorNote message={list.error} onRetry={list.reload} />;
   const teams = list.data?.teams ?? [];
@@ -53,11 +60,18 @@ export function TeamAnalysis() {
   const standing = table.find((t) => t.id === teamId) ?? p?.standing;
   const [c1, c2] = clubMeta(name).colors;
   const field = "rounded-lg border px-3 py-2 text-sm font-semibold";
+  const c = list.data?.competition;
   return (
     <div className="space-y-4">
       <PageHeader
         accent={c1 === "#ffffff" ? c2 : c1}
-        eyebrow={`Team analysis${list.data ? ` · ${list.data.competition} ${list.data.season}` : ""}`}
+        eyebrow={
+          c && (
+            <Link to={`/pro/${comp}`} className="hover:underline">
+              ← {c.name} {c.season}
+            </Link>
+          )
+        }
         title={
           <>
             <span className="sr-only">Team analysis: </span>
@@ -68,9 +82,11 @@ export function TeamAnalysis() {
         subtitle={
           standing && (
             <span className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-              <span>
-                <span className="font-display text-2xl font-bold text-white">{ordinal(standing.position)}</span> in the league
-              </span>
+              {standing.position != null && (
+                <span>
+                  <span className="font-display text-2xl font-bold text-white">{ordinal(standing.position)}</span> in the league
+                </span>
+              )}
               <span>
                 <span className="font-display text-2xl font-bold text-white">{standing.points}</span> pts
               </span>
@@ -82,70 +98,76 @@ export function TeamAnalysis() {
           )
         }
         actions={
-          <>
-            <label className="flex items-center gap-2 text-sm font-semibold">
-              Team
-              <select aria-label="Team" className={field} value={teamId} onChange={(e) => pickTeam(e.target.value)}>
-                {teams.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex items-center gap-2 text-sm font-semibold">
-              Compare with
-              <select aria-label="Compare with" className={field} value={vsId ?? ""} onChange={(e) => set("vs", e.target.value || null)}>
-                <option value="">No comparison</option>
-                {teams
-                  .filter((t) => t.id !== teamId)
-                  .map((t) => (
+          league && (
+            <>
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                Team
+                <select aria-label="Team" className={field} value={teamId} onChange={(e) => pickTeam(e.target.value)}>
+                  {teams.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.name}
                     </option>
                   ))}
-              </select>
-            </label>
-          </>
+                </select>
+              </label>
+              <label className="flex items-center gap-2 text-sm font-semibold">
+                Compare with
+                <select aria-label="Compare with" className={field} value={vsId ?? ""} onChange={(e) => set("vs", e.target.value || null)}>
+                  <option value="">No comparison</option>
+                  {teams
+                    .filter((t) => t.id !== teamId)
+                    .map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            </>
+          )
         }
         bottom={
           <>
+            {!league && c && <p className="mb-3 max-w-3xl text-sm text-white/80">{c.note}</p>}
             {versus && (
               <p className="mb-3 flex flex-wrap items-center gap-2 text-sm text-white/80">
                 <span className="font-display text-base font-bold tracking-wide text-white uppercase">vs</span>
                 <Crest name={versus.team} size={22} />
                 <span className="font-semibold text-white">{versus.team}</span>
-                {ordinal(versus.standing.position)}, {versus.standing.points} pts · shown as rings on the bars and "vs" numbers
+                {versus.standing.position != null && `${ordinal(versus.standing.position)}, `}
+                {versus.standing.points} pts · shown as rings on the bars and "vs" numbers
                 <button className="tap ml-1 underline" onClick={() => set("vs", null)}>
                   Clear
                 </button>
               </p>
             )}
-            <Tabs label="Analysis sections" items={TABS} value={tab} onChange={(k) => set("tab", k === "overview" ? null : k)} />
+            <Tabs label="Analysis sections" items={tabs} value={tab} onChange={(k) => set("tab", k === "overview" ? null : k)} />
           </>
         }
       />
 
       {/* The league sites' club strip: every club's badge, one click to switch */}
-      <nav aria-label="Clubs" className="no-scrollbar -mt-1 flex gap-1 overflow-x-auto pb-1">
-        {table.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => pickTeam(t.id)}
-            aria-label={t.team}
-            aria-current={t.id === teamId ? "page" : undefined}
-            title={t.team}
-            className={cn(
-              "tap flex shrink-0 flex-col items-center justify-center rounded-lg px-1.5 py-1 transition",
-              t.id === teamId ? "bg-surface border-line border shadow-sm" : "opacity-70 hover:opacity-100",
-            )}
-          >
-            <Crest name={t.team} size={28} />
-          </button>
-        ))}
-      </nav>
+      {table.length > 1 && (
+        <nav aria-label="Clubs" className="no-scrollbar -mt-1 flex gap-1 overflow-x-auto pb-1">
+          {table.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => pickTeam(t.id)}
+              aria-label={t.team}
+              aria-current={t.id === teamId ? "page" : undefined}
+              title={t.team}
+              className={cn(
+                "tap flex shrink-0 flex-col items-center justify-center rounded-lg px-1.5 py-1 transition",
+                t.id === teamId ? "bg-surface border-line border shadow-sm" : "opacity-70 hover:opacity-100",
+              )}
+            >
+              <Crest name={t.team} size={28} />
+            </button>
+          ))}
+        </nav>
+      )}
 
-      <div role="tabpanel" aria-label={TABS.find(([k]) => k === tab)?.[1]}>
+      <div role="tabpanel" aria-label={tabs.find(([k]) => k === tab)?.[1]}>
         {tab === "set-pieces" ? (
           <SetPieces teamId={teamId} />
         ) : tab === "players" ? (
@@ -174,8 +196,9 @@ export function TeamAnalysis() {
 
       <p className="text-ink-2 text-xs">
         Data: <a className="underline" href={list.data?.source_url ?? "https://github.com/statsbomb/open-data"}>StatsBomb Open Data</a>,
-        used under StatsBomb's open-data terms. Club badges are drawn from club colours, not the clubs' crests. Definitions:
-        docs/team-analysis.md.
+        used under StatsBomb's open-data terms. Numbers are compared with the {label}
+        {league ? " (the other teams)" : " in the same matches"}. Club badges are drawn from club colours, not the clubs' crests.
+        Definitions: docs/team-analysis.md.
       </p>
     </div>
   );

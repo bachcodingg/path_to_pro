@@ -20,6 +20,7 @@ interface Snapshot {
   meta: { today: string; story: Record<string, string>; password: string; generated?: string; readiness?: ReadinessMeta };
   users: Record<string, { me: Json; responses: Record<string, Json> }>;
   staff: Record<string, Json>;
+  pro?: Record<string, Json>; // the competitions list; each competition's data is a file of its own
 }
 
 let state: Snapshot | null = null;
@@ -41,6 +42,21 @@ async function load(): Promise<Snapshot> {
     return state;
   });
   return loading;
+}
+
+// Pro leagues: one recorded file per competition (several MB each), fetched the first time
+// that competition is opened and kept out of the saved demo state
+const proFiles = new Map<string, Promise<Record<string, Json>>>();
+function proFile(comp: string): Promise<Record<string, Json>> {
+  if (!proFiles.has(comp))
+    proFiles.set(
+      comp,
+      fetch(`${import.meta.env.BASE_URL}demo/pro/${encodeURIComponent(comp)}.json`).then((r) => {
+        if (!r.ok) proFiles.delete(comp);
+        return r.ok ? r.json() : {};
+      }),
+    );
+  return proFiles.get(comp)!;
 }
 
 function persist(): void {
@@ -216,6 +232,14 @@ async function route(path: string, method: string, body?: Json): Promise<Json> {
   if (!user) fail(401, "Not signed in");
   const role: string = user.me.role;
   if (p === "/api/auth/me") return user.me;
+
+  // ---- pro leagues: public match data, the same for every account
+  if (p.startsWith("/api/pro/")) {
+    if (method !== "GET") fail(405, "Read only");
+    if (p === "/api/pro/competitions") return s.pro?.[p] ?? fail(404, "Not available in the demo");
+    const rec = await proFile(p.split("/")[3]);
+    return rec[p] ?? fail(404, "Not in the dataset");
+  }
 
   // ---- player
   if (p.startsWith("/api/me/")) {

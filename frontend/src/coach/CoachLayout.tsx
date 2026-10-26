@@ -1,4 +1,4 @@
-import { type LucideIcon, CalendarRange, ClipboardList, Euro, Flag, Gauge, Grid3x3, LogOut, MessageSquareText, Play, Star, Stethoscope, Users } from "lucide-react";
+import { type LucideIcon, CalendarRange, ClipboardList, Euro, Gauge, Grid3x3, LogOut, MessageSquareText, Play, Star, Stethoscope, Trophy, Users } from "lucide-react";
 import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import { api } from "../shared/api";
@@ -24,9 +24,12 @@ const nav = (): { group: string; items: NavItem[] }[] => [
     group: "Matchday",
     items: [
       { to: "/coach/matches", label: t("nav.matches"), icon: Star },
-      { to: "/coach/analysis", label: t("nav.analysis"), icon: Flag, coachOnly: true },
       { to: "/coach/log", label: t("nav.log"), icon: MessageSquareText },
     ],
+  },
+  {
+    group: "Scouting",
+    items: [{ to: "/pro", label: t("nav.pro"), icon: Trophy }],
   },
   {
     group: "Club",
