@@ -31,6 +31,7 @@ export interface Standing {
   gf: number;
   ga: number;
   points: number;
+  form?: ("W" | "D" | "L")[];
 }
 
 export interface StyleProfile {

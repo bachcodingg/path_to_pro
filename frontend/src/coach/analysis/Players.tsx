@@ -86,6 +86,7 @@ export function Players({ teamId }: { teamId: string }) {
     .sort((a, b) => (b[key] == null ? -1 : a[key] == null ? 1 : Number(b[key]) - Number(a[key])));
   return (
     <div className="space-y-3">
+      <Leaders players={data.players} />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-1" role="group" aria-label="Category">
           {Object.entries(CATEGORIES).map(([k, c]) => (
@@ -143,6 +144,56 @@ export function Players({ teamId }: { teamId: string }) {
         duels, 15 dribbles, 10 shots). Tap-ins are goals from inside the six-yard box; long shots are from outside the box.
       </p>
     </div>
+  );
+}
+
+// Stats-centre cards: the squad's top five for a few headline numbers
+const LEADERS: [string, string, Kind][] = [
+  ["goals", "Goals", "int"],
+  ["assists", "Assists", "int"],
+  ["key_passes90", "Key passes /90", "num"],
+  ["aerial_won", "Aerial duels won", "int"],
+  ["tackles_int90", "Tackles + interceptions /90", "num"],
+];
+
+function Leaders({ players }: { players: PlayerRow[] }) {
+  return (
+    <section aria-label="Squad leaders" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      {LEADERS.map(([k, label, kind]) => {
+        const top = players
+          .filter((p) => p[k] != null && Number(p[k]) > 0)
+          .sort((a, b) => Number(b[k]) - Number(a[k]))
+          .slice(0, 5);
+        const [first, ...rest] = top;
+        return (
+          <Card key={k} className="overflow-hidden p-0">
+            <div className="hero px-3 pt-2.5 pb-3">
+              <p className="text-pitch-300 text-[11px] font-bold tracking-[0.12em] uppercase">{label}</p>
+              {first ? (
+                <div className="mt-1 flex items-end justify-between gap-2">
+                  <span className="min-w-0">
+                    <span className="block truncate font-bold">{first.name}</span>
+                    <span className="block truncate text-xs text-white/70">{first.position ?? ""}</span>
+                  </span>
+                  <span className="font-display text-4xl leading-none font-bold">{fmt(first[k], kind)}</span>
+                </div>
+              ) : (
+                <p className="mt-1 text-sm text-white/70">No one yet</p>
+              )}
+            </div>
+            <ol className="divide-y divide-[color:var(--line)] text-sm" start={2}>
+              {rest.map((p, i) => (
+                <li key={p.name} className="flex items-center gap-2 px-3 py-1.5">
+                  <span className="text-ink-2 w-4 text-xs font-bold">{i + 2}</span>
+                  <span className="min-w-0 flex-1 truncate">{p.name}</span>
+                  <span className="num font-semibold">{fmt(p[k], kind)}</span>
+                </li>
+              ))}
+            </ol>
+          </Card>
+        );
+      })}
+    </section>
   );
 }
 
