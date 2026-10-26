@@ -36,20 +36,23 @@ export function GymProgrammeView({ p, compact = false }: { p: GymProgramme; comp
           ))}
         </ul>
       )}
-      {p.blocks.map((b) => (
-        <section key={b.title}>
-          <h3 className="mb-1 flex items-center gap-2 text-sm font-bold">
-            {b.tag === "position" ? <Target className="text-pitch-400 h-4 w-4" aria-hidden /> : <Dumbbell className="h-4 w-4" aria-hidden />}
-            {b.title}
-            <span className="text-ink-2 text-xs font-medium">{b.tag === "position" ? `· ${p.position_label}` : "· everyone"}</span>
-          </h3>
-          <div className="border-line divide-[color:var(--line)] divide-y rounded-xl border">
-            {b.items.map((it) => (
-              <ExerciseRow key={it.id} it={it} compact={compact} />
-            ))}
-          </div>
-        </section>
-      ))}
+      {/* Wide screens: blocks side by side, in session order row by row */}
+      <div className={cn("space-y-3", !compact && "lg:grid lg:grid-cols-2 lg:items-start lg:gap-4 lg:space-y-0")}>
+        {p.blocks.map((b) => (
+          <section key={b.title}>
+            <h3 className="mb-1 flex items-center gap-2 text-sm font-bold">
+              {b.tag === "position" ? <Target className="text-pitch-400 h-4 w-4" aria-hidden /> : <Dumbbell className="h-4 w-4" aria-hidden />}
+              {b.title}
+              <span className="text-ink-2 text-xs font-medium">{b.tag === "position" ? `· ${p.position_label}` : "· everyone"}</span>
+            </h3>
+            <div className="border-line divide-[color:var(--line)] divide-y rounded-xl border">
+              {b.items.map((it) => (
+                <ExerciseRow key={it.id} it={it} compact={compact} />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
     </div>
   );
 }

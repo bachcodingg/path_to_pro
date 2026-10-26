@@ -125,108 +125,116 @@ export function Devices() {
         </Card>
       )}
 
-      <Card>
-        <p className="font-bold">Latest from your watch</p>
-        <ul className="text-ink-2 mt-1 space-y-1 text-sm">
-          <li>Heart-rate variability: {data.latest.hrv_day ? fmtDay(data.latest.hrv_day, { weekday: "short", day: "numeric", month: "short" }) : "nothing yet"}</li>
-          <li>
-            Sleep:{" "}
-            {data.latest.sleep_night
-              ? `${data.latest.sleep_hours?.toFixed(1)} h on ${fmtDay(data.latest.sleep_night, { weekday: "short", day: "numeric", month: "short" })}`
-              : "nothing yet"}
-          </li>
-        </ul>
-      </Card>
+      {/* Wide screens: connect on the left, what was received on the right */}
+      <div className="space-y-5 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6 lg:space-y-0">
+        <div className="space-y-5">
+          <Card>
+            <p className="font-bold">Latest from your watch</p>
+            <ul className="text-ink-2 mt-1 space-y-1 text-sm">
+              <li>Heart-rate variability: {data.latest.hrv_day ? fmtDay(data.latest.hrv_day, { weekday: "short", day: "numeric", month: "short" }) : "nothing yet"}</li>
+              <li>
+                Sleep:{" "}
+                {data.latest.sleep_night
+                  ? `${data.latest.sleep_hours?.toFixed(1)} h on ${fmtDay(data.latest.sleep_night, { weekday: "short", day: "numeric", month: "short" })}`
+                  : "nothing yet"}
+              </li>
+            </ul>
+          </Card>
 
-      <section>
-        <SectionTitle>1. Automatic daily sync (iPhone Shortcut)</SectionTitle>
-        <Card className="space-y-3">
-          {data.tokens.map((t) => (
-            <div key={t.id} className="border-line flex items-center justify-between gap-2 rounded-xl border p-3">
-              <div className="min-w-0">
-                <p className="font-semibold">{t.label}</p>
-                <p className="text-ink-2 text-xs">
-                  {t.last_used_at ? `Last sync ${new Date(t.last_used_at).toLocaleString("en-GB")}: ${summaryText(t.last_summary)}` : "Waiting for the first sync"}
+          <section>
+            <SectionTitle>1. Automatic daily sync (iPhone Shortcut)</SectionTitle>
+            <Card className="space-y-3">
+              {data.tokens.map((t) => (
+                <div key={t.id} className="border-line flex items-center justify-between gap-2 rounded-xl border p-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold">{t.label}</p>
+                    <p className="text-ink-2 text-xs">
+                      {t.last_used_at ? `Last sync ${new Date(t.last_used_at).toLocaleString("en-GB")}: ${summaryText(t.last_summary)}` : "Waiting for the first sync"}
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="sm" aria-label={`Disconnect ${t.label}`} onClick={() => remove(t.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              {fresh ? (
+                <div className="border-pitch-500 space-y-3 rounded-xl border p-3">
+                  <p className="font-semibold">Your connection details (the code is shown only once)</p>
+                  <CopyField label="URL" value={`${window.location.origin}/api/ingest/apple-health`} />
+                  <CopyField label="Device code" value={fresh.token} />
+                </div>
+              ) : (
+                <Button onClick={connect} disabled={DEMO}>
+                  <Watch className="h-4 w-4" aria-hidden /> Connect Apple Watch
+                </Button>
+              )}
+              <details className="text-sm">
+                <summary className="cursor-pointer font-semibold">How to set up the Shortcut (5 minutes, once)</summary>
+                <ol className="text-ink-2 mt-2 list-decimal space-y-1.5 pl-5">
+                  <li>On your iPhone open <b>Shortcuts → Automation → New Automation → Time of Day</b>: 08:00, Daily, Run Immediately.</li>
+                  <li>
+                    Add <b>Find Health Samples</b>: Heart Rate Variability, Start Date is in the last 1 day. Then <b>Calculate Statistics</b>:
+                    Average. Rename the result <b>HRV</b>.
+                  </li>
+                  <li>
+                    Add <b>Find Health Samples</b>: Sleep Analysis, Start Date is in the last 1 day, Value is not In Bed / Awake. Then{" "}
+                    <b>Get Details of Health Samples</b>: Duration, and <b>Calculate Statistics</b>: Sum. Divide by 3600 (seconds to hours) if
+                    needed and rename it <b>Sleep</b>.
+                  </li>
+                  <li>
+                    Add <b>Dictionary</b> with keys <code>date</code> (Current Date, format yyyy-MM-dd), <code>hrv_sdnn_ms</code> (HRV) and{" "}
+                    <code>sleep_hours</code> (Sleep).
+                  </li>
+                  <li>
+                    Add <b>Get Contents of URL</b>: the URL above, Method POST, Header <code>Authorization</code> ={" "}
+                    <code>Bearer &lt;device code&gt;</code>, Request Body JSON with key <code>days</code> = a list containing the Dictionary.
+                  </li>
+                  <li>Run it once by hand: "Last sync" above shows what arrived.</li>
+                </ol>
+              </details>
+              {msg && !busy && <p className="text-sm font-semibold">{msg}</p>}
+            </Card>
+          </section>
+        </div>
+
+        <div className="space-y-5">
+          <section>
+            <SectionTitle>2. Or upload your Health data</SectionTitle>
+            <Card className="space-y-2">
+              <p className="text-ink-2 text-sm">
+                On your iPhone: <b>Health → your picture → Export All Health Data</b>, save the zip, then choose it here. Only the last{" "}
+                {data.window_days} days of HRV, sleep and workouts are read; the file isn't kept.
+              </p>
+              <label className="block">
+                <span className="sr-only">Apple Health export</span>
+                <input type="file" accept=".zip,.xml,application/zip,text/xml" onChange={upload} disabled={busy || DEMO} className="text-sm" />
+              </label>
+              {busy && (
+                <p className="flex items-center gap-2 text-sm">
+                  <Upload className="h-4 w-4 animate-pulse" aria-hidden /> Reading your export: large files take a minute…
                 </p>
-              </div>
-              <Button variant="ghost" size="sm" aria-label={`Disconnect ${t.label}`} onClick={() => remove(t.id)}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-          {fresh ? (
-            <div className="border-pitch-500 space-y-3 rounded-xl border p-3">
-              <p className="font-semibold">Your connection details (the code is shown only once)</p>
-              <CopyField label="URL" value={`${window.location.origin}/api/ingest/apple-health`} />
-              <CopyField label="Device code" value={fresh.token} />
-            </div>
-          ) : (
-            <Button onClick={connect} disabled={DEMO}>
-              <Watch className="h-4 w-4" aria-hidden /> Connect Apple Watch
-            </Button>
-          )}
-          <details className="text-sm">
-            <summary className="cursor-pointer font-semibold">How to set up the Shortcut (5 minutes, once)</summary>
-            <ol className="text-ink-2 mt-2 list-decimal space-y-1.5 pl-5">
-              <li>On your iPhone open <b>Shortcuts → Automation → New Automation → Time of Day</b>: 08:00, Daily, Run Immediately.</li>
-              <li>
-                Add <b>Find Health Samples</b>: Heart Rate Variability, Start Date is in the last 1 day. Then <b>Calculate Statistics</b>:
-                Average. Rename the result <b>HRV</b>.
-              </li>
-              <li>
-                Add <b>Find Health Samples</b>: Sleep Analysis, Start Date is in the last 1 day, Value is not In Bed / Awake. Then{" "}
-                <b>Get Details of Health Samples</b>: Duration, and <b>Calculate Statistics</b>: Sum. Divide by 3600 (seconds to hours) if
-                needed and rename it <b>Sleep</b>.
-              </li>
-              <li>
-                Add <b>Dictionary</b> with keys <code>date</code> (Current Date, format yyyy-MM-dd), <code>hrv_sdnn_ms</code> (HRV) and{" "}
-                <code>sleep_hours</code> (Sleep).
-              </li>
-              <li>
-                Add <b>Get Contents of URL</b>: the URL above, Method POST, Header <code>Authorization</code> ={" "}
-                <code>Bearer &lt;device code&gt;</code>, Request Body JSON with key <code>days</code> = a list containing the Dictionary.
-              </li>
-              <li>Run it once by hand: "Last sync" above shows what arrived.</li>
-            </ol>
-          </details>
-          {msg && !busy && <p className="text-sm font-semibold">{msg}</p>}
-        </Card>
-      </section>
+              )}
+              {msg && busy === false && msg.startsWith("Imported") && (
+                <p role="status" className="text-sm font-semibold">
+                  {msg}
+                </p>
+              )}
+            </Card>
+          </section>
 
-      <section>
-        <SectionTitle>2. Or upload your Health data</SectionTitle>
-        <Card className="space-y-2">
-          <p className="text-ink-2 text-sm">
-            On your iPhone: <b>Health → your picture → Export All Health Data</b>, save the zip, then choose it here. Only the last{" "}
-            {data.window_days} days of HRV, sleep and workouts are read; the file isn't kept.
-          </p>
-          <label className="block">
-            <span className="sr-only">Apple Health export</span>
-            <input type="file" accept=".zip,.xml,application/zip,text/xml" onChange={upload} disabled={busy || DEMO} className="text-sm" />
-          </label>
-          {busy && (
-            <p className="flex items-center gap-2 text-sm">
-              <Upload className="h-4 w-4 animate-pulse" aria-hidden /> Reading your export: large files take a minute…
+          <Card className="text-ink-2 space-y-1 text-xs">
+            <p>
+              <Chip>About the numbers</Chip> Apple Watch measures heart-rate variability as SDNN; chest straps usually give RMSSD. Your battery
+              compares each day with your own 7-day baseline from the same kind of measurement, so the two are never mixed.
             </p>
-          )}
-          {msg && busy === false && msg.startsWith("Imported") && (
-            <p role="status" className="text-sm font-semibold">
-              {msg}
+            <p>
+              Workouts become training load using your average heart rate (an effort estimate). Days you already logged, or your club logged,
+              aren't counted twice. You can disconnect at any time.
             </p>
-          )}
-        </Card>
-      </section>
+          </Card>
+        </div>
+      </div>
 
-      <Card className="text-ink-2 space-y-1 text-xs">
-        <p>
-          <Chip>About the numbers</Chip> Apple Watch measures heart-rate variability as SDNN; chest straps usually give RMSSD. Your battery
-          compares each day with your own 7-day baseline from the same kind of measurement, so the two are never mixed.
-        </p>
-        <p>
-          Workouts become training load using your average heart rate (an effort estimate). Days you already logged, or your club logged,
-          aren't counted twice. You can disconnect at any time.
-        </p>
-      </Card>
     </div>
   );
 }
