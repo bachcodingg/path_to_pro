@@ -61,7 +61,9 @@ export function PhysioHome() {
                   </Link>
                   <p className="text-ink-2 text-sm">
                     {age(e.age_minutes)}
-                    {e.notified_after_s != null && ` · you were notified after ${e.notified_after_s.toFixed(1)} s`}
+                    {/* Queued, not pushed: there is no push, email or SMS channel yet */}
+                    {e.notified_after_s != null &&
+                      ` · in this queue ${e.notified_after_s < 1 ? "within a second" : `${Math.round(e.notified_after_s)} s`} after the check-in`}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
