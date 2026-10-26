@@ -1,9 +1,11 @@
-"""Import set pieces from StatsBomb Open Data into one compact JSON file.
+"""Import StatsBomb Open Data into two compact JSON files.
 
 StatsBomb publish full-season event data for La Liga 2015/16 (all 380 matches) under
 their open-data terms: free for research, credit "StatsBomb" when you publish. Each match
-file is ~3.5 MB of events; we keep only corners, penalties and direct free kicks, plus
-what followed each corner, so the committed dataset stays small.
+file is ~3.5 MB of events; we keep set pieces (corners, penalties, direct free kicks and
+what followed each corner) in one file, and per-match team counts, per-player season
+counts and every shot (`scouting.play`) in a second `_play.json` file, so the committed
+data stays small. Raw events are cached gzipped, so changing a definition re-runs offline.
 
     python -m scouting.statsbomb --competition 11 --season 27 \
         --out scouting/data/laliga_2015_16.json --cache ../.statsbomb-cache
@@ -15,11 +17,14 @@ y = 0 on the attacking team's left. The goal mouth spans y 36-44 and is 2.67 hig
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import time
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+
+from scouting.play import SHOT_COLUMNS, extract_play
 
 BASE = "https://raw.githubusercontent.com/statsbomb/open-data/master/data"
 # A shot this many seconds after a corner, in the same possession, counts as "from" it.
@@ -138,15 +143,20 @@ def extract(match: dict, events: list[dict], names: dict[int, str]) -> dict:
     return {"match": mid, "teams": [home, away], "corners": corners, "penalties": penalties, "free_kicks": free_kicks}
 
 
-def _one(match: dict, cache: Path) -> dict:
-    path = cache / f"{match['match_id']}.json"
+def _raw(kind: str, match_id: int, cache: Path) -> list:
+    path = cache / "raw" / f"{match_id}.{kind}.json.gz"
     if path.exists():
-        return json.loads(path.read_text(encoding="utf-8"))
-    events = _get(f"{BASE}/events/{match['match_id']}.json")
-    lineups = _get(f"{BASE}/lineups/{match['match_id']}.json")
-    out = extract(match, events, _short_names(lineups))
-    path.write_text(json.dumps(out), encoding="utf-8")
-    return out
+        return json.loads(gzip.decompress(path.read_bytes()).decode("utf-8"))
+    data = _get(f"{BASE}/{kind}/{match_id}.json")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(gzip.compress(json.dumps(data).encode("utf-8")))
+    return data
+
+
+def _one(match: dict, cache: Path) -> dict:
+    events = _raw("events", match["match_id"], cache)
+    names = _short_names(_raw("lineups", match["match_id"], cache))
+    return extract(match, events, names) | extract_play(match, events, names)
 
 
 def build(competition: int, season: int, cache: Path, workers: int = 16, log=print) -> dict:
@@ -166,6 +176,21 @@ def build(competition: int, season: int, cache: Path, workers: int = 16, log=pri
     for r in rows:
         for t in r["teams"]:
             matches_played[t] = matches_played.get(t, 0) + 1
+    season_players: dict[tuple[str, str], dict] = {}
+    for r in rows:
+        for team, ps in r["players"].items():
+            for name, st in ps.items():
+                agg = season_players.setdefault((team, name), {"team": team, "name": name, "matches": 0, "pos": {}})
+                agg["matches"] += st["minutes"] > 0
+                if st["position"]:
+                    agg["pos"][st["position"]] = agg["pos"].get(st["position"], 0) + st["minutes"]
+                for k, v in st.items():
+                    if k != "position":
+                        agg[k] = round(agg.get(k, 0) + v, 3)
+    players = []
+    for agg in season_players.values():
+        pos = agg.pop("pos")
+        players.append({**agg, "position": max(pos, key=pos.get) if pos else None})
     return {
         "source": "StatsBomb Open Data",
         "source_url": "https://github.com/statsbomb/open-data",
@@ -176,7 +201,21 @@ def build(competition: int, season: int, cache: Path, workers: int = 16, log=pri
         "corners": [c for r in rows for c in r["corners"]],
         "penalties": [p for r in rows for p in r["penalties"]],
         "free_kicks": [f for r in rows for f in r["free_kicks"]],
+        "team_matches": [{"m": r["match"], "team": t, **st} for r in rows for t, st in r["team_stats"].items()],
+        "players": sorted(players, key=lambda p: (p["team"], -p["minutes"])),
+        "shot_columns": SHOT_COLUMNS,
+        "shots": [s for r in rows for s in r["shots"]],
     }
+
+
+def _write(path: Path, data: dict, lists: tuple[str, ...]) -> None:
+    """One row per line, so a re-import gives a readable diff."""
+    body = {k: v for k, v in data.items() if k not in lists}
+    lines = ["{"] + [f"  {json.dumps(k)}: {json.dumps(v, ensure_ascii=False)}," for k, v in body.items()]
+    for i, key in enumerate(lists):
+        items = ",\n".join("    " + json.dumps(x, ensure_ascii=False) for x in data[key])
+        lines.append(f'  "{key}": [\n{items}\n  ]' + ("," if i < len(lists) - 1 else ""))
+    path.write_text("\n".join(lines) + "\n}\n", encoding="utf-8", newline="\n")
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -189,15 +228,16 @@ def main(argv: list[str] | None = None) -> None:
     args = ap.parse_args(argv)
     data = build(args.competition, args.season, args.cache, args.workers)
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    # One row per line: small diffs when the data is re-imported.
-    body = {k: v for k, v in data.items() if k not in ("corners", "penalties", "free_kicks")}
-    lines = ["{"] + [f"  {json.dumps(k)}: {json.dumps(v, ensure_ascii=False)}," for k, v in body.items()]
-    for i, key in enumerate(("corners", "penalties", "free_kicks")):
-        items = ",\n".join("    " + json.dumps(x, ensure_ascii=False) for x in data[key])
-        lines.append(f'  "{key}": [\n{items}\n  ]' + ("," if i < 2 else ""))
-    args.out.write_text("\n".join(lines) + "\n}\n", encoding="utf-8")
+    head = {k: data[k] for k in ("source", "source_url", "competition", "season", "matches", "matches_played")}
+    set_pieces = ("corners", "penalties", "free_kicks")
+    _write(args.out, head | {k: data[k] for k in set_pieces}, set_pieces)
+    play_out = args.out.with_name(args.out.stem + "_play.json")
+    play = ("team_matches", "players", "shots")
+    _write(play_out, head | {"shot_columns": data["shot_columns"]} | {k: data[k] for k in play}, play)
     print(f"{args.out}: {data['matches']} matches, {len(data['corners'])} corners, "
           f"{len(data['penalties'])} penalties, {len(data['free_kicks'])} direct free kicks")  # fmt: skip
+    print(f"{play_out}: {len(data['team_matches'])} team-matches, {len(data['players'])} players, "
+          f"{len(data['shots'])} shots")  # fmt: skip
 
 
 if __name__ == "__main__":
