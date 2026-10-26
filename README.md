@@ -80,7 +80,7 @@ rule-based agents: the LLM's contribution has not been evaluated yet.
 | Teams, careers, ratings | `backend/performance/` + `config/competitions.yaml`: dual registration with rule H8, league ladder (Finland first), career CV, match diary, 3-10 match ratings with a breakdown, coach training pitch |
 | Club finances | `backend/finance/`: contracts (academy fees, semi-pro/pro salaries, staff), running costs and income, automatic match bonuses and title bonuses, ledger; coach page, player and parent views. See [docs/finances.md](docs/finances.md) |
 | Apple Watch | `backend/devices/`: iPhone Shortcut ingest with write-only device codes, Apple Health export upload (safe streaming XML parser), HRV (SDNN) + sleep + workouts into readiness and load. See [docs/apple-watch.md](docs/apple-watch.md) |
-| User interface | `frontend/`: player PWA (check-in, Today, week pitch, gym, growth, card, season map, levels), coach (heatmap, inbox with A/E/R, tactics board, scouting report with instruction box, match commentary, calibration), physio queue, guardian view, sign-up |
+| User interface | `frontend/`: player PWA (check-in, Today, week pitch, gym, growth, card, season map, levels) for phone and laptop: bottom tabs on a phone, a sidebar and two-column pages from tablet width; coach (heatmap, inbox with A/E/R, tactics board, team analysis, scouting report with instruction box, match commentary, calibration), physio queue, guardian view, sign-up |
 | Architecture | FastAPI, SQLAlchemy 2, Alembic, PostgreSQL, APScheduler, JWT + RBAC, `docker-compose.yml` |
 | Simulator | `backend/simulator/`: 25 players x 40 weeks, seeded, 3 injury models, pluggable policy |
 | Evaluation | `backend/eval/`: `python -m eval`, 54-case safety suite, equal-load and heuristic-coach baselines, 10-seed CIs (`python -m eval.seeds`), report in [docs/evaluation/report.md](docs/evaluation/report.md) |
@@ -136,7 +136,7 @@ cd backend && pytest                      # 209 unit, scenario and API tests
 cd backend && python -m eval              # evaluation report (seed 2026) -> eval_results/
 cd backend && python -m eval.seeds        # 10-seed comparison with confidence intervals
 cd frontend && npm test                   # Vitest
-cd frontend && npx playwright test        # 21 end-to-end tests (API on :8000, web on :5173)
+cd frontend && npx playwright test        # 22 end-to-end tests (API on :8000, web on :5173)
 ```
 
 All academy demo data is synthetic. No real player data is stored. Benchmarks and norms are
