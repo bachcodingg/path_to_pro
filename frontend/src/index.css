@@ -28,6 +28,14 @@
   --color-win: #12a150;
   --color-draw: #8b9893;
   --color-loss: #d83a3a;
+
+  /* The overview page's news-ticker crawl (the list is doubled, so -50% loops seamlessly) */
+  --animate-marquee: marquee 60s linear infinite;
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -71,6 +79,13 @@ body {
   background: var(--surface-2);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
+}
+
+/* Overview page: section links glide instead of jumping */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(#landing) {
+    scroll-behavior: smooth;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -64,9 +64,14 @@ export function Login() {
   return (
     <main className="dark bg-pitch-950 min-h-full lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
       <section className="hero flex flex-col justify-between gap-8 px-6 py-8 lg:px-14 lg:py-12">
-        <div className="flex items-center gap-3">
-          <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="h-11 w-11" />
-          <span className="font-display text-2xl font-extrabold tracking-wide uppercase">PathToPro</span>
+        <div className="flex items-center justify-between gap-3">
+          <Link to="/" className="flex items-center gap-3">
+            <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="h-11 w-11" />
+            <span className="font-display text-2xl font-extrabold tracking-wide uppercase">PathToPro</span>
+          </Link>
+          <Link to="/" className="text-sm font-semibold text-white/70 hover:text-white">
+            ← Overview
+          </Link>
         </div>
         <div>
           <p className="text-pitch-300 text-xs font-bold tracking-[0.16em] uppercase">For academy players aged 13 to 18</p>

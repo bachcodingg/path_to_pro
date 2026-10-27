@@ -7,6 +7,7 @@ import { Register, RegisterGuardian } from "./shared/Register";
 import type { Role } from "./shared/types";
 import { Spinner } from "./shared/ui";
 
+const Landing = lazy(() => import("./landing/Landing").then((m) => ({ default: m.Landing })));
 const CoachLayout = lazy(() => import("./coach/CoachLayout").then((m) => ({ default: m.CoachLayout })));
 const AgentLog = lazy(() => import("./coach/AgentLog").then((m) => ({ default: m.AgentLog })));
 const Calibration = lazy(() => import("./coach/Calibration").then((m) => ({ default: m.Calibration })));
@@ -49,10 +50,12 @@ function Guard({ roles, children }: { roles: Role[]; children: React.ReactNode }
 }
 
 export function App() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   return (
     <Suspense fallback={<Spinner />}>
     <Routes>
+      {/* Signed out: the overview page; signed in: straight to your home */}
+      <Route path="/" element={loading ? <Spinner /> : user ? <Navigate to={homeFor(user.role)} replace /> : <Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/register/guardian" element={<RegisterGuardian />} />
@@ -131,7 +134,7 @@ export function App() {
           </Guard>
         }
       />
-      <Route path="*" element={<Navigate to={user ? homeFor(user.role) : "/login"} replace />} />
+      <Route path="*" element={<Navigate to={user ? homeFor(user.role) : "/"} replace />} />
     </Routes>
     </Suspense>
   );
