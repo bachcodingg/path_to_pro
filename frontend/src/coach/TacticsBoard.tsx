@@ -1,12 +1,13 @@
 // "Line-up readiness": next match formation, each dot coloured by readiness.
 // Drag a bench player onto a position (or select + click) to compare/swap.
+import { AlertTriangle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Crest } from "../shared/Club";
 import { PageHeader } from "../shared/PageHeader";
 import { Pitch } from "../shared/Pitch";
 import type { Band } from "../shared/types";
 import { useApi } from "../shared/useApi";
-import { BandBadge, Card, ErrorNote, Spinner, cn, fmtDay } from "../shared/ui";
+import { BandBadge, Card, Chip, ErrorNote, Spinner, cn, fmtDay } from "../shared/ui";
 
 interface LineupPlayer {
   id: string;
@@ -23,11 +24,11 @@ interface Lineup {
 
 // 4-3-3 on a 100 x 150 pitch, own goal at the bottom
 const SLOTS = [
-  { x: 50, y: 138, pos: "GK" },
-  { x: 15, y: 112, pos: "LB" },
-  { x: 38, y: 118, pos: "CB" },
-  { x: 62, y: 118, pos: "CB" },
-  { x: 85, y: 112, pos: "RB" },
+  { x: 50, y: 134, pos: "GK" },
+  { x: 15, y: 108, pos: "LB" },
+  { x: 36, y: 113, pos: "CB" },
+  { x: 64, y: 113, pos: "CB" },
+  { x: 85, y: 108, pos: "RB" },
   { x: 28, y: 85, pos: "CM" },
   { x: 50, y: 92, pos: "DM" },
   { x: 72, y: 85, pos: "CM" },
@@ -35,6 +36,8 @@ const SLOTS = [
   { x: 50, y: 38, pos: "ST" },
   { x: 82, y: 45, pos: "RW" },
 ];
+// Pain and red readiness are for staff, not for the line-up: shown as an alert
+const isAlarm = (flag: string) => /pain|red/i.test(flag);
 const FILL: Record<Band, string> = { green: "#2f7fe0", amber: "#e3a008", red: "#ea6a12" };
 
 export function TacticsBoard() {
@@ -73,8 +76,8 @@ export function TacticsBoard() {
       {/* Next-fixture header, as on a match preview: opponent badge, date, the XI's readiness */}
       <PageHeader
         eyebrow="Squad"
-        title="Line-up readiness"
-        subtitle="Drag a bench player onto a position (or select, then click) to see how ready the starting XI is."
+        title="Tactics board"
+        subtitle="Line-up readiness: drag a bench player onto a position (or select, then click) to see how ready the starting XI is."
         bottom={
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pb-5">
             {data.match ? (
@@ -132,12 +135,25 @@ export function TacticsBoard() {
         </Card>
         <div className="space-y-3">
           {hover && (
-            <Card>
+            <Card className={cn(hover.flags.some(isAlarm) && "border-l-ready-red border-l-4")}>
               <div className="flex items-center justify-between">
-                <p className="font-bold">{hover.name}</p>
+                <p className="flex items-center gap-2 font-bold">
+                  {hover.flags.some(isAlarm) && <AlertTriangle className="text-ready-red h-4 w-4" aria-label="Needs attention" />}
+                  {hover.name}
+                </p>
                 <BandBadge band={hover.band} score={hover.readiness} />
               </div>
-              <p className="text-ink-2 mt-1 text-sm">{hover.flags.length ? hover.flags.join(" · ") : "No flags"}</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {hover.flags.length ? (
+                  hover.flags.map((f) => (
+                    <Chip key={f} tone={isAlarm(f) ? "red" : "amber"}>
+                      {f}
+                    </Chip>
+                  ))
+                ) : (
+                  <span className="text-ink-2 text-sm">No flags</span>
+                )}
+              </div>
             </Card>
           )}
           <Card>

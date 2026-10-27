@@ -207,7 +207,7 @@ export function MyWeek() {
         </div>
       </div>
 
-      <p className="text-ink-2 text-center text-xs">Tip: tap or long-press a day for details.</p>
+      <p className="text-ink-2 text-center text-xs">Numbers show effort, from 1 (easy) to 10 (flat out). Tap or long-press a day for details.</p>
     </div>
   );
 }

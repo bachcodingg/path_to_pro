@@ -1,14 +1,15 @@
 // "Scouting report": timeline of load, readiness, ACWR, growth, tests, approved changes and notes.
 import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Bar, Brush, CartesianGrid, ComposedChart, Legend, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api, ApiError } from "../shared/api";
 import { useAuth } from "../shared/auth";
 import { GymProgrammeView } from "../shared/GymProgramme";
 import { RatingHistory, type RatingHistoryData } from "../shared/RatingHistory";
 import type { Card as CardData, GymProgramme, PlanDay, Position, Roadmap, Status } from "../shared/types";
+import { AXIS, GRID, TOOLTIP } from "../shared/chart";
 import { useApi } from "../shared/useApi";
-import { PageHeader } from "../shared/PageHeader";
+import { PageHeader, Tabs } from "../shared/PageHeader";
 import { BAND_TEXT, BandIcon, Button, Card, Chip, ErrorNote, SectionTitle, Spinner, cn, fmtDay, intensityClass } from "../shared/ui";
 
 const BAND_RING = { green: "ring-ready-green", amber: "ring-ready-amber", red: "ring-ready-red" } as const;
@@ -115,22 +116,7 @@ export function PlayerProfile() {
 
       <InstructionBox playerId={id!} name={data.player.name.split(" ")[0]} onApplied={reload} />
 
-      <Card className="h-80 p-2">
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data.series} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-            <CartesianGrid stroke="#e5ece8" />
-            <XAxis dataKey="date" tickFormatter={(d) => d.slice(5)} fontSize={11} />
-            <YAxis yAxisId="load" fontSize={11} label={{ value: "AU", angle: -90, position: "insideLeft", fontSize: 11 }} />
-            <YAxis yAxisId="r" orientation="right" domain={[0, 100]} fontSize={11} />
-            <Tooltip />
-            <Legend />
-            <Bar yAxisId="load" dataKey="load" name="Load (AU)" fill="#46c17e" />
-            <Line yAxisId="r" dataKey="readiness" name="Readiness" stroke="#2f7fe0" strokeWidth={2} dot={false} connectNulls />
-            <ReferenceLine yAxisId="r" y={50} stroke="#ea6a12" strokeDasharray="4 4" />
-            <Brush dataKey="date" height={20} travellerWidth={8} tickFormatter={(d) => d.slice(5)} />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </Card>
+      <LoadChart series={data.series} />
 
       <section>
         <SectionTitle>Match ratings over time</SectionTitle>
@@ -239,6 +225,54 @@ interface InstructionResult {
 }
 
 // Plain-words coach instruction -> planner constraints, previewed before it is applied.
+const RANGES = [
+  ["28", "4 weeks"],
+  ["56", "8 weeks"],
+  ["all", "All"],
+] as const;
+
+// Load bars and the readiness line on one time axis; the dashed line is where "Recover" starts
+function LoadChart({ series }: { series: Profile["series"] }) {
+  const [range, setRange] = useState<(typeof RANGES)[number][0]>("56");
+  const shown = range === "all" ? series : series.slice(-Number(range));
+  const short = (d: string) => fmtDay(d, { day: "numeric", month: "short" });
+  return (
+    <Card className="p-0">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 pt-3">
+        <div>
+          <p className="font-bold">Load and readiness</p>
+          <p className="text-ink-2 flex flex-wrap items-center gap-x-4 text-xs">
+            <span className="flex items-center gap-1.5">
+              <span className="bg-pitch-400 h-2.5 w-2.5 rounded-sm" aria-hidden /> Daily load (AU)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="bg-ink h-0.5 w-4 rounded-full" aria-hidden /> Readiness (0-100)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="border-ready-red w-4 border-t-2 border-dashed" aria-hidden /> Recover below 50
+            </span>
+          </p>
+        </div>
+        <Tabs label="Time range" tone="plain" value={range} onChange={setRange} items={RANGES} />
+      </div>
+      <div className="h-72 px-1 pt-2 pb-1">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={shown} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
+            <CartesianGrid {...GRID} />
+            <XAxis dataKey="date" {...AXIS} tickFormatter={short} minTickGap={28} />
+            <YAxis yAxisId="load" {...AXIS} width={36} />
+            <YAxis yAxisId="r" orientation="right" domain={[0, 100]} ticks={[0, 50, 100]} {...AXIS} width={28} />
+            <Tooltip {...TOOLTIP} labelFormatter={(d: string) => fmtDay(d, { weekday: "short", day: "numeric", month: "short" })} />
+            <Bar yAxisId="load" dataKey="load" name="Load (AU)" fill="var(--color-pitch-400)" radius={[3, 3, 0, 0]} maxBarSize={14} />
+            <ReferenceLine yAxisId="r" y={50} stroke="var(--color-ready-red)" strokeDasharray="4 4" />
+            <Line yAxisId="r" dataKey="readiness" name="Readiness" stroke="var(--ink)" strokeWidth={2} dot={false} connectNulls />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+    </Card>
+  );
+}
+
 function InstructionBox({ playerId, name, onApplied }: { playerId: string; name: string; onApplied: () => void }) {
   const { user } = useAuth();
   const [text, setText] = useState("");

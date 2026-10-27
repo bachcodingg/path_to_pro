@@ -47,8 +47,8 @@ export function PhysioHome() {
     <div>
       <PageHeader
         eyebrow="Medical"
-        title="Escalation queue"
-        subtitle="Pain reports and red check-ins, oldest first. The agents take no action on these: they are yours."
+        title="Physio queue"
+        subtitle="Escalations: pain reports and red check-ins, oldest first. The agents take no action on these: they are yours."
         actions={
           queue.data && (
             <span className="text-right">

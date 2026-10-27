@@ -179,7 +179,7 @@ function Strip({
                     aria-label={`Session ${d.date}`}
                     value={d.kind}
                     onChange={(e) => onEdit?.(d.date, { kind: e.target.value as SessionKind, rpe: e.target.value === "rest" ? 0 : Math.max(d.rpe, 2) })}
-                    className="text-ink w-full rounded bg-white px-0.5 text-[11px]"
+                    className="select-plain text-ink w-full rounded bg-white px-0.5 text-[11px]"
                   >
                     {EDITABLE.map((k) => (
                       <option key={k}>{k}</option>

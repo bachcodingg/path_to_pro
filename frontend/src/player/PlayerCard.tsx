@@ -54,7 +54,7 @@ export function PlayerCard() {
                       aria-label={`${attr}: ${v ?? "no data"} percentile`}
                     >
                       <p className="text-2xl font-extrabold">{v ?? "–"}</p>
-                      <p className="text-xs font-semibold uppercase">{attr.slice(0, 3)}</p>
+                      <p className="text-[11px] font-semibold tracking-wide uppercase">{attr}</p>
                     </button>
                   );
                 })}

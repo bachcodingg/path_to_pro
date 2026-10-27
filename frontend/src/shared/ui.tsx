@@ -54,12 +54,14 @@ export function SectionTitle({ children, action }: { children: ReactNode; action
   );
 }
 
-export function Chip({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | Band }) {
+// green/amber/red are readiness bands (blue/amber/orange); "win" is a good outcome that is not readiness (paid, profit)
+export function Chip({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | Band | "win" }) {
   const tones = {
     neutral: "bg-surface-2 text-ink border-line",
     green: "bg-ready-green/10 text-ready-green border-ready-green/30",
     amber: "bg-ready-amber/10 text-amber-700 dark:text-ready-amber border-ready-amber/40",
     red: "bg-ready-red/10 text-ready-red border-ready-red/40",
+    win: "bg-win/10 text-win border-win/30",
   };
   return (
     <span className={cn("inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold", tones[tone])}>

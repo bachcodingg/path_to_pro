@@ -61,15 +61,14 @@ export function Calibration() {
       <PageHeader
         eyebrow="Club"
         title="Readiness calibration"
-        subtitle={
-          <>
-            Rate players in the Dressing room ("How ready does he look?"). Your ratings are compared with the score, and the
-            weights that agree best with staff are suggested. A suggestion is only allowed if it spots at least as many of your
-            red days as today's weights.
-          </>
-        }
+        subtitle="How well the readiness score agrees with your own eye, and better weights when the data supports them."
       />
-      <div className="max-w-4xl space-y-4">
+      <div className="space-y-4">
+        <p className="text-ink-2 max-w-3xl text-sm">
+          Rate players in the Dressing room ("How ready does he look?"). Your ratings are compared with the score, and the weights
+          that agree best with staff are suggested. A suggestion is only allowed if it spots at least as many of your red days as
+          today's weights.
+        </p>
         {!data.enough_data && (
           <Card className="border-ready-amber/50">
             {data.n} rated days so far. At least {data.min_samples} are needed before suggesting new weights.

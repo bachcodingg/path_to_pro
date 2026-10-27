@@ -267,7 +267,7 @@ test("sign-in on a laptop: what the app does, demo accounts by role, skip link o
   await expect(page.getByRole("button", { name: /Coach.*Squad, matches, analysis/ })).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/sign-in.png` });
   await page.getByRole("button", { name: /Physio.*Escalation queue/ }).click();
-  await expect(page.getByRole("heading", { name: "Escalation queue" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Physio queue" })).toBeVisible();
   await expect(page).toHaveTitle("Physio queue · PathToPro");
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();

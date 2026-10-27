@@ -77,16 +77,16 @@ export function MatchDiary({ due, position, onSaved }: { due: DiaryDue[]; positi
                     setMinutes(d.minutes ?? 90);
                   }}
                 >
-                  <span className="flex items-center gap-3">
+                  <span className="flex min-w-0 items-center gap-3">
                     <Crest name={d.opponent} size={30} />
-                    <span>
+                    <span className="min-w-0">
                       <span className="block font-semibold">vs {d.opponent}</span>
-                      <span className="text-ink-2 text-xs">
+                      <span className="text-ink-2 block truncate text-xs">
                         {fmtDay(d.date, { weekday: "short", day: "numeric", month: "short" })} · {d.team}
                       </span>
                     </span>
                   </span>
-                  <span className="text-pitch-300 text-sm font-semibold">Fill in</span>
+                  <span className="text-pitch-300 shrink-0 text-sm font-semibold whitespace-nowrap">Fill in</span>
                 </button>
               </li>
             ))}
