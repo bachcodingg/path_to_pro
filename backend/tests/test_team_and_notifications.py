@@ -1,6 +1,7 @@
 """Two-step sign-in, check-in reminders, web push, calendar feeds, team availability and
 announcements."""
 
+import base64
 import re
 import time
 from datetime import datetime
@@ -52,7 +53,8 @@ def _sub(n: int) -> dict:
 
 
 def test_totp_matches_the_rfc_test_vector():
-    secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ"  # "12345678901234567890"
+    # RFC 6238 appendix B: the ASCII digits 1-9, 0 twice, base32-encoded for the app
+    secret = base64.b32encode(b"1234567890" * 2).decode()
     assert mfa.code_at(secret, 59) == "287082"
     assert mfa.code_at(secret, 1111111109) == "081804"
     assert mfa.verify(secret, "287 082", at=59) and mfa.verify(secret, "287082", at=59 + 30)

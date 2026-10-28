@@ -1,0 +1,4 @@
+# Reviewed false positives (gitleaks fingerprints: commit:file:rule:line).
+# The public RFC 6238 TOTP test key ("12345678901234567890" in base32), not a secret;
+# later commits derive it in code instead of writing it out.
+2875b294367e0796d355aca2f5ccd0d949167a53:backend/tests/test_team_and_notifications.py:generic-api-key:55
