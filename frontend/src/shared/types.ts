@@ -13,6 +13,8 @@ export interface User {
   player_id: string | null;
   pathway?: Pathway | null;
   position?: Position | null;
+  email_verified?: boolean;
+  mfa_enabled?: boolean;
 }
 
 export interface PlanDay {

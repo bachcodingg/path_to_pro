@@ -3,6 +3,7 @@ import { CheckCircle2, ChevronDown, ChevronRight, Circle, Dumbbell, Flame, Footp
 import { useState, type FormEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { api } from "../shared/api";
+import { AnnouncementsCard } from "../shared/Team";
 import { useAuth } from "../shared/auth";
 import { t } from "../shared/i18n";
 import type { SessionKind, Today, WhyCard } from "../shared/types";
@@ -40,6 +41,8 @@ export function TodayScreen() {
           </span>
         )}
       </div>
+
+      <AnnouncementsCard />
 
       {checkin?.flagged && (
         <Card className="border-pitch-400 flex gap-3">

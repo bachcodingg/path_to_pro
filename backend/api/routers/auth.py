@@ -3,21 +3,23 @@ from __future__ import annotations
 import threading
 import time
 from collections import defaultdict, deque
-from datetime import date
+from datetime import UTC, date, datetime
 from typing import Literal
 
+import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from api import clock
 from api.db import get_db
 from api.deps import CurrentUser, age_on, audit, current_user
 from api.security import create_token, hash_password, verify_password
+from api.services import accounts, mfa
 from api.settings import settings
-from domain.enums import Position, Role
-from domain.models import Guardian, Player, StaffMember, UserAccount
+from domain.enums import Pathway, Position, Role
+from domain.models import ConsentRecord, Guardian, Player, StaffMember, UserAccount
 from pathway import service as pathway
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -41,7 +43,20 @@ def _profile(db: Session, acc: UserAccount) -> dict:
         name = db.get(Guardian, acc.guardian_id).name
     elif acc.staff_id:
         name = db.get(StaffMember, acc.staff_id).name
-    return {"id": acc.id, "email": acc.email, "role": acc.role.value, "name": name, "player_id": acc.player_id, **extra}
+    return {
+        "id": acc.id,
+        "email": acc.email,
+        "role": acc.role.value,
+        "name": name,
+        "player_id": acc.player_id,
+        "email_verified": acc.email_verified_at is not None,
+        "mfa_enabled": acc.mfa_enabled_at is not None,
+        **extra,
+    }
+
+
+def _signed_in(db: Session, acc: UserAccount, **extra) -> dict:
+    return {"token": create_token(acc.id, acc.role.value, acc.token_version or 0), "user": _profile(db, acc), **extra}
 
 
 # Failed sign-ins per email within a sliding window (in memory: one API process).
@@ -70,11 +85,46 @@ def login(body: Login, db: Session = Depends(get_db)) -> dict:
         with _failed_lock:
             _recent_failures(email, now).append(now)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Wrong email or password")
+    if acc.mfa_enabled_at is not None:
+        # Password right; the failure count is only cleared once the second step passes too
+        return {"mfa_required": True, "mfa_token": mfa.step_token(acc.id)}
     with _failed_lock:
         _failed.pop(email, None)
     audit(db, CurrentUser(acc, acc.role), "login", "user_account", acc.id)
     db.commit()
-    return {"token": create_token(acc.id, acc.role.value), "user": _profile(db, acc)}
+    return _signed_in(db, acc)
+
+
+class SecondStep(BaseModel):
+    mfa_token: str
+    code: str = Field(min_length=6, max_length=20, description="6-digit code, or a recovery code")
+
+
+@router.post("/login/mfa")
+def login_second_step(body: SecondStep, db: Session = Depends(get_db)) -> dict:
+    try:
+        acc = db.get(UserAccount, mfa.read_step_token(body.mfa_token))
+    except jwt.PyJWTError as e:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Sign in again: the code step timed out") from e
+    if acc is None or not acc.active or acc.mfa_enabled_at is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Sign in again")
+    now = time.monotonic()
+    with _failed_lock:
+        if len(_recent_failures(acc.email, now)) >= MAX_FAILED_LOGINS:
+            raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, "Too many attempts. Try again in 15 minutes")
+    via = "app"
+    if not mfa.verify(acc.mfa_secret, body.code):
+        left = mfa.use_recovery_code(acc.mfa_recovery, body.code)
+        if left is None:
+            with _failed_lock:
+                _recent_failures(acc.email, now).append(now)
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "That code is not right")
+        acc.mfa_recovery, via = left, "recovery_code"
+    with _failed_lock:
+        _failed.pop(acc.email, None)
+    audit(db, CurrentUser(acc, acc.role), "login", "user_account", acc.id, second_step=via)
+    db.commit()
+    return _signed_in(db, acc)
 
 
 @router.get("/me")
@@ -174,9 +224,12 @@ def register(body: Register, db: Session = Depends(get_db)) -> dict:
         invite = g.invite_code
     db.flush()
     pathway.replan_from(db, player, today, "signup")
+    accounts.send_verify(db, acc)
+    if invite:
+        accounts.send_guardian_invite(db, g, player.display_name)
     audit(db, CurrentUser(acc, acc.role), "create", "user_account", acc.id, pathway="amateur", minor=minor)
     db.commit()
-    return {"token": create_token(acc.id, acc.role.value), "user": _profile(db, acc), "guardian_invite": invite}
+    return _signed_in(db, acc, guardian_invite=invite)
 
 
 class RegisterGuardian(BaseModel):
@@ -199,6 +252,219 @@ def register_guardian(body: RegisterGuardian, db: Session = Depends(get_db)) -> 
     acc = UserAccount(email=g.email, password_hash=hash_password(body.password), role=Role.GUARDIAN, guardian_id=g.id)
     db.add(acc)
     db.flush()
+    # The child may have passed the code on, so the parent's address is confirmed separately
+    accounts.send_verify(db, acc)
     audit(db, CurrentUser(acc, acc.role), "create", "user_account", acc.id, role="guardian")
     db.commit()
-    return {"token": create_token(acc.id, acc.role.value), "user": _profile(db, acc)}
+    return _signed_in(db, acc)
+
+
+# --------------------------------------------------------------------------- email links: reset, invitation, verification
+
+# Reset emails per address within a window (in memory: one API process), so the form
+# can't be used to flood someone's inbox
+MAX_RESET_EMAILS = 3
+RESET_WINDOW_S = 60 * 60
+_resets: dict[str, deque[float]] = defaultdict(deque)
+
+
+class Forgot(BaseModel):
+    email: str
+
+
+@router.post("/password/forgot", status_code=202)
+def forgot_password(body: Forgot, db: Session = Depends(get_db)) -> dict:
+    """Always the same answer, so the form doesn't reveal which emails have an account."""
+    email = body.email.strip().lower()
+    now = time.monotonic()
+    with _failed_lock:
+        q = _resets[email]
+        while q and q[0] < now - RESET_WINDOW_S:
+            q.popleft()
+        allowed = len(q) < MAX_RESET_EMAILS
+        if allowed:
+            q.append(now)
+    acc = db.scalars(select(UserAccount).where(UserAccount.email == email)).first()
+    if allowed and acc is not None and acc.active:
+        accounts.send_reset(db, acc)
+        audit(db, CurrentUser(acc, acc.role), "request_reset", "user_account", acc.id)
+        db.commit()
+    return {"ok": True}
+
+
+class TokenIn(BaseModel):
+    token: str = Field(min_length=10, max_length=200)
+
+
+@router.post("/token")
+def check_token(body: TokenIn, db: Session = Depends(get_db)) -> dict:
+    """What a set-password link is for, so the page can greet the person before they type."""
+    tok, acc = accounts.lookup(db, body.token, ("reset", "invite"))
+    return {"purpose": tok.purpose, "email": acc.email, "name": accounts.display_name(db, acc)}
+
+
+class SetPassword(TokenIn):
+    password: str = Field(min_length=8, max_length=200)
+
+
+@router.post("/password/set")
+def set_password(body: SetPassword, db: Session = Depends(get_db)) -> dict:
+    """Finish a reset or an invitation: new password, every older session signed out.
+    Opening the emailed link also proves the address, so it counts as verified."""
+    tok, acc = accounts.lookup(db, body.token, ("reset", "invite"))
+    now = datetime.now(UTC)
+    tok.used_at = now
+    acc.password_hash = hash_password(body.password)
+    acc.token_version = (acc.token_version or 0) + 1
+    acc.email_verified_at = acc.email_verified_at or now
+    with _failed_lock:
+        _failed.pop(acc.email, None)
+    audit(db, CurrentUser(acc, acc.role), "set_password", "user_account", acc.id, via=tok.purpose)
+    db.commit()
+    if acc.mfa_enabled_at is not None:
+        # A reset link proves the inbox, not the second factor
+        return {"mfa_required": True, "mfa_token": mfa.step_token(acc.id)}
+    return _signed_in(db, acc)
+
+
+@router.post("/verify-email")
+def verify_email(body: TokenIn, db: Session = Depends(get_db)) -> dict:
+    tok, acc = accounts.lookup(db, body.token, ("verify",))
+    tok.used_at = datetime.now(UTC)
+    acc.email_verified_at = acc.email_verified_at or tok.used_at
+    audit(db, CurrentUser(acc, acc.role), "verify_email", "user_account", acc.id)
+    db.commit()
+    return {"ok": True, "email": acc.email}
+
+
+@router.post("/verify-email/resend", status_code=202)
+def resend_verification(user: CurrentUser = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    if user.account.email_verified_at is not None:
+        return {"ok": True, "already_verified": True}
+    accounts.send_verify(db, user.account)
+    db.commit()
+    return {"ok": True, "already_verified": False}
+
+
+# --------------------------------------------------------------------------- account settings
+
+
+class ChangePassword(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=8, max_length=200)
+
+
+@router.post("/password/change")
+def change_password(body: ChangePassword, user: CurrentUser = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    """Signs out every other device; this one gets a fresh token."""
+    acc = user.account
+    if not verify_password(body.current_password, acc.password_hash):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Your current password is not right")
+    acc.password_hash = hash_password(body.new_password)
+    acc.token_version = (acc.token_version or 0) + 1
+    audit(db, user, "change_password", "user_account", acc.id)
+    db.commit()
+    return _signed_in(db, acc)
+
+
+@router.post("/logout-everywhere")
+def logout_everywhere(user: CurrentUser = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    user.account.token_version = (user.account.token_version or 0) + 1
+    audit(db, user, "logout_everywhere", "user_account", user.id)
+    db.commit()
+    return {"ok": True}
+
+
+def deletion_rule(db: Session, acc: UserAccount) -> str | None:
+    """Why this account can't delete itself (None = it can). Academy and under-16 data is
+    deleted by a parent (guardian view) or the club administrator."""
+    if acc.role == Role.GUARDIAN:
+        return None
+    if acc.role == Role.PLAYER:
+        p = db.get(Player, acc.player_id)
+        if p.pathway != Pathway.AMATEUR.value:
+            return "Your club holds your academy data: ask your club administrator or a parent to delete it."
+        if age_on(p.birth_date, clock.today()) < settings.digital_consent_age:
+            return "Under 16, a parent deletes your data from their PathToPro account."
+        return None
+    return "Staff and administrator accounts are removed by the club administrator."
+
+
+@router.get("/me/deletion")
+def can_delete(user: CurrentUser = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    reason = deletion_rule(db, user.account)
+    return {"allowed": reason is None, "reason": reason}
+
+
+class DeleteMe(BaseModel):
+    password: str
+
+
+@router.post("/me/delete")
+def delete_me(body: DeleteMe, user: CurrentUser = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    """GDPR Art. 17 for the account holder: the account and everything stored about them."""
+    acc = user.account
+    if not verify_password(body.password, acc.password_hash):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Your password is not right")
+    reason = deletion_rule(db, acc)
+    if reason:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, reason)
+    if acc.role == Role.PLAYER:
+        accounts.delete_player(db, db.get(Player, acc.player_id))
+    else:
+        g = db.get(Guardian, acc.guardian_id)
+        # Consent given earlier stays on record (who agreed, when), without the parent's identity
+        db.execute(update(ConsentRecord).where(ConsentRecord.guardian_id == g.id).values(guardian_id=None))
+        db.delete(acc)
+        db.delete(g)
+    audit(db, None, "delete", "user_account", acc.id, role=acc.role.value, self_service=True)
+    db.commit()
+    return {"deleted": True}
+
+
+# --------------------------------------------------------------------------- two-step sign-in
+
+
+@router.post("/mfa/setup")
+def mfa_setup(user: CurrentUser = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    """A new secret for the authenticator app; it counts only after a code confirms it."""
+    acc = user.account
+    if acc.mfa_enabled_at is not None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Two-step sign-in is already on")
+    acc.mfa_secret = mfa.new_secret()
+    db.commit()
+    return {"secret": acc.mfa_secret, "otpauth_uri": mfa.otpauth_uri(acc.mfa_secret, acc.email)}
+
+
+class MfaCode(BaseModel):
+    code: str = Field(min_length=6, max_length=20)
+
+
+@router.post("/mfa/enable")
+def mfa_enable(body: MfaCode, user: CurrentUser = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    acc = user.account
+    if acc.mfa_secret is None or acc.mfa_enabled_at is not None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Start the setup first")
+    if not mfa.verify(acc.mfa_secret, body.code):
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "That code is not right: check the time on your phone")
+    codes, hashes = mfa.new_recovery_codes()
+    acc.mfa_enabled_at, acc.mfa_recovery = datetime.now(UTC), hashes
+    acc.token_version = (acc.token_version or 0) + 1  # other devices sign in again, with the code
+    audit(db, user, "enable_mfa", "user_account", acc.id)
+    db.commit()
+    return {**_signed_in(db, acc), "recovery_codes": codes}
+
+
+class MfaOff(BaseModel):
+    password: str
+
+
+@router.post("/mfa/disable")
+def mfa_disable(body: MfaOff, user: CurrentUser = Depends(current_user), db: Session = Depends(get_db)) -> dict:
+    acc = user.account
+    if not verify_password(body.password, acc.password_hash):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Your password is not right")
+    acc.mfa_secret = acc.mfa_enabled_at = acc.mfa_recovery = None
+    audit(db, user, "disable_mfa", "user_account", acc.id)
+    db.commit()
+    return _profile(db, acc)

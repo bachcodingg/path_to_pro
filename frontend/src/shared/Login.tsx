@@ -1,8 +1,9 @@
 import { Battery, CalendarDays, ClipboardList, Compass, Heart, ShieldCheck, Star, Stethoscope, Users } from "lucide-react";
 import { useState, type FormEvent } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ApiError } from "./api";
 import { homeFor, useAuth } from "./auth";
+import { LegalLinks } from "../legal/Legal";
 import { Button, Card } from "./ui";
 
 // The demo story's accounts, grouped by who uses the app, each with what it shows
@@ -37,8 +38,12 @@ const PITCH = [
 ];
 
 export function Login() {
-  const { user, login } = useAuth();
+  const { user, login, finishMfa } = useAuth();
   const nav = useNavigate();
+  // After a password reset on an account with two-step sign-in, the code step comes here
+  const location = useLocation();
+  const [mfaToken, setMfaToken] = useState<string | null>((location.state as { mfaToken?: string } | null)?.mfaToken ?? null);
+  const [code, setCode] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -52,9 +57,25 @@ export function Login() {
     setError(null);
     try {
       const u = await login(override ?? email, override ? "demo1234" : password);
+      if ("mfaToken" in u) setMfaToken(u.mfaToken);
+      else nav(homeFor(u.role));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Cannot reach the server");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitCode(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const u = await finishMfa(mfaToken!, code);
       nav(homeFor(u.role));
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Cannot reach the server");
+      if (err instanceof ApiError && err.message.startsWith("Sign in again")) setMfaToken(null);
     } finally {
       setBusy(false);
     }
@@ -103,6 +124,36 @@ export function Login() {
         <div className="w-full max-w-md">
           <h2 className="font-display mb-3 text-3xl font-bold text-white uppercase">Sign in</h2>
           <Card>
+            {mfaToken ? (
+              <form onSubmit={submitCode} className="space-y-3">
+                <p className="text-ink-2 text-sm">Enter the 6-digit code from your authenticator app, or one of your recovery codes.</p>
+                <label className="block">
+                  <span className="text-ink-2 text-sm font-medium">Code</span>
+                  <input
+                    className="bg-surface-2 border-line text-ink mt-1 h-12 w-full rounded-xl border px-3 text-center font-mono text-xl tracking-[0.3em]"
+                    inputMode="text"
+                    autoComplete="one-time-code"
+                    autoFocus
+                    required
+                    minLength={6}
+                    maxLength={20}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                  />
+                </label>
+                {error && (
+                  <p role="alert" className="text-ready-red text-sm font-medium">
+                    {error}
+                  </p>
+                )}
+                <Button type="submit" className="w-full" loading={busy}>
+                  Verify
+                </Button>
+                <button type="button" className="text-ink-2 w-full text-center text-sm underline" onClick={() => setMfaToken(null)}>
+                  Back
+                </button>
+              </form>
+            ) : (
             <form onSubmit={submit} className="space-y-3">
               <label className="block">
                 <span className="text-ink-2 text-sm font-medium">Email</span>
@@ -134,7 +185,13 @@ export function Login() {
               <Button type="submit" className="w-full" loading={busy}>
                 Sign in
               </Button>
+              <p className="text-center text-sm">
+                <Link to="/forgot-password" className="text-ink-2 hover:text-ink underline">
+                  Forgot your password?
+                </Link>
+              </p>
             </form>
+            )}
           </Card>
 
           <div className="mt-6">
@@ -170,6 +227,7 @@ export function Login() {
               Create a free plan
             </Link>
           </p>
+          <LegalLinks className="mt-6 justify-center text-white/50" />
         </div>
       </section>
     </main>

@@ -13,7 +13,7 @@ from api.db import get_db
 from api.deps import CurrentUser, age_on, audit, player_in_scope, require, staff_of
 from api.services import views
 from domain.enums import Role
-from domain.models import Escalation, Player
+from domain.models import Escalation, Notification, Player
 
 router = APIRouter(prefix="/api/physio", tags=["physio"])
 
@@ -38,6 +38,8 @@ def queue(user: CurrentUser = Depends(require(Role.PHYSIO, Role.COACH)), db: Ses
         created = e.created_at if e.created_at.tzinfo else e.created_at.replace(tzinfo=UTC)
         notified = e.notified_at if e.notified_at is None or e.notified_at.tzinfo else e.notified_at.replace(tzinfo=UTC)
         st = views.latest_status(db, p.id, clock.today())
+        mail = db.scalars(select(Notification).where(Notification.escalation_id == e.id)).first()
+        emailed = None if mail is None or mail.sent_at is None else (mail.sent_at if mail.sent_at.tzinfo else mail.sent_at.replace(tzinfo=UTC))
         out.append(
             {
                 "id": e.id,
@@ -47,6 +49,8 @@ def queue(user: CurrentUser = Depends(require(Role.PHYSIO, Role.COACH)), db: Ses
                 "created_at": created.isoformat(),
                 "age_minutes": round((now - created).total_seconds() / 60),
                 "notified_after_s": None if notified is None else round((notified - created).total_seconds(), 3),
+                # Red check-in to the email leaving the server (None: not sent yet, or no email queued)
+                "emailed_after_s": None if emailed is None else round((emailed - created).total_seconds(), 3),
                 "readiness": views.status_json(st),
             }
         )

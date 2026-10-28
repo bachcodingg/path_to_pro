@@ -20,7 +20,8 @@ export default defineConfig({
       url: "http://127.0.0.1:8000/api/health",
       reuseExistingServer: true,
       timeout: 120_000,
-      env: { PATHTOPRO_LLM: "off", PATHTOPRO_SCHEDULER: "off" },
+      // The admin account exists only when its password is set (club.spec.ts signs in with it)
+      env: { PATHTOPRO_LLM: "off", PATHTOPRO_SCHEDULER: "off", PATHTOPRO_ADMIN_PASSWORD: "e2e-admin-password" },
     },
     {
       command: "npx vite --host 127.0.0.1 --port 5173 --strictPort",
@@ -31,6 +32,6 @@ export default defineConfig({
   ],
   projects: [
     { name: "phone", use: { ...devices["Pixel 7"] }, testMatch: /(player|pathway|career)\.spec/ },
-    { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } }, testMatch: /staff\.spec/ },
+    { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } }, testMatch: /(staff|club)\.spec/ },
   ],
 });

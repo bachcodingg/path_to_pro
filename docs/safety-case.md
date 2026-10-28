@@ -71,8 +71,50 @@ not left to the LLM. Each claim below names the mechanism and the evidence.
   days before a match. Covered by `tests/test_gym.py`.
 - **Coach instructions** become weighted constraints, never overrides of the hard rules;
   notes mentioning pain or injury are refused and pointed to the physio.
-- **Limits:** benchmarks and doses are placeholders; sign-up has no email verification or
-  rate limiting yet.
+- **Limits:** benchmarks and doses are placeholders.
+
+## Accounts, email and club setup
+
+- **Red check-ins reach a person outside the app.** The escalation email to the named adult
+  (the team's physio, else the coach; a self-guided minor's parent) is written in the same
+  transaction as the escalation and sent after the commit, so it can't be lost or sent for
+  a rolled-back check-in. Failed sends are retried every minute (up to 5 attempts, error
+  kept). Evidence: `tests/test_accounts.py` (email sent, under 5 minutes, retried after a
+  mail-server failure).
+- **No health detail by email.** Emails name the player and link to the app; what was
+  reported (pain, mood) is only shown after signing in. Asserted in the tests.
+- **Invited accounts can't be signed into** until the person opens the emailed link and
+  chooses a password (an unusable password hash until then).
+- **Email links** (reset 1 h, verification 7 days, invitation 14 days) are random, stored only
+  as SHA-256 hashes, work once, and a new link cancels the previous one. The reset form gives
+  the same answer whether or not an account exists, and sends at most 3 emails per address
+  per hour.
+- **Sign out everywhere.** Every token carries the account's version; a password change,
+  reset, "sign out everywhere" or an administrator switching an account off raises it, so
+  older tokens stop working at once.
+- **Deletion.** Self-guided adults and parents delete their own account (password needed);
+  the club administrator deletes academy players. Everything stored about the player is
+  removed; consent records stay as evidence of who agreed, without the deleted parent's
+  identity. Under-16s and academy players can't delete themselves: a parent or the club does.
+- **Under-16s added by a club** get a parent invitation by email; nothing about their health is
+  stored until that parent signs up and consents (same rule as self-guided sign-up).
+- **Push notifications** carry the same minimal text as the emails (the player's name, never
+  what was reported); they add to the email, which stays the record and is retried.
+- **Two-step sign-in** (TOTP, RFC 6238) is available to every account and recommended for staff.
+  The step after the password uses a token signed with a separate key, so it can't be used as an
+  access token; a password reset still asks for the code. Wrong codes count towards the sign-in
+  limit. Recovery codes are stored as hashes and work once; the administrator can reset a staff
+  member's second step (audited).
+- **Calendar feeds** are secret addresses (stored as hashes, one per account, replaceable). Event
+  titles name the session type and the opponent, never readiness or a reason for a change.
+- **Availability** reasons are a fixed list (school, family, travel, other): no free text and no
+  health reasons. The page tells players to report feeling unwell in the check-in, which reaches
+  the physio.
+- **Reminders** are opt-in and skip players whose check-ins may not be stored yet (no parent
+  consent under 16).
+- **Limits:** one club per deployment; the reset and login limits are
+  kept in memory (one API process); the legal pages are templates until the operator fills
+  them in and has them reviewed (`docs/going-live.md`).
 
 ## Dual registration and team sessions
 

@@ -1,4 +1,5 @@
 import {
+  CalendarCheck,
   CalendarDays,
   ClipboardCheck,
   Dumbbell,
@@ -6,6 +7,7 @@ import {
   Home,
   Lightbulb,
   LogOut,
+  Settings,
   Map,
   Ruler,
   Shield,
@@ -15,6 +17,7 @@ import {
   Watch,
 } from "lucide-react";
 import { Link, NavLink, Outlet } from "react-router-dom";
+import { DEMO } from "../shared/api";
 import { useAuth } from "../shared/auth";
 import { t } from "../shared/i18n";
 import { SkipLink } from "../shared/SkipLink";
@@ -74,6 +77,8 @@ function extrasFor(selfGuided: boolean) {
     ...(selfGuided
       ? []
       : [{ to: "/player/road", label: t("nav.road"), icon: Map }]),
+    // Availability for the team's sessions and matches (academy teams; needs the API)
+    ...(selfGuided || DEMO ? [] : [{ to: "/player/team", label: t("nav.myteam"), icon: CalendarCheck }]),
     { to: "/player/devices", label: t("nav.devices"), icon: Watch },
     { to: "/pro", label: t("nav.pro"), icon: Trophy },
   ];
@@ -127,9 +132,12 @@ export function PlayerLayout() {
           <p className="text-ink-2">
             {selfGuided ? "Self-guided player" : "Academy player"}
           </p>
+          <Link to="/account" className="tap text-ink-2 hover:text-ink mt-1 flex items-center gap-1">
+            <Settings className="h-4 w-4" aria-hidden /> {t("nav.account")}
+          </Link>
           <button
             onClick={logout}
-            className="tap text-ink-2 hover:text-ink mt-1 flex items-center gap-1"
+            className="tap text-ink-2 hover:text-ink flex items-center gap-1"
           >
             <LogOut className="h-4 w-4" aria-hidden /> {t("common.signout")}
           </button>
@@ -153,6 +161,13 @@ export function PlayerLayout() {
               aria-label={t("nav.pro")}
             >
               <Trophy className="h-5 w-5" aria-hidden />
+            </Link>
+            <Link
+              to="/account"
+              className="tap text-ink-2 flex h-11 w-11 items-center justify-center"
+              aria-label={t("nav.account")}
+            >
+              <Settings className="h-5 w-5" aria-hidden />
             </Link>
             <Link
               to="/player/devices"

@@ -1,6 +1,6 @@
-import { type LucideIcon, CalendarRange, ClipboardList, Euro, Gauge, Grid3x3, LogOut, MessageSquareText, Play, Star, Stethoscope, Trophy, Users } from "lucide-react";
+import { type LucideIcon, CalendarDays, CalendarRange, CalendarCheck, ClipboardList, Euro, Gauge, Grid3x3, LogOut, MessageSquareText, Play, Settings, Star, Stethoscope, Trophy, Users } from "lucide-react";
 import { useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import { api } from "../shared/api";
 import { useAuth } from "../shared/auth";
 import { t } from "../shared/i18n";
@@ -17,6 +17,8 @@ const nav = (): { group: string; items: NavItem[] }[] => [
       { to: "/coach", label: t("nav.heatmap"), icon: Grid3x3, end: true },
       { to: "/coach/inbox", label: t("nav.inbox"), icon: ClipboardList },
       { to: "/coach/pitch", label: t("nav.pitch"), icon: CalendarRange },
+      { to: "/coach/schedule", label: t("nav.schedule"), icon: CalendarDays },
+      { to: "/coach/team", label: t("nav.team"), icon: CalendarCheck },
       { to: "/coach/tactics", label: t("nav.tactics"), icon: Users },
     ],
   },
@@ -111,13 +113,17 @@ export function CoachLayout() {
           )}
           {msg && <p className="text-pitch-200 mb-2 px-2 text-xs">{msg}</p>}
           <div className="flex items-center gap-3 border-t border-white/10 px-2 pt-3 text-sm">
-            <span className="bg-pitch-300 text-pitch-950 font-display flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base font-bold" aria-hidden>
-              {initials}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold">{user?.name}</p>
-              <p className="text-pitch-200 text-xs capitalize">{user?.role}</p>
-            </div>
+            <Link to="/account" className="group flex min-w-0 flex-1 items-center gap-3" title={t("nav.account")}>
+              <span className="bg-pitch-300 text-pitch-950 font-display flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base font-bold" aria-hidden>
+                {initials}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-semibold group-hover:underline">{user?.name}</span>
+                <span className="text-pitch-200 flex items-center gap-1 text-xs capitalize">
+                  {user?.role} · <Settings className="h-3 w-3" aria-hidden /> {t("nav.account")}
+                </span>
+              </span>
+            </Link>
             <button onClick={logout} className="tap text-pitch-200 flex items-center justify-center hover:text-white" aria-label={t("common.signout")} title={t("common.signout")}>
               <LogOut className="h-4 w-4" aria-hidden />
             </button>
@@ -131,9 +137,14 @@ export function CoachLayout() {
               <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="h-7 w-7" />
               <span className="font-display text-lg font-extrabold tracking-wide uppercase">PathToPro</span>
             </span>
-            <button onClick={logout} className="tap text-pitch-200 flex items-center gap-1 text-sm" aria-label={t("common.signout")}>
-              {user?.name} <LogOut className="h-4 w-4" aria-hidden />
-            </button>
+            <span className="flex items-center gap-1">
+              <Link to="/account" className="tap text-pitch-200 flex h-11 w-11 items-center justify-center" aria-label={t("nav.account")}>
+                <Settings className="h-4 w-4" aria-hidden />
+              </Link>
+              <button onClick={logout} className="tap text-pitch-200 flex items-center gap-1 text-sm" aria-label={t("common.signout")}>
+                {user?.name} <LogOut className="h-4 w-4" aria-hidden />
+              </button>
+            </span>
           </div>
           <nav className="no-scrollbar flex gap-1 overflow-x-auto px-2 pb-1" aria-label="Staff navigation">
             {NAV.map(({ to, label, end }) => (

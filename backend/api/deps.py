@@ -43,6 +43,8 @@ def current_user(
     acc = db.get(UserAccount, payload.get("sub"))
     if acc is None or not acc.active:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Account not found")
+    if payload.get("ver", 0) != (acc.token_version or 0):
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Signed out: please sign in again")
     return CurrentUser(acc, acc.role)
 
 

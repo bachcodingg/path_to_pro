@@ -44,8 +44,31 @@ class Settings:
         os.environ.get("PATHTOPRO_REGISTRATION", "off" if os.environ.get("PATHTOPRO_AUTOSEED") == "on" else "on")
         == "on"
     )
+    # Where people open the website; links in emails (password reset, invitations) point here.
+    public_url: str = os.environ.get("PATHTOPRO_PUBLIC_URL", "http://localhost:5173").rstrip("/")
+    # Email: "smtp" sends through PATHTOPRO_SMTP_*, "log" writes each email to the server log
+    # (development), "memory" keeps them in a list (tests). Default: smtp when a host is set.
+    mail: str = os.environ.get("PATHTOPRO_MAIL", "smtp" if os.environ.get("PATHTOPRO_SMTP_HOST") else "log")
+    smtp_host: str | None = os.environ.get("PATHTOPRO_SMTP_HOST")
+    smtp_port: int = int(os.environ.get("PATHTOPRO_SMTP_PORT", "587"))
+    smtp_user: str | None = os.environ.get("PATHTOPRO_SMTP_USER")
+    smtp_password: str | None = os.environ.get("PATHTOPRO_SMTP_PASSWORD")
+    smtp_tls: str = os.environ.get("PATHTOPRO_SMTP_TLS", "starttls")  # starttls | ssl | none
+    mail_from: str = os.environ.get("PATHTOPRO_MAIL_FROM", "PathToPro <no-reply@localhost>")
+    # The club administrator, created on start if no account has this email (real deployments).
+    admin_email: str | None = os.environ.get("PATHTOPRO_ADMIN_EMAIL")
+    # The club's local time: check-in reminders go out at the hour each player picked.
+    timezone: str = os.environ.get("PATHTOPRO_TIMEZONE", "Europe/Berlin")
+    # Web push (PWA notifications); keys from `python -m api.jobs vapid`. Unset = push off.
+    vapid_public_key: str | None = os.environ.get("PATHTOPRO_VAPID_PUBLIC_KEY")
+    vapid_private_key: str | None = os.environ.get("PATHTOPRO_VAPID_PRIVATE_KEY")
+    vapid_subject: str = os.environ.get("PATHTOPRO_VAPID_SUBJECT", "mailto:admin@localhost")
 
     def __post_init__(self):
+        if self.mail not in ("smtp", "log", "memory"):
+            raise RuntimeError("PATHTOPRO_MAIL must be smtp, log or memory")
+        if self.mail == "smtp" and not self.smtp_host:
+            raise RuntimeError("PATHTOPRO_MAIL=smtp needs PATHTOPRO_SMTP_HOST")
         if self.env == "production" and self.jwt_secret == "dev-only-change-me-this-is-not-a-secret-key":
             raise RuntimeError("PATHTOPRO_JWT_SECRET must be set in production")
         if self.env == "production" and self.autoseed and self.registration:

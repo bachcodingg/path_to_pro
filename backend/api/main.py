@@ -1,10 +1,10 @@
-"""FastAPI app: routers, CORS, startup, nightly scheduler (APScheduler, 23:00)."""
+"""FastAPI app: routers, CORS, startup, scheduler (nightly agents at 23:00, email retries
+every minute, training weeks extended on Sundays; see api/jobs.py)."""
 
 from __future__ import annotations
 
 import logging
 from contextlib import asynccontextmanager
-from datetime import date
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException
@@ -13,25 +13,18 @@ from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from api import clock
+from api import clock, jobs
 from api.db import SessionLocal, get_db, init_db
 from api.deps import CurrentUser, require
-from api.routers import auth, coach, devices, finance, guardian, physio, player, pro
+from api.routers import account, admin, auth, coach, devices, finance, guardian, physio, player, pro, schedule, team
 from api.settings import settings
 from domain.enums import Role
-from domain.models import AppSetting, Squad
 
 log = logging.getLogger("pathtopro")
 
 
 def nightly_job() -> None:
-    from agents.llm import default_backend
-    from api.services.agent_runner import run_squad
-
-    with SessionLocal() as db:
-        for squad in db.scalars(select(Squad)):
-            out = run_squad(db, squad.id, clock.today(), "nightly", default_backend())
-            log.info("nightly run for %s: %s", squad.name, out)
+    jobs.nightly()
 
 
 _data_state = {"status": "ready"}
@@ -66,27 +59,23 @@ def _autoseed() -> None:
     threading.Thread(target=run, name="autoseed", daemon=True).start()
 
 
-def _load_today() -> None:
-    from api.services.calibration import load_saved
-
-    with SessionLocal() as db:
-        row = db.get(AppSetting, "today")
-        if row and settings.demo_today is None:
-            clock.set_today(date.fromisoformat(row.value))
-        load_saved(db)  # calibrated readiness weights, if a coach applied them
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     _autoseed()
-    _load_today()
+    jobs.ensure_admin()
+    jobs.load_state()
+    if settings.env == "production" and settings.mail == "log":
+        log.warning("PATHTOPRO_SMTP_HOST is not set: emails (safety alerts, password resets) are only logged")
     scheduler = None
     if settings.scheduler:
         from apscheduler.schedulers.background import BackgroundScheduler
 
         scheduler = BackgroundScheduler()
         scheduler.add_job(nightly_job, "cron", hour=23, minute=0, id="nightly")
+        scheduler.add_job(jobs.deliver, "interval", minutes=1, id="mail")
+        scheduler.add_job(jobs.extend_schedules, "cron", day_of_week="sun", hour=22, id="schedule")
+        scheduler.add_job(jobs.remind, "cron", minute=0, id="remind")
         scheduler.start()
     yield
     if scheduler:
@@ -101,7 +90,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-for r in (auth.router, player.router, coach.router, pro.router, physio.router, guardian.router, devices.router, finance.router):
+for r in (
+    auth.router,
+    player.router,
+    coach.router,
+    schedule.router,
+    team.router,
+    account.router,
+    admin.router,
+    pro.router,
+    physio.router,
+    guardian.router,
+    devices.router,
+    finance.router,
+):
     app.include_router(r)
 
 

@@ -17,7 +17,7 @@ Without an API key the LLM's part is done by rules, which is how every result be
 The website runs entirely in your browser on a snapshot of the synthetic season, recorded
 from the real API. Pick a demo account on the sign-in page; changes stay in your browser
 until you press "Reset demo". On a phone, use "Add to Home Screen" to install the player
-app (PWA). Sign-up and plain-words coach instructions need the full system (below).
+app (PWA). Sign-up, club setup, emails and plain-words coach instructions need the full system (below).
 
 | Demo account | Shows |
 | --- | --- |
@@ -47,11 +47,15 @@ the new columns automatically on start. Free tier limits: the service sleeps aft
 minutes idle (~1 min to wake), and a free database expires after 30 days. CI builds this
 same image and runs the end-to-end tests against it on PostgreSQL on every push.
 
+**Running it for a real club** (admin, invitations, email, backups, legal pages, scheduled jobs):
+see [docs/going-live.md](docs/going-live.md).
+
 ## Run it
 
 ```bash
 docker compose up --build          # PostgreSQL + API + web, seeds the synthetic demo season
 open http://localhost:8080         # demo accounts on the login page, password demo1234
+open http://localhost:8025         # Mailpit: every email the server sends (invitations, resets, alerts)
 ```
 
 Without Docker:
@@ -88,9 +92,12 @@ rule-based agents: the LLM's contribution has not been evaluated yet.
 | Simulator | `backend/simulator/`: 25 players x 40 weeks, seeded, 3 injury models, pluggable policy |
 | Evaluation | `backend/eval/`: `python -m eval`, 54-case safety suite, equal-load and heuristic-coach baselines, 10-seed CIs (`python -m eval.seeds`), report in [docs/evaluation/report.md](docs/evaluation/report.md) |
 | Pro league analysis | `backend/scouting/` (+ `scouting/competitions.py`): real event data from StatsBomb Open Data, as much as it covers: La Liga and Premier League 2015/16 (all 380 matches), Ligue 1 2015/16 (377), Leverkusen's 34 Bundesliga matches 2023/24 (compared with their opponents, unranked), the 14 Champions League finals 2004-2019 (match centre only). Per team, against the rest of the league with a rank: pass accuracy by length (short, medium, long), long-ball share, crosses, through balls, key passes; shots by zone (tap-in range, box, long shots), headers, big chances, counters, conversion, xG; aerial duels, dribbles, tackles; pressing (PPDA, high pressures, counter-pressing), shots and xG conceded; discipline. Set pieces: corner delivery zones, swing, takers, corners defended, penalty and free-kick placement. Shot map, squad leaders and table, league table (form, home / away, European and relegation places), a club badge strip to switch team, side-by-side comparison. Every match: result and match centre (both teams' numbers, goals, shot map). A strength, weakness or habit is named only when its 95% interval excludes the league. See [docs/team-analysis.md](docs/team-analysis.md) |
-| Safety and ethics | [docs/safety-case.md](docs/safety-case.md): encryption, audit log, consent, export/delete, escalations |
+| Club setup and accounts | `backend/api/routers/admin.py`, `schedule.py`, `auth.py`: a club administrator adds teams, invites staff and players by email (form or CSV import), parents of under-16s get a consent invitation; coaches set the training week and fixtures (sessions generated 8 weeks ahead); password reset, email verification, password change, sign out everywhere, self-service account deletion. See [docs/going-live.md](docs/going-live.md) |
+| Email | `backend/api/services/notify.py`: an outbox written in the same transaction, sent after the commit over SMTP, retried every minute; safety alerts name the player but never the health detail; time from red check-in to email measured on the physio queue |
+| Notifications, calendar, team | Web push on the installed app (`api/services/push.py`, `frontend/public/push-sw.js`) for safety alerts, check-in reminders (opt-in, at the player's hour) and team messages; a calendar feed (.ics) of the player's plan or the team's schedule; availability for every session and match; coach announcements on the Today screen; two-step sign-in (TOTP) with recovery codes |
+| Safety and ethics | [docs/safety-case.md](docs/safety-case.md): encryption, audit log, consent, export/delete, escalations; privacy notice, terms and imprint templates at `/privacy`, `/terms`, `/imprint` |
 
-More: [teams, careers and ratings](docs/teams-careers-ratings.md) · [pro league analysis](docs/team-analysis.md) · [gym and pathway](docs/gym-and-pathway.md) · [architecture](docs/architecture.md) · [demo script](docs/demo-script.md) · [week-1 decisions](docs/week1-scope.md)
+More: [going live](docs/going-live.md) · [teams, careers and ratings](docs/teams-careers-ratings.md) · [pro league analysis](docs/team-analysis.md) · [gym and pathway](docs/gym-and-pathway.md) · [architecture](docs/architecture.md) · [demo script](docs/demo-script.md) · [week-1 decisions](docs/week1-scope.md)
 
 ## Results (25 players x 40 weeks, 3 injury models, 10 seeds)
 
@@ -123,8 +130,10 @@ calibration has only been run on the simulator's synthetic staff ratings.
 - **LLM contribution.** Every result above is the rule-based agents; there is no
   with-vs-without-LLM comparison and no first-try validity rate (needs an API key).
 - **People.** No coach or player interviews, no SUS score, no expert rating of plans.
-- **Notification time.** A red check-in is queued for staff in milliseconds, but there is
-  no push, email or SMS channel, so the time until a person sees it is unknown.
+- **Notification time to a person.** A red check-in reaches the named adult's queue in
+  milliseconds, and the email and the push notification leave the server right after the
+  check-in is saved (the physio queue shows both times; tests assert under 5 minutes). Inbox
+  and phone delivery and the time until someone reads it are not measured; there is no SMS.
 - **Norms.** Benchmark norms are placeholders, so bio-banded percentiles are illustrative.
 
 **Readiness calibration:** staff rate players in the heatmap ("How ready does he look?");
@@ -135,11 +144,11 @@ above the fold-to-fold noise. Demo ratings are synthetic.
 ## Tests
 
 ```bash
-cd backend && pytest                      # 228 unit, scenario and API tests
+cd backend && pytest                      # 257 unit, scenario and API tests
 cd backend && python -m eval              # evaluation report (seed 2026) -> eval_results/
 cd backend && python -m eval.seeds        # 10-seed comparison with confidence intervals
 cd frontend && npm test                   # Vitest (8 component tests)
-cd frontend && npx playwright test        # 25 end-to-end tests (API on :8000, web on :5173)
+cd frontend && npx playwright test        # 30 end-to-end tests (API on :8000, web on :5173)
 ```
 
 All academy demo data is synthetic. No real player data is stored. Benchmarks and norms are

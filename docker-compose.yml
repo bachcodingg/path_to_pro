@@ -1,5 +1,6 @@
 # One command: docker compose up --build   then open http://localhost:8080
-# The demo seeds synthetic data on first start (seed service).
+# The demo seeds synthetic data on first start (seed service). Every email the server sends
+# (invitations, password resets, safety alerts) lands in Mailpit: http://localhost:8025
 services:
   db:
     image: postgres:16-alpine
@@ -22,8 +23,16 @@ services:
       PATHTOPRO_CORS: http://localhost:8080
       PATHTOPRO_LLM: ${PATHTOPRO_LLM:-auto}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      PATHTOPRO_PUBLIC_URL: http://localhost:8080
+      PATHTOPRO_SMTP_HOST: mailpit
+      PATHTOPRO_SMTP_PORT: "1025"
+      PATHTOPRO_SMTP_TLS: none
+      PATHTOPRO_MAIL_FROM: PathToPro <no-reply@pathtopro.local>
+      # Club admin (sign in at /login, lands on /admin); remove to run without one
+      PATHTOPRO_ADMIN_PASSWORD: ${PATHTOPRO_ADMIN_PASSWORD:-admin-dev-password}
     depends_on:
       db: {condition: service_healthy}
+      mailpit: {condition: service_started}
     ports: ["8000:8000"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
@@ -36,6 +45,10 @@ services:
       api: {condition: service_healthy}
     command: ["-fsS", "-X", "POST", "http://api:8000/api/demo/seed?players=25"]
     restart: "no"
+
+  mailpit:
+    image: axllent/mailpit:v1.21.8
+    ports: ["8025:8025"]
 
   web:
     build: ./frontend
