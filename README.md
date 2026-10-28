@@ -8,7 +8,9 @@ levels, benchmark tests and the same safety engine.
 **Design principle:** code computes, the LLM plans and explains, a fixed policy decides who approves.
 Without an API key the LLM's part is done by rules, which is how every result below was produced.
 
-![Pro league analysis: club header, badge strip and league table](docs/screenshots/coach-team-analysis.png)
+![PathToPro in 48 seconds: a player's morning check-in, the coach approving a lighter week for a tired player in his growth spurt, the player's Why? card, the physio queue, Pro leagues and the club admin](docs/demo/pathtopro-demo.gif)
+
+*48-second walkthrough of the real app on synthetic data. Re-record it with `npx playwright test -c playwright.video.config.ts` in `frontend/`, then `python scripts/demo_gif.py ../frontend/test-results/demo-frames ../docs/demo/pathtopro-demo.gif` in `backend/`.*
 
 ## Try it
 

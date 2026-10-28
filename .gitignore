@@ -17,3 +17,6 @@ frontend/playwright-report/
 frontend/dist/
 frontend/*.tsbuildinfo
 frontend/public/demo/
+
+# Local secrets (never commit)
+password/
