@@ -13,7 +13,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["icon.svg"],
+      includeAssets: ["icon.svg", "push-sw.js"],
       manifest: {
         name: "PathToPro",
         short_name: "PathToPro",
@@ -31,6 +31,8 @@ export default defineConfig({
       },
       workbox: {
         navigateFallback: `${base}index.html`,
+        // Push notifications: public/push-sw.js handles "push" and "notificationclick"
+        importScripts: ["push-sw.js"],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.pathname.includes("/api/me/"),

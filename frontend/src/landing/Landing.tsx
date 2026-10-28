@@ -68,7 +68,7 @@ function useTryAs() {
     setBusy(email);
     try {
       const u = await login(email, "demo1234");
-      nav(homeFor(u.role));
+      nav("mfaToken" in u ? "/login" : homeFor(u.role));
     } catch {
       nav("/login");
     } finally {
@@ -1035,6 +1035,15 @@ function Footer() {
           </Link>
           <Link to="/register" className="hover:text-white">
             Create a free plan
+          </Link>
+          <Link to="/privacy" className="hover:text-white">
+            Privacy
+          </Link>
+          <Link to="/terms" className="hover:text-white">
+            Terms
+          </Link>
+          <Link to="/imprint" className="hover:text-white">
+            Imprint
           </Link>
           <a href={SOURCE} className="inline-flex items-center gap-1 hover:text-white">
             <CodeXml className="h-4 w-4" aria-hidden /> Source

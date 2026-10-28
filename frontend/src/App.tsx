@@ -4,9 +4,16 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { homeFor, useAuth } from "./shared/auth";
 import { Login } from "./shared/Login";
 import { Register, RegisterGuardian } from "./shared/Register";
+import { ForgotPassword, SetPassword, VerifyEmail } from "./shared/AuthPages";
+import { Imprint, Privacy, Terms } from "./legal/Legal";
 import type { Role } from "./shared/types";
 import { Spinner } from "./shared/ui";
 
+const Account = lazy(() => import("./shared/Account").then((m) => ({ default: m.Account })));
+const AdminHome = lazy(() => import("./admin/AdminHome").then((m) => ({ default: m.AdminHome })));
+const PlayerTeam = lazy(() => import("./shared/Team").then((m) => ({ default: m.PlayerTeam })));
+const CoachTeam = lazy(() => import("./shared/Team").then((m) => ({ default: m.CoachTeam })));
+const Schedule = lazy(() => import("./coach/Schedule").then((m) => ({ default: m.Schedule })));
 const Landing = lazy(() => import("./landing/Landing").then((m) => ({ default: m.Landing })));
 const CoachLayout = lazy(() => import("./coach/CoachLayout").then((m) => ({ default: m.CoachLayout })));
 const AgentLog = lazy(() => import("./coach/AgentLog").then((m) => ({ default: m.AgentLog })));
@@ -59,6 +66,28 @@ export function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/register/guardian" element={<RegisterGuardian />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/set-password" element={<SetPassword />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/imprint" element={<Imprint />} />
+      <Route
+        path="/account"
+        element={
+          <Guard roles={["player", "coach", "physio", "guardian", "admin"]}>
+            <Account />
+          </Guard>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <Guard roles={["admin"]}>
+            <AdminHome />
+          </Guard>
+        }
+      />
       <Route
         path="/player"
         element={
@@ -75,6 +104,7 @@ export function App() {
         <Route path="tips" element={<Tips />} />
         <Route path="levels" element={<Pathway />} />
         <Route path="career" element={<Career />} />
+        <Route path="team" element={<PlayerTeam />} />
         <Route path="devices" element={<Devices />} />
         <Route path="matches/:id" element={<MatchView />} />
         <Route path="growth" element={<Growth />} />
@@ -92,6 +122,8 @@ export function App() {
         <Route index element={<Heatmap />} />
         <Route path="inbox" element={<Inbox />} />
         <Route path="pitch" element={<TrainingPitch />} />
+        <Route path="schedule" element={<Schedule />} />
+        <Route path="team" element={<CoachTeam />} />
         <Route path="matches" element={<Matches />} />
         <Route path="matches/:id" element={<MatchReport />} />
         <Route path="finance" element={<Finance />} />

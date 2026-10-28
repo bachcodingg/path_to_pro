@@ -1,9 +1,10 @@
 // Sign-up for self-guided players (amateur / non-academy, 13+) and for parents with an invite code.
 import { useState, type FormEvent, type ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api, ApiError, DEMO } from "./api";
 import { useAuth } from "./auth";
 import type { User } from "./types";
+import { LegalLinks } from "../legal/Legal";
 import { Button, Card, cn } from "./ui";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -21,9 +22,10 @@ const LEVELS = [
   [3, "Competitive amateur: I start in a competitive league"],
   [4, "Elite amateur: regional or select team"],
 ];
-const input = "bg-surface-2 border-line text-ink mt-1 h-12 w-full rounded-xl border px-3 text-base";
+export const input = "bg-surface-2 border-line text-ink mt-1 h-12 w-full rounded-xl border px-3 text-base";
 
-function Shell({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
+// Also the frame of the password, verification and account pages (AuthPages.tsx)
+export function Shell({ title, subtitle, children, footer }: { title: string; subtitle: string; children: ReactNode; footer?: ReactNode }) {
   return (
     <main className="dark bg-pitch-950 flex min-h-full items-start justify-center p-4 sm:items-center">
       <div className="w-full max-w-md py-6">
@@ -33,18 +35,21 @@ function Shell({ title, subtitle, children }: { title: string; subtitle: string;
           <p className="text-pitch-200 mt-1">{subtitle}</p>
         </div>
         <Card>{children}</Card>
-        <p className="text-pitch-200 mt-4 text-center text-sm">
-          Already have an account?{" "}
-          <Link to="/login" className="font-semibold text-white underline">
-            Sign in
-          </Link>
-        </p>
+        {footer ?? (
+          <p className="text-pitch-200 mt-4 text-center text-sm">
+            Already have an account?{" "}
+            <Link to="/login" className="font-semibold text-white underline">
+              Sign in
+            </Link>
+          </p>
+        )}
+        <LegalLinks className="mt-6 justify-center text-pitch-200/80" />
       </div>
     </main>
   );
 }
 
-function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
+export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return (
     <label className="block">
       <span className="text-ink-2 text-sm font-medium">{label}</span>
@@ -212,8 +217,15 @@ export function Register() {
         <label className="flex items-start gap-2 text-sm">
           <input type="checkbox" className="mt-1 h-5 w-5" checked={f.accept_terms} onChange={(e) => set("accept_terms", e.target.checked)} required />
           <span>
-            I agree that PathToPro stores my training data to plan my sessions. It gives training guidance, not medical advice. I can
-            delete my data at any time.
+            I agree that PathToPro stores my training data to plan my sessions (see the{" "}
+            <Link to="/privacy" target="_blank" className="font-semibold underline">
+              privacy notice
+            </Link>{" "}
+            and{" "}
+            <Link to="/terms" target="_blank" className="font-semibold underline">
+              terms
+            </Link>
+            ). It gives training guidance, not medical advice. I can delete my data at any time.
           </span>
         </label>
         {error && (
@@ -232,7 +244,8 @@ export function Register() {
 export function RegisterGuardian() {
   const { adopt } = useAuth();
   const nav = useNavigate();
-  const [code, setCode] = useState("");
+  const [params] = useSearchParams();
+  const [code, setCode] = useState(params.get("code") ?? "");  // the emailed link carries it
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);

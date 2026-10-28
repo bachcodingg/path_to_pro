@@ -1,6 +1,7 @@
 // Guardian: weekly summary card, consent switches per data type, data export and delete.
-import { Download, LogOut, ShieldAlert, Trash2 } from "lucide-react";
+import { Download, LogOut, Settings, ShieldAlert, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { api, download } from "../shared/api";
 import { useAuth } from "../shared/auth";
 import { eur } from "../shared/money";
@@ -38,9 +39,14 @@ export function GuardianHome() {
             PathToPro <span className="text-pitch-300">· Family</span>
           </span>
         </div>
-        <button onClick={logout} className="tap flex items-center gap-1 text-sm">
-          {user?.name} <LogOut className="h-4 w-4" aria-hidden />
-        </button>
+        <span className="flex items-center gap-1">
+          <Link to="/account" className="tap flex h-11 w-11 items-center justify-center" aria-label="Account">
+            <Settings className="h-4 w-4" aria-hidden />
+          </Link>
+          <button onClick={logout} className="tap flex items-center gap-1 text-sm">
+            {user?.name} <LogOut className="h-4 w-4" aria-hidden />
+          </button>
+        </span>
       </header>
       <main className="mx-auto max-w-2xl space-y-6 p-4 lg:max-w-5xl lg:p-6">
         {kids.loading && <Spinner />}
