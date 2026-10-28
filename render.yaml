@@ -40,3 +40,10 @@ services:
       # Optional: an Anthropic API key turns on Claude for the agents (leave empty for rules only).
       - key: ANTHROPIC_API_KEY
         sync: false
+      # A deployment for real players (AUTOSEED off, REGISTRATION on) also needs: the address
+      # in emailed links, a mail server, and the club administrator. See docs/going-live.md.
+      #   PATHTOPRO_PUBLIC_URL=https://your-domain
+      #   PATHTOPRO_SMTP_HOST / _PORT / _USER / _PASSWORD, PATHTOPRO_MAIL_FROM
+      #   PATHTOPRO_ADMIN_EMAIL, PATHTOPRO_ADMIN_PASSWORD (created once on start)
+      #   PATHTOPRO_SCHEDULER=on (one instance) for the nightly agents, email retries and reminders
+      #   PATHTOPRO_VAPID_PUBLIC_KEY / _PRIVATE_KEY (python -m api.jobs vapid) for phone notifications
