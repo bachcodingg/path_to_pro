@@ -18,6 +18,7 @@ from agents.orchestrator import PROTECT_DAYS, CycleResult, diff, protective_plan
 from agents.rules import DevGoal
 from analytics.maturation import MaturityStatus
 from api.deps import age_on, audit, has_consent
+from api.services import notify, push
 from domain.enums import AgentName, ConsentDataType, ProposalStatus, Role, SessionType
 from domain.models import (
     AgentRun,
@@ -36,6 +37,7 @@ from domain.models import (
     SleepRecord,
     StaffMember,
     TestResult,
+    UserAccount,
     WeeklyPlan,
     WellnessCheckin,
 )
@@ -370,8 +372,27 @@ def _escalate(db: Session, player: Player, cycle: CycleResult, run: AgentRun, da
             continue
         esc = Escalation(player_id=player.id, kind=f.kind.value, staff_id=staff.id, created_at=_now())
         db.add(esc)
-        # In-app notification: the escalation lands in the staff member's queue now.
+        db.flush()
+        # In-app notification: the escalation lands in the staff member's queue now; the
+        # email leaves after the commit (Notification.sent_at measures how long that took).
         esc.notified_at = _now()
+        notify.queue(
+            db,
+            staff.email,
+            "escalation",
+            f"PathToPro: {player.display_name} needs a check-in from you",
+            f"Hi {staff.name.split()[0]},\n\n{player.display_name}'s check-in today raised a safety flag that "
+            "needs a person, not the planner. The details are in your queue:\n\n"
+            f"{notify.link('/physio')}\n\nPlease acknowledge it there once you have spoken with them.",
+            escalation_id=esc.id,
+        )
+        push.queue(
+            db,
+            list(db.scalars(select(UserAccount.id).where(UserAccount.staff_id == staff.id))),
+            f"{player.display_name} needs a check-in from you",
+            "A safety flag from today's check-in is in your queue.",
+            "/physio",
+        )
         out.append(esc)
         audit(db, None, "escalate", "escalation", None, player=player.id, kind=f.kind.value, staff=staff.id, run=run.id)
     return out
@@ -395,6 +416,23 @@ def _alert_guardians(db: Session, player: Player, cycle: CycleResult) -> list[Gu
             alert = GuardianAlert(player_id=player.id, guardian_id=g.id, kind=f.kind.value, created_at=_now())
             db.add(alert)
             out.append(alert)
+            where = notify.link("/guardian") if g.invite_code is None else notify.link(f"/register/guardian?code={g.invite_code}")
+            notify.queue(
+                db,
+                g.email,
+                "guardian_alert",
+                f"PathToPro: please check in with {player.display_name}",
+                f"Hello,\n\n{player.display_name}'s check-in on PathToPro today raised something an adult should "
+                "follow up on. PathToPro has made the next days easy, but it does not give medical advice.\n\n"
+                f"See what was reported and what to do next:\n\n{where}",
+            )
+            push.queue(
+                db,
+                list(db.scalars(select(UserAccount.id).where(UserAccount.guardian_id == g.id))),
+                f"Please check in with {player.display_name}",
+                "Their check-in today needs an adult's attention.",
+                "/guardian",
+            )
             audit(db, None, "alert_guardian", "guardian_alert", None, player=player.id, kind=f.kind.value, guardian=g.id)
     return out
 

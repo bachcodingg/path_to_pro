@@ -32,9 +32,10 @@ def verify_password(password: str, stored: str) -> bool:
     return hmac.compare_digest(digest, base64.b64decode(digest_b64))
 
 
-def create_token(user_id: str, role: str) -> str:
+def create_token(user_id: str, role: str, version: int = 0) -> str:
+    """`version` is the account's token_version: raising it there invalidates every older token."""
     now = datetime.now(UTC)
-    payload = {"sub": user_id, "role": role, "iat": now, "exp": now + timedelta(minutes=settings.jwt_minutes)}
+    payload = {"sub": user_id, "role": role, "ver": version, "iat": now, "exp": now + timedelta(minutes=settings.jwt_minutes)}
     return jwt.encode(payload, settings.jwt_secret, algorithm="HS256")
 
 

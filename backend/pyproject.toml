@@ -20,6 +20,8 @@ dependencies = [
     "matplotlib>=3.8",
     "python-multipart>=0.0.9",
     "defusedxml>=0.7.1",
+    "pywebpush>=2.0",
+    "tzdata>=2024.1",
 ]
 
 [project.optional-dependencies]

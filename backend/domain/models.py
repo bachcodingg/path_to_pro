@@ -73,6 +73,9 @@ class Squad(Base):
     # The team's league (config/competitions.yaml); None = by the player's age group (academy).
     competition: Mapped[str | None] = mapped_column(String(40))
     club: Mapped[str | None] = mapped_column(String(100))
+    # The team's training week, set by the coach: [{"weekday": 0-6, "kind", "minutes", "rpe"}].
+    # Future team sessions are generated from it (api/routers/schedule.py).
+    training_week: Mapped[list | None] = mapped_column(JSON)
     players: Mapped[list[Player]] = relationship(back_populates="squad")
 
 
@@ -385,6 +388,100 @@ class UserAccount(Base):
     guardian_id: Mapped[str | None] = mapped_column(ForeignKey("guardians.id", ondelete="CASCADE"))
     staff_id: Mapped[str | None] = mapped_column(ForeignKey("staff_members.id", ondelete="CASCADE"))
     active: Mapped[bool] = mapped_column(Boolean, default=True)
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Part of every access token: raising it signs the account out everywhere (password change).
+    token_version: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    # Daily check-in reminder at this local hour (PATHTOPRO_TIMEZONE); None = off (opt-in)
+    reminder_hour: Mapped[int | None] = mapped_column(Integer)
+    # Two-step sign-in (TOTP, RFC 6238). The secret is set at setup and counts once enabled.
+    mfa_secret: Mapped[str | None] = mapped_column(EncryptedStr)
+    mfa_enabled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    mfa_recovery: Mapped[list | None] = mapped_column(JSON)  # SHA-256 of unused recovery codes
+
+
+class PushSubscription(Base):
+    """A browser or installed app that receives web push for this account (PWA)."""
+
+    __tablename__ = "push_subscriptions"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    account_id: Mapped[str] = mapped_column(ForeignKey("user_accounts.id", ondelete="CASCADE"), index=True)
+    endpoint: Mapped[str] = mapped_column(String(1000), unique=True)
+    p256dh: Mapped[str] = mapped_column(String(200))
+    auth: Mapped[str] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class CalendarFeed(Base):
+    """A secret calendar address (.ics) for one account; calendar apps can't sign in, so the
+    address is the key. Only its hash is stored; making a new one cancels the old."""
+
+    __tablename__ = "calendar_feeds"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    account_id: Mapped[str] = mapped_column(ForeignKey("user_accounts.id", ondelete="CASCADE"), unique=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
+class Availability(Base):
+    """A player's answer for one team event: can they make the match or the session?
+    Reasons are a fixed list (no free text, no health detail)."""
+
+    __tablename__ = "availability"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    player_id: Mapped[str] = mapped_column(ForeignKey("players.id", ondelete="CASCADE"), index=True)
+    match_id: Mapped[str | None] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"), index=True)
+    session_id: Mapped[str | None] = mapped_column(ForeignKey("sessions.id", ondelete="CASCADE"), index=True)
+    event_key: Mapped[str] = mapped_column(String(50))  # "match:<id>" | "session:<id>"
+    available: Mapped[bool] = mapped_column(Boolean)
+    reason: Mapped[str | None] = mapped_column(String(20))  # school | family | travel | other
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    __table_args__ = (UniqueConstraint("player_id", "event_key"),)
+
+
+class Announcement(Base):
+    """A coach's message to the team, shown on the players' Today screen."""
+
+    __tablename__ = "announcements"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    squad_id: Mapped[str] = mapped_column(ForeignKey("squads.id", ondelete="CASCADE"), index=True)
+    author_id: Mapped[str] = mapped_column(ForeignKey("staff_members.id", ondelete="CASCADE"))
+    text: Mapped[str] = mapped_column(String(1000))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
+
+
+class AuthToken(Base):
+    """A one-time link sent by email: password reset, email verification, or an invitation
+    to set a first password (staff and academy players added by the club). Only a hash of
+    the token is stored; it expires and works once."""
+
+    __tablename__ = "auth_tokens"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    account_id: Mapped[str] = mapped_column(ForeignKey("user_accounts.id", ondelete="CASCADE"), index=True)
+    purpose: Mapped[str] = mapped_column(String(10))  # reset | verify | invite
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Notification(Base):
+    """Email outbox. Rows are written in the same transaction as what caused them and sent
+    right after the commit (retried by the scheduler), so a safety email is never lost and
+    the time from a red check-in to the email leaving the server is measured.
+
+    Bodies name the player but never the health detail (pain, mood): that stays in the app."""
+
+    __tablename__ = "notifications"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_id)
+    to_email: Mapped[str] = mapped_column(String(200))
+    kind: Mapped[str] = mapped_column(String(30))  # escalation | guardian_alert | reset | verify | invite | guardian_invite
+    subject: Mapped[str] = mapped_column(String(200))
+    body: Mapped[str] = mapped_column(Text)
+    escalation_id: Mapped[str | None] = mapped_column(ForeignKey("escalations.id", ondelete="SET NULL"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str | None] = mapped_column(String(500))
 
 
 class PlayerNote(Base):

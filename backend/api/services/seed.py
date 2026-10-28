@@ -15,7 +15,7 @@ import logging
 import os
 from datetime import UTC, date, datetime, time, timedelta
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from agents.monitor import assess
@@ -34,6 +34,7 @@ from domain.models import (
     HRVRecord,
     LedgerEntry,
     Match,
+    Notification,
     Player,
     Proposal,
     SessionLoad,
@@ -253,6 +254,9 @@ def seed(db: Session, n_players: int = 25, story: bool = True) -> dict:
             agent_runner.decide_proposal(db, prop, coach, "approve", note="seeded")
     _amateur(db, pw, today, week_start)
     db.merge(AppSetting(key="today", value=today.isoformat()))
+    # The synthetic history sends no email, and its accounts count as confirmed
+    db.execute(delete(Notification))
+    db.execute(update(UserAccount).values(email_verified_at=_at(start, 9)))
     db.commit()
     set_today(today)
     pending = db.scalars(select(Proposal).where(Proposal.status == ProposalStatus.PENDING)).all()
