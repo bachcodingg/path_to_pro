@@ -253,7 +253,7 @@ function AddSeason({ data, onSaved }: { data: CareerData; onSaved: (c: CareerDat
           </label>
         ))}
         {error && (
-          <p role="alert" className="text-ready-red col-span-2 text-sm">
+          <p role="alert" className="text-recover col-span-2 text-sm">
             {error}
           </p>
         )}

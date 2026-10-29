@@ -142,7 +142,7 @@ export function CheckIn() {
               </fieldset>
               <label className="border-line flex items-center justify-between rounded-xl border p-3">
                 <span className="font-semibold">{t("checkin.pain")}</span>
-                <input type="checkbox" className="accent-ready-red h-6 w-6" checked={pain} onChange={(e) => setPain(e.target.checked)} />
+                <input type="checkbox" className="accent-recover h-6 w-6" checked={pain} onChange={(e) => setPain(e.target.checked)} />
               </label>
               <label className="block">
                 <span className="font-semibold">Hours slept: {sleepHours} h</span>
@@ -157,7 +157,7 @@ export function CheckIn() {
                 />
               </label>
               {error && (
-                <p role="alert" className="text-ready-red text-sm">
+                <p role="alert" className="text-recover text-sm">
                   {error}
                 </p>
               )}

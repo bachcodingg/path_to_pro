@@ -266,7 +266,7 @@ export function TwoStep({ onNote }: { onNote: Note }) {
       ) : user.mfa_enabled ? (
         <form onSubmit={turnOff} className="space-y-3">
           <p className="flex items-center gap-2 text-sm">
-            <ShieldCheck className="text-ready-green h-5 w-5" aria-hidden /> On: signing in asks for a code from your authenticator app.
+            <ShieldCheck className="text-ready h-5 w-5" aria-hidden /> On: signing in asks for a code from your authenticator app.
           </p>
           <Field label="Password, to turn it off">
             <input className={input} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />

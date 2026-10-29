@@ -172,7 +172,7 @@ export function TrainingPitch() {
             <Button variant="ghost" size="sm" onClick={() => setPreview(null)}>
               Cancel
             </Button>
-            <Button variant="approve" size="sm" loading={busy} onClick={() => place(preview.day, true)}>
+            <Button variant="primary" size="sm" loading={busy} onClick={() => place(preview.day, true)}>
               Apply to squad
             </Button>
           </span>
@@ -237,9 +237,9 @@ export function TrainingPitch() {
                           className={cn(
                             "rounded-lg p-1.5 text-center",
                             intensityClass(show.kind, show.rpe),
-                            changed && pl.status === "ok" && "ring-ready-green ring-2",
-                            changed && pl.status === "adjusted" && "ring-ready-amber ring-2",
-                            changed && pl.status === "unchanged" && "ring-ready-red ring-2",
+                            changed && pl.status === "ok" && "ring-ready ring-2",
+                            changed && pl.status === "adjusted" && "ring-caution ring-2",
+                            changed && pl.status === "unchanged" && "ring-recover ring-2",
                           )}
                           title={changed && pl.reasons.length ? pl.reasons.join("; ") : undefined}
                         >

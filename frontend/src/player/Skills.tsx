@@ -100,8 +100,8 @@ export function Skills() {
             {s.adjustments.length > 0 && (
               <ul className="mt-3 space-y-1">
                 {s.adjustments.map((a) => (
-                  <li key={a} className="border-ready-amber/40 bg-ready-amber/10 flex gap-2 rounded-xl border p-2 text-sm">
-                    <ShieldCheck className="text-ready-amber h-4 w-4 shrink-0" aria-hidden />
+                  <li key={a} className="border-caution/40 bg-caution/10 flex gap-2 rounded-xl border p-2 text-sm">
+                    <ShieldCheck className="text-caution h-4 w-4 shrink-0" aria-hidden />
                     {a}
                   </li>
                 ))}
@@ -183,8 +183,8 @@ function DrillCard({ d, index, open: initial = false }: { d: Drill; index?: numb
       {open && (
         <div className="space-y-3 px-4 pb-4 text-sm">
           {d.variant && (
-            <p className="border-ready-amber/40 bg-ready-amber/10 flex gap-2 rounded-xl border p-2">
-              <ShieldCheck className="text-ready-amber h-4 w-4 shrink-0" aria-hidden />
+            <p className="border-caution/40 bg-caution/10 flex gap-2 rounded-xl border p-2">
+              <ShieldCheck className="text-caution h-4 w-4 shrink-0" aria-hidden />
               {d.variant}
             </p>
           )}

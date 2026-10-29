@@ -64,7 +64,7 @@ export function MatchDiary({ due, position, onSaved }: { due: DiaryDue[]; positi
     <section aria-label="Match diary">
       <Card className="border-pitch-500">
         <p className="flex items-center gap-2 font-bold">
-          <Trophy className="text-ready-amber h-5 w-5" aria-hidden /> How did the match go?
+          <Trophy className="text-caution h-5 w-5" aria-hidden /> How did the match go?
         </p>
         {!match && (
           <ul className="mt-2 space-y-2">
@@ -135,7 +135,7 @@ export function MatchDiary({ due, position, onSaved }: { due: DiaryDue[]; positi
               <input type="range" min={1} max={10} value={rpe} onChange={(e) => setRpe(Number(e.target.value))} className="accent-pitch-400 h-11 w-full" />
             </label>
             {error && (
-              <p role="alert" className="text-ready-red text-sm">
+              <p role="alert" className="text-recover text-sm">
                 {error}
               </p>
             )}

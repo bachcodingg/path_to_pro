@@ -244,7 +244,7 @@ function HeroVisual() {
               </span>
             ))}
           </div>
-          <p className="bg-ready-green mt-2 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold">
+          <p className="bg-pitch-600 mt-2 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-white">
             <Check className="h-3.5 w-3.5" aria-hidden /> Approved by the coach
           </p>
         </FloatCard>
@@ -282,12 +282,12 @@ function Phone() {
         <div className="mt-3 rounded-2xl border border-white/10 bg-[#0f2219] p-3">
           <div className="flex items-center gap-3">
             <div className="relative h-11 flex-1 rounded-lg border-2 border-white/40 p-0.5">
-              <div className="bg-ready-red h-full w-[42%] rounded-md" />
+              <div className="bg-recover h-full w-[42%] rounded-md" />
               <div className="absolute top-1/2 -right-1.5 h-4 w-1 -translate-y-1/2 rounded-r bg-white/40" />
             </div>
             <div className="text-right">
               <p className="text-2xl leading-none font-extrabold">42</p>
-              <p className="text-ready-red text-[11px] font-bold">Recover</p>
+              <p className="text-recover text-[11px] font-bold">Recover</p>
             </div>
           </div>
           <div className="mt-2 flex flex-wrap gap-1">
@@ -335,7 +335,7 @@ function Ticker() {
     <div className="border-y border-white/10 bg-black/30" aria-label="Overnight agent actions from the demo season">
       <div className="mx-auto flex max-w-7xl items-stretch">
         <p className="bg-pitch-300 text-pitch-950 font-display z-10 flex shrink-0 items-center gap-2 px-4 text-sm font-extrabold tracking-wider uppercase">
-          <span className="bg-ready-red h-2 w-2 animate-pulse rounded-full" aria-hidden /> Night shift
+          <span className="bg-recover h-2 w-2 animate-pulse rounded-full" aria-hidden /> Night shift
         </p>
         <div className="relative min-w-0 flex-1 overflow-hidden [mask-image:linear-gradient(90deg,transparent,black_6%,black_94%,transparent)]">
           <ul className="animate-marquee flex w-max gap-10 py-3 hover:[animation-play-state:paused] motion-reduce:animate-none">
@@ -413,7 +413,7 @@ const STEPS: [LucideIcon, string, string, string][] = [
 const POLICY: [string, string, string][] = [
   ["Effort up or down by 1 point", "Applied, coach notified", "text-white/80"],
   ["A session swap or a load cut", "Coach approves", "text-pitch-300"],
-  ["A safety flag, such as pain", "Staff only, agents take no action", "text-ready-red"],
+  ["A safety flag, such as pain", "Staff only, agents take no action", "text-recover"],
 ];
 
 function HowItWorks() {
@@ -663,7 +663,7 @@ function MiniHeatmap() {
     ["Elias O.", [57, 68, 29, 42, 38, 57, 70]],
     ["Emil L.", [67, 57, 43, 83, 49, 64, 88]],
   ];
-  const cell = (v: number) => (v >= 70 ? "bg-ready-green/25 text-[#7fb2f0]" : v >= 50 ? "bg-ready-amber/25 text-ready-amber" : "bg-ready-red text-white");
+  const cell = (v: number) => (v >= 70 ? "bg-ready/25 text-[#7fb2f0]" : v >= 50 ? "bg-caution/25 text-caution" : "bg-recover text-white");
   return (
     <MockFrame title="Dressing room">
       <table className="w-full border-separate border-spacing-1 text-[11px]">
@@ -718,8 +718,8 @@ function MiniFamily() {
 function MiniPhysio() {
   return (
     <MockFrame title="Physio queue">
-      <div className="border-ready-red/50 rounded-xl border border-l-4 bg-white/[0.03] p-3">
-        <p className="text-ready-red text-[11px] font-bold uppercase">Pain reported</p>
+      <div className="border-recover/50 rounded-xl border border-l-4 bg-white/[0.03] p-3">
+        <p className="text-recover text-[11px] font-bold uppercase">Pain reported</p>
         <p className="font-bold">Noah H.</p>
         <p className="text-xs text-white/55">In this queue within a second of the check-in</p>
         <span className="bg-pitch-600 mt-3 inline-flex rounded-lg px-3 py-1.5 text-xs font-bold">I've spoken to them</span>
@@ -733,7 +733,7 @@ function MiniPhysio() {
         ].map(([n, v]) => (
           <div key={n} className="flex justify-between py-1.5">
             <span>{n}</span>
-            <span className="text-ready-amber font-bold">{v}</span>
+            <span className="text-caution font-bold">{v}</span>
           </div>
         ))}
       </div>

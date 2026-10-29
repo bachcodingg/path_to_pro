@@ -90,7 +90,7 @@ export function RoadToPro() {
             <div className="grid grid-cols-3 gap-2">
               {data.badges.map((b) => (
                 <Card key={b.id} className={cn("flex flex-col items-center p-3 text-center", !b.earned && "opacity-50")}>
-                  {b.earned ? <Award className="text-ready-amber h-8 w-8" aria-hidden /> : <Lock className="text-ink-2 h-8 w-8" aria-hidden />}
+                  {b.earned ? <Award className="text-caution h-8 w-8" aria-hidden /> : <Lock className="text-ink-2 h-8 w-8" aria-hidden />}
                   <p className="mt-1 text-sm font-bold">{b.name}</p>
                   <p className="text-ink-2 text-xs">{b.rule}</p>
                 </Card>

@@ -142,7 +142,7 @@ export function Login() {
                   />
                 </label>
                 {error && (
-                  <p role="alert" className="text-ready-red text-sm font-medium">
+                  <p role="alert" className="text-recover text-sm font-medium">
                     {error}
                   </p>
                 )}
@@ -178,7 +178,7 @@ export function Login() {
                 />
               </label>
               {error && (
-                <p role="alert" className="text-ready-red text-sm font-medium">
+                <p role="alert" className="text-recover text-sm font-medium">
                   {error}
                 </p>
               )}

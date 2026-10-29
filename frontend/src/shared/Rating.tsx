@@ -42,7 +42,7 @@ export function Breakdown({ items }: { items: BreakdownItem[] }) {
         <li key={b.label} className="flex justify-between gap-3">
           <span className="text-ink-2">{b.label}</span>
           {b.value !== 0 && (
-            <span className={cn("font-semibold tabular-nums", b.value > 0 ? "text-ready-green" : "text-ready-red")}>
+            <span className={cn("font-semibold tabular-nums", b.value > 0 ? "text-ready" : "text-recover")}>
               {b.value > 0 ? "+" : ""}
               {b.value.toFixed(2)}
             </span>

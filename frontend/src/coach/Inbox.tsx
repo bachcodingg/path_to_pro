@@ -106,7 +106,7 @@ export function Inbox() {
               <p className="text-sm">{p.reason}</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="approve" size="sm" disabled={busy} onClick={() => decide(p, editing === p.id ? "edit" : "approve")}>
+              <Button size="sm" disabled={busy} onClick={() => decide(p, editing === p.id ? "edit" : "approve")}>
                 <Check className="h-4 w-4" aria-hidden /> {editing === p.id ? "Save edit" : t("inbox.approve")}
               </Button>
               {p.proposed.length > 0 && editing !== p.id && (
@@ -114,7 +114,7 @@ export function Inbox() {
                   <Pencil className="h-4 w-4" aria-hidden /> {t("inbox.edit")}
                 </Button>
               )}
-              <Button variant="danger" size="sm" disabled={busy} onClick={() => decide(p, "reject")}>
+              <Button variant="secondary" size="sm" disabled={busy} onClick={() => decide(p, "reject")}>
                 <X className="h-4 w-4" aria-hidden /> {t("inbox.reject")}
               </Button>
             </div>
@@ -171,7 +171,7 @@ function Strip({
         {days.map((d, i) => {
           const changed = compare && (compare[i]?.kind !== d.kind || compare[i]?.rpe !== d.rpe || compare[i]?.minutes !== d.minutes);
           return (
-            <div key={d.date} className={cn("rounded-lg p-1.5 text-center text-xs", intensityClass(d.kind, d.rpe), changed && "ring-ready-amber ring-2")}>
+            <div key={d.date} className={cn("rounded-lg p-1.5 text-center text-xs", intensityClass(d.kind, d.rpe), changed && "ring-caution ring-2")}>
               <div className="font-bold">{fmtDay(d.date)}</div>
               {editable && d.kind !== "match" ? (
                 <div className="mt-1 space-y-1">

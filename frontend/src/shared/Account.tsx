@@ -90,7 +90,7 @@ export function Account() {
     >
       <div className="space-y-6">
         {note && (
-          <p role={note.ok ? "status" : "alert"} className={note.ok ? "text-ready-green text-sm font-semibold" : "text-ready-red text-sm font-medium"}>
+          <p role={note.ok ? "status" : "alert"} className={note.ok ? "text-ready text-sm font-semibold" : "text-recover text-sm font-medium"}>
             {note.text}
           </p>
         )}
@@ -99,7 +99,7 @@ export function Account() {
           <SectionTitle>Email</SectionTitle>
           {user.email_verified || DEMO ? (
             <p className="flex items-center gap-2 text-sm">
-              <CheckCircle2 className="text-ready-green h-5 w-5" aria-hidden /> {user.email} is confirmed.
+              <CheckCircle2 className="text-ready h-5 w-5" aria-hidden /> {user.email} is confirmed.
             </p>
           ) : (
             <div className="space-y-2 text-sm">
@@ -146,7 +146,7 @@ export function Account() {
           <SectionTitle>Delete account</SectionTitle>
           {deletion.data?.allowed ? (
             confirmDelete ? (
-              <form onSubmit={remove} className="border-ready-red/40 space-y-3 rounded-xl border p-3">
+              <form onSubmit={remove} className="border-danger/40 space-y-3 rounded-xl border p-3">
                 <p className="text-sm">
                   This deletes your account and everything PathToPro stores about you, at once. It can't be undone.
                 </p>

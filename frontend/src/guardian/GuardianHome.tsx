@@ -91,8 +91,8 @@ function ChildPanel({ child }: { child: Child }) {
         {child.name} <span className="text-ink-2 text-base font-medium">{child.age} y</span>
       </h1>
       {s?.alerts?.map((a) => (
-        <Card key={a.id} className="border-ready-red/50 flex gap-3" role="alert">
-          <ShieldAlert className="text-ready-red h-6 w-6 shrink-0" aria-hidden />
+        <Card key={a.id} className="border-recover/50 flex gap-3" role="alert">
+          <ShieldAlert className="text-recover h-6 w-6 shrink-0" aria-hidden />
           <div className="flex-1">
             <p>
               <span className="font-bold">{child.name.split(" ")[0]}</span> {a.text}
@@ -146,7 +146,7 @@ function ChildPanel({ child }: { child: Child }) {
                 ))}
               <p className="text-ink-2 mt-1 text-sm">
                 Paid this season {eur(money.data.fees_paid_cents)} ·{" "}
-                <span className={money.data.fees_due_cents > 0 ? "text-ready-amber font-semibold" : ""}>due {eur(money.data.fees_due_cents)}</span>
+                <span className={money.data.fees_due_cents > 0 ? "text-caution font-semibold" : ""}>due {eur(money.data.fees_due_cents)}</span>
               </p>
             </Card>
           )}

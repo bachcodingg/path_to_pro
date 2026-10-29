@@ -8,7 +8,7 @@ export function DemoBanner() {
     resetDemo();
   }
   return (
-    <div role="note" className="bg-ready-amber px-3 py-1 text-center text-xs font-semibold text-pitch-950">
+    <div role="note" className="bg-caution px-3 py-1 text-center text-xs font-semibold text-pitch-950">
       Demo · synthetic data · runs in your browser, nothing is sent anywhere ·{" "}
       <button className="underline" onClick={reset}>
         Reset demo

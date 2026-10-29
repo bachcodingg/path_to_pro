@@ -20,9 +20,13 @@
   --color-pitch-900: #0b2a20;
   --color-pitch-950: #07170f;
 
-  --color-ready-green: #2f7fe0;
-  --color-ready-amber: #e3a008;
-  --color-ready-red: #ea6a12;
+  /* Readiness only: blue / amber / orange. Buttons never use these, so a colour has one meaning */
+  --color-ready: #2f7fe0;
+  --color-caution: #e3a008;
+  --color-recover: #ea6a12;
+
+  /* Destructive actions (delete account, delete player): a true red, not the readiness orange */
+  --color-danger: #c53030;
 
   /* Results: a letter is always shown too, so the colour is never the only cue */
   --color-win: #12a150;

@@ -96,7 +96,7 @@ export function PlayerTeam() {
         <p className="text-ink-2 text-sm">Can you make it? Your coach sees your answer. Not feeling well? Say so in your morning check-in instead.</p>
       </div>
       {failed && (
-        <p role="alert" className="text-ready-red text-sm font-medium">
+        <p role="alert" className="text-recover text-sm font-medium">
           {failed}
         </p>
       )}
@@ -114,10 +114,10 @@ export function PlayerTeam() {
                 {e.available === false && <Chip tone="amber">Can't make it</Chip>}
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Button size="sm" variant={e.available === true ? "approve" : "secondary"} disabled={busy === e.key} onClick={() => answer(e, true)}>
+                <Button size="sm" variant={e.available === true ? "primary" : "secondary"} disabled={busy === e.key} onClick={() => answer(e, true)}>
                   <Check className="h-4 w-4" aria-hidden /> I'm in
                 </Button>
-                <Button size="sm" variant={e.available === false ? "danger" : "secondary"} disabled={busy === e.key} onClick={() => answer(e, false, e.reason ?? "other")}>
+                <Button size="sm" variant={e.available === false ? "primary" : "secondary"} disabled={busy === e.key} onClick={() => answer(e, false, e.reason ?? "other")}>
                   <X className="h-4 w-4" aria-hidden /> Can't make it
                 </Button>
                 {e.available === false && (
@@ -183,7 +183,7 @@ export function CoachTeam() {
         subtitle="Who can make the next three weeks of sessions and matches, and messages to the whole team."
       />
       {note && (
-        <p role={note.ok ? "status" : "alert"} className={cn("text-sm font-semibold", note.ok ? "text-ready-green" : "text-ready-red")}>
+        <p role={note.ok ? "status" : "alert"} className={cn("text-sm font-semibold", note.ok ? "text-ready" : "text-recover")}>
           {note.text}
         </p>
       )}

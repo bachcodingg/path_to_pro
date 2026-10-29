@@ -49,7 +49,7 @@ export function Growth() {
           <Card>
             {data.in_phv_window ? (
               <p>
-                <strong className="text-ready-amber">You're in your growth spurt.</strong> Bones grow faster than muscles and tendons
+                <strong className="text-caution">You're in your growth spurt.</strong> Bones grow faster than muscles and tendons
                 right now, so jumps and sprints are kept short. It's temporary and normal.
               </p>
             ) : (

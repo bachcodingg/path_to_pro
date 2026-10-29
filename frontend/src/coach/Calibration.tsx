@@ -70,7 +70,7 @@ export function Calibration() {
           today's weights.
         </p>
         {!data.enough_data && (
-          <Card className="border-ready-amber/50">
+          <Card className="border-caution/50">
             {data.n} rated days so far. At least {data.min_samples} are needed before suggesting new weights.
           </Card>
         )}
@@ -116,7 +116,7 @@ export function Calibration() {
             </table>
           </Card>
           {data.enough_data && !same && (
-            <Card className={cn("mt-2", data.recommended ? "border-ready-green/50" : "border-ready-amber/50")} role="status">
+            <Card className={cn("mt-2", data.recommended ? "border-ready/50" : "border-caution/50")} role="status">
               {data.recommended ? (
                 <p>
                   <span className="font-semibold">Recommended.</span> On players the weights were not fitted on, agreement improves by{" "}

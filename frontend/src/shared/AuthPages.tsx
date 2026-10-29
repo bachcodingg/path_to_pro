@@ -50,7 +50,7 @@ export function ForgotPassword() {
             <input className={input} type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </Field>
           {error && (
-            <p role="alert" className="text-ready-red text-sm font-medium">
+            <p role="alert" className="text-recover text-sm font-medium">
               {error}
             </p>
           )}
@@ -118,7 +118,7 @@ export function SetPassword() {
     >
       {linkError ? (
         <div className="space-y-3">
-          <p role="alert" className="text-ready-red font-medium">
+          <p role="alert" className="text-recover font-medium">
             {linkError}
           </p>
           <Link to="/forgot-password" className="text-pitch-600 font-semibold underline">
@@ -141,7 +141,7 @@ export function SetPassword() {
             <input className={input} type="password" autoComplete="new-password" required minLength={8} value={repeat} onChange={(e) => setRepeat(e.target.value)} />
           </Field>
           {error && (
-            <p role="alert" className="text-ready-red text-sm font-medium">
+            <p role="alert" className="text-recover text-sm font-medium">
               {error}
             </p>
           )}
@@ -190,8 +190,8 @@ export function VerifyEmail() {
       {!state ? (
         <Spinner label="Confirming" />
       ) : (
-        <p role={state.ok ? "status" : "alert"} className={state.ok ? "flex items-center gap-2 font-semibold" : "text-ready-red font-medium"}>
-          {state.ok && <CheckCircle2 className="text-ready-green h-6 w-6" aria-hidden />}
+        <p role={state.ok ? "status" : "alert"} className={state.ok ? "flex items-center gap-2 font-semibold" : "text-recover font-medium"}>
+          {state.ok && <CheckCircle2 className="text-ready h-6 w-6" aria-hidden />}
           {state.text}
           {!state.ok && user && " You can send a new link from your account settings."}
         </p>

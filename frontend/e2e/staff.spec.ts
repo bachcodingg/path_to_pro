@@ -84,7 +84,7 @@ test("guardian sees summary and can switch consent", async ({ page }) => {
 test("coach rates a player and reviews the readiness calibration", async ({ page }) => {
   await login(page, "coach@demo.pathtopro");
   await page.getByRole("button", { name: /Leon U\. .*: \d+/ }).first().click();
-  await page.getByRole("button", { name: "Take care" }).click();
+  await page.getByRole("button", { name: "Take care", exact: true }).click();
   await expect(page.getByText("Saved. Used to calibrate the score.")).toBeVisible();
 
   await page.getByRole("link", { name: "Calibration" }).click();

@@ -127,7 +127,7 @@ export function Register() {
   return (
     <Shell title="Join PathToPro" subtitle="A plan to reach your next level. Free, for players 13+.">
       {DEMO && (
-        <p className="border-ready-amber/50 bg-ready-amber/10 mb-3 rounded-xl border p-3 text-sm">
+        <p className="border-caution/50 bg-caution/10 mb-3 rounded-xl border p-3 text-sm">
           This is the offline demo: sign-up needs the live server. Try the demo account "Self-guided player" on the sign-in page.
         </p>
       )}
@@ -229,7 +229,7 @@ export function Register() {
           </span>
         </label>
         {error && (
-          <p role="alert" className="text-ready-red text-sm font-medium">
+          <p role="alert" className="text-recover text-sm font-medium">
             {error}
           </p>
         )}
@@ -282,7 +282,7 @@ export function RegisterGuardian() {
           <input className={input} type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
         </Field>
         {error && (
-          <p role="alert" className="text-ready-red text-sm font-medium">
+          <p role="alert" className="text-recover text-sm font-medium">
             {error}
           </p>
         )}
