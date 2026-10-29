@@ -129,6 +129,8 @@ def main(out: Path) -> None:
             out = {f"/api/coach/squad-week?offset={o}": get(h, f"/api/coach/squad-week?offset={o}") for o in (0, 1)}
             out["/api/coach/matches"] = get(h, "/api/coach/matches")
             out["/api/coach/finance"] = get(h, "/api/coach/finance")
+            for p in ("/api/coach/schedule", "/api/team/events", "/api/team/announcements"):
+                out[p] = get(h, p)
             for m in out["/api/coach/matches"]:
                 out[f"/api/coach/matches/{m['id']}"] = get(h, f"/api/coach/matches/{m['id']}")
             return out

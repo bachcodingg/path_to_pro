@@ -272,3 +272,27 @@ test("sign-in on a laptop: what the app does, demo accounts by role, skip link o
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Skip to main content" })).toBeFocused();
 });
+
+test("demo: coach schedule and availability load from the snapshot", async ({ page }) => {
+  test.skip(!process.env.E2E_DEMO, "the live server is covered in club.spec.ts");
+  await login(page, "coach@demo.pathtopro");
+  await page.getByRole("link", { name: "Schedule" }).first().click();
+  await expect(page.getByRole("heading", { name: "Schedule" })).toBeVisible();
+  const today = (await page.getByLabel("Kick-off").getAttribute("min"))!.slice(0, 10);
+  const day = new Date(today + "T12:00:00Z");
+  day.setUTCDate(day.getUTCDate() + 70);
+  await page.getByRole("textbox", { name: "Opponent" }).fill("FC Faraway");
+  await page.getByLabel("Kick-off").fill(`${day.toISOString().slice(0, 10)}T15:00`);
+  await page.getByRole("button", { name: "Add match" }).click();
+  await expect(page.getByText("FC Faraway")).toBeVisible();
+  await page.getByRole("button", { name: "Remove the match against FC Faraway" }).click();
+  await expect(page.getByText("FC Faraway")).toHaveCount(0);
+
+  await page.getByRole("link", { name: "Availability" }).first().click();
+  await expect(page.getByRole("heading", { name: "Availability" })).toBeVisible();
+  await page.getByLabel("Message").fill("Bring both kits on Saturday.");
+  await page.getByRole("button", { name: "Post" }).click();
+  await expect(page.getByText(/^Posted\./)).toBeVisible();
+  await page.getByRole("button", { name: "Delete message" }).first().click();
+  await expect(page.getByText("No messages yet.")).toBeVisible();
+});
