@@ -371,8 +371,8 @@ async function route(path: string, method: string, body?: Json): Promise<Json> {
     fail(404, "Not available in the demo");
   }
 
-  // ---- staff
-  if (p.startsWith("/api/coach/") || p.startsWith("/api/physio/")) {
+  // ---- staff (players' team screen is switched off in the demo)
+  if (p.startsWith("/api/coach/") || p.startsWith("/api/physio/") || p.startsWith("/api/team/")) {
     if (role !== "coach" && role !== "physio" && role !== "admin") fail(403, "Not allowed for your role");
     // A second team's coach has his own recorded views; everyone else shares the main squad's
     const st: Record<string, Json> = { ...s.staff, ...user.responses };
@@ -399,8 +399,66 @@ async function route(path: string, method: string, body?: Json): Promise<Json> {
       return st[p] ?? fail(404, "Not available in the demo");
     }
     if (p.startsWith("/api/coach/finance/")) fail(403, "Booking money needs the live server, not this offline demo");
-    if (p === "/api/coach/squad-week/session" || /^\/api\/coach\/matches\/[^/]+\/ratings$/.test(p) || p === "/api/coach/ratings/preview")
+    if (
+      p === "/api/coach/squad-week/session" ||
+      p === "/api/coach/schedule/week" ||
+      /^\/api\/coach\/matches\/[^/]+\/ratings$/.test(p) ||
+      p === "/api/coach/ratings/preview"
+    )
       fail(403, "This runs the planner or the rating engine: it needs the live server, not this offline demo");
+    if (p === "/api/coach/fixtures" || p.startsWith("/api/coach/fixtures/")) {
+      if (role !== "coach") fail(403, "Only coaches change fixtures");
+      const sched = st["/api/coach/schedule"] ?? fail(404, "Not available in the demo");
+      const events: Json[] = st["/api/team/events"]?.events ?? [];
+      if (method === "DELETE") {
+        const id = p.split("/").at(-1)!;
+        const f = sched.fixtures.find((x: Json) => x.id === id) ?? fail(404, "Fixture not found");
+        if (f.kickoff.slice(0, 10) < s.meta.today) fail(409, "This match has been played: it stays on record");
+        sched.fixtures.splice(sched.fixtures.indexOf(f), 1);
+        const i = events.findIndex((e) => e.key === `match:${id}`);
+        if (i >= 0) events.splice(i, 1);
+        return { deleted: id };
+      }
+      const kickoff = String(body.kickoff ?? "").slice(0, 16);
+      const day = kickoff.slice(0, 10);
+      if (String(body.opponent ?? "").trim().length < 2 || kickoff.length < 16) fail(422, "Enter the opponent and the kick-off");
+      if (day < s.meta.today) fail(422, "Kick-off is in the past");
+      if (sched.fixtures.some((x: Json) => x.kickoff.startsWith(day))) fail(409, "The team already plays that day");
+      const f = {
+        id: crypto.randomUUID(),
+        kickoff,
+        opponent: body.opponent.trim(),
+        competition: body.competition?.trim() || null,
+        is_evening: Number(kickoff.slice(11, 13)) >= 17,
+      };
+      sched.fixtures.push(f);
+      sched.fixtures.sort((a: Json, b: Json) => a.kickoff.localeCompare(b.kickoff));
+      // Match day replaces that day's team training
+      sched.next_sessions = sched.next_sessions.filter((x: Json) => x.day !== day);
+      const end = new Date(s.meta.today + "T12:00:00Z");
+      end.setUTCDate(end.getUTCDate() + 21);
+      if (day < end.toISOString().slice(0, 10)) {
+        for (let i = events.length - 1; i >= 0; i--) if (events[i].kind === "session" && events[i].day === day) events.splice(i, 1);
+        const roster = Math.max(0, ...events.filter((e) => e.kind === "match").map((e) => e.available + e.unavailable.length + e.no_answer));
+        events.push({ key: `match:${f.id}`, kind: "match", day, time: kickoff.slice(11), title: `Match vs ${f.opponent}`, available: 0, unavailable: [], no_answer: roster });
+        events.sort((a, b) => (a.day + (a.time ?? "")).localeCompare(b.day + (b.time ?? "")));
+      }
+      return f;
+    }
+    if (p === "/api/team/announcements" || p.startsWith("/api/team/announcements/")) {
+      if (role !== "coach") fail(403, "Only coaches post to the team");
+      const news: Json[] = st["/api/team/announcements"] ?? fail(404, "Not available in the demo");
+      if (method === "DELETE") {
+        const i = news.findIndex((a) => a.id === p.split("/").at(-1));
+        if (i < 0) fail(404, "Announcement not found");
+        return { deleted: news.splice(i, 1)[0].id };
+      }
+      const text = String(body?.text ?? "").trim();
+      if (text.length < 2) fail(422, "Write a message first");
+      const a = { id: crypto.randomUUID(), text, author: user.me.name, created_at: new Date().toISOString() };
+      news.unshift(a);
+      return a;
+    }
     const decision = p.match(/^\/api\/coach\/proposals\/([^/]+)\/decision$/);
     if (decision) {
       if (role !== "coach") fail(403, "Only coaches decide on proposals");
