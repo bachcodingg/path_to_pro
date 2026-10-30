@@ -1,4 +1,4 @@
-"""Guardian view: weekly summary, consent switches per data type, data export and delete."""
+"""Guardian view: weekly summary, the child's schedule, consent switches per data type, data export and delete."""
 
 from __future__ import annotations
 
@@ -30,6 +30,7 @@ from domain.models import (
     player_guardians,
 )
 from domain.models import ConsentRecord as Consent
+from pathway import service as pathway
 
 router = APIRouter(prefix="/api/guardian", tags=["guardian"])
 
@@ -86,6 +87,26 @@ def summary(player_id: str, user: CurrentUser = Depends(require(Role.GUARDIAN)),
             for a in alerts
         ],
     }
+
+
+@router.get("/children/{player_id}/schedule")
+def schedule(player_id: str, user: CurrentUser = Depends(require(Role.GUARDIAN)), db: Session = Depends(get_db)) -> dict:
+    """This week and next: training, rest and matches (with kickoff), so the family can plan around them.
+    The plan only, no health data."""
+    p = player_in_scope(player_id, user, db)
+    today = clock.today()
+    weeks = []
+    for offset in (0, 1):
+        start = views.week_start(today) + timedelta(weeks=offset)
+        pathway.ensure_week(db, p, start, today)
+        days = [
+            {k: d[k] for k in ("date", "kind", "label", "minutes")} | ({"match": d["match"]} if "match" in d else {})
+            for d in views.week_days(db, p, start)
+        ]
+        weeks.append({"start": start.isoformat(), "days": days})
+    audit(db, user, "read", "weekly_plan", p.id)
+    db.commit()
+    return {"today": today.isoformat(), "weeks": weeks}
 
 
 ALERT_TEXT = {

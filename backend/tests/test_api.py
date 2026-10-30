@@ -167,6 +167,14 @@ def test_guardian_scope_consent_export_delete(demo):
     assert client.get(f"/api/guardian/children/{other}/summary", headers=g).status_code == 403
     assert client.get(f"/api/guardian/children/{kid}/summary", headers=g).status_code == 200
 
+    # The child's plan for this week and next, without load or effort
+    assert client.get(f"/api/guardian/children/{other}/schedule", headers=g).status_code == 403
+    sched = client.get(f"/api/guardian/children/{kid}/schedule", headers=g).json()
+    assert [len(w["days"]) for w in sched["weeks"]] == [7, 7]
+    days = [d for w in sched["weeks"] for d in w["days"]]
+    assert all("rpe" not in d and "load" not in d for d in days)
+    assert all(d["match"]["time"] for d in days if "match" in d)
+
     r = client.put(f"/api/guardian/children/{kid}/consent", headers=g, json={"data_type": "wellness", "granted": False})
     assert {i["data_type"]: i["granted"] for i in r.json()["items"]}["wellness"] is False
     with SessionLocal() as db:

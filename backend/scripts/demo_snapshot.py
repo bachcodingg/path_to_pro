@@ -151,7 +151,7 @@ def main(out: Path) -> None:
             kids = get(h, "/api/guardian/children")
             resp = {"/api/guardian/children": kids}
             for k in kids:
-                for sub in ("summary", "consent", "export", "finance"):
+                for sub in ("summary", "schedule", "consent", "export", "finance"):
                     resp[f"/api/guardian/children/{k['id']}/{sub}"] = get(h, f"/api/guardian/children/{k['id']}/{sub}")
             snap["users"][email] = {"me": get(h, "/api/auth/me"), "responses": resp}
     out.parent.mkdir(parents=True, exist_ok=True)

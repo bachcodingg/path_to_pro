@@ -70,7 +70,12 @@ def week_days(db: Session, player: Player, start: date) -> list[dict]:
         m = matches.get(d.date)
         if m is not None:
             squad = db.get(Squad, m.squad_id)
-            j["match"] = {"opponent": m.opponent, "team": squad.name if squad else "", "primary": m.squad_id == player.squad_id}
+            j["match"] = {
+                "opponent": m.opponent,
+                "team": squad.name if squad else "",
+                "primary": m.squad_id == player.squad_id,
+                "time": m.kickoff.strftime("%H:%M"),
+            }
         out.append(j)
     return out
 
