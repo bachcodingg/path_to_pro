@@ -27,7 +27,7 @@ export const input = "bg-surface-2 border-line text-ink mt-1 h-12 w-full rounded
 // Also the frame of the password, verification and account pages (AuthPages.tsx)
 export function Shell({ title, subtitle, children, footer }: { title: string; subtitle: string; children: ReactNode; footer?: ReactNode }) {
   return (
-    <main className="dark bg-pitch-950 flex min-h-full items-start justify-center p-4 sm:items-center">
+    <main className="dark app-bg flex min-h-full items-start justify-center p-4 sm:items-center">
       <div className="w-full max-w-md py-6">
         <div className="mb-5 text-center text-white">
           <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="mx-auto mb-3 h-12 w-12" />

@@ -104,7 +104,7 @@ export function Account() {
           ) : (
             <div className="space-y-2 text-sm">
               <p className="flex items-center gap-2">
-                <MailWarning className="h-5 w-5 text-amber-600" aria-hidden /> {user.email} is not confirmed yet. Open the link we emailed you, so
+                <MailWarning className="dark:text-caution h-5 w-5 text-amber-600" aria-hidden /> {user.email} is not confirmed yet. Open the link we emailed you, so
                 you can reset your password if you forget it.
               </p>
               <Button variant="secondary" size="sm" onClick={resend} loading={busy === "verify"} disabled={DEMO}>

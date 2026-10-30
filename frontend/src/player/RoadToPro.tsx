@@ -28,8 +28,8 @@ export function RoadToPro() {
         <div className="space-y-5">
           <Card className="p-2">
             <svg viewBox={`0 0 120 ${height}`} className="mx-auto max-h-[420px] w-full" role="img" aria-label="Season map">
-              <path d={path} fill="none" stroke="#24402f" strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" />
-              <path d={path} fill="none" stroke="#7ee0a8" strokeWidth={2} strokeDasharray="3 4" />
+              <path d={path} fill="none" stroke="#24324d" strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" />
+              <path d={path} fill="none" stroke="var(--brand-300)" strokeWidth={2} strokeDasharray="3 4" />
               {pts.map((p, i) => (
                 <g
                   key={i}
@@ -41,11 +41,11 @@ export function RoadToPro() {
                   aria-label={`Test day ${fmtDay(cps[i].date, { day: "numeric", month: "short" })}${cps[i].done ? ", done" : ", next"}`}
                   style={{ cursor: "pointer" }}
                 >
-                  <circle r={11} fill={cps[i].done ? "#22a061" : "#0f2219"} stroke={sel === i ? "#fff" : "#7ee0a8"} strokeWidth={2} />
+                  <circle r={11} fill={cps[i].done ? "var(--brand-500)" : "#111b30"} stroke={sel === i ? "#fff" : "var(--brand-300)"} strokeWidth={2} />
                   <text y={3.5} textAnchor="middle" fontSize={9} fontWeight={800} fill="#fff">
                     {cps[i].done ? "✓" : i + 1}
                   </text>
-                  <text x={p.x < 60 ? 16 : -16} y={3} textAnchor={p.x < 60 ? "start" : "end"} fontSize={7} fill="#a9c2b3">
+                  <text x={p.x < 60 ? 16 : -16} y={3} textAnchor={p.x < 60 ? "start" : "end"} fontSize={7} fill="#a8b4c8">
                     {fmtDay(cps[i].date, { day: "numeric", month: "short" })}
                   </text>
                 </g>

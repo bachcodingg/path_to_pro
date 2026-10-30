@@ -268,7 +268,7 @@ function HeroVisual() {
 }
 
 function FloatCard({ children }: { children: ReactNode }) {
-  return <div className="rounded-2xl border border-white/15 bg-[#0f2219]/90 p-3 shadow-2xl shadow-black/40 backdrop-blur">{children}</div>;
+  return <div className="rounded-2xl border border-white/15 bg-[#111b30]/90 p-3 shadow-2xl shadow-black/40 backdrop-blur">{children}</div>;
 }
 
 // The player's "Today" screen for Leon, the demo's tired U15 in his growth spurt
@@ -279,7 +279,7 @@ function Phone() {
         <div className="mx-auto mb-3 h-5 w-24 rounded-full bg-black" aria-hidden />
         <p className="text-[11px] text-white/50">Thursday 26 November</p>
         <p className="font-display text-3xl leading-none font-extrabold uppercase">Hi Leon</p>
-        <div className="mt-3 rounded-2xl border border-white/10 bg-[#0f2219] p-3">
+        <div className="mt-3 rounded-2xl border border-white/10 bg-[#111b30] p-3">
           <div className="flex items-center gap-3">
             <div className="relative h-11 flex-1 rounded-lg border-2 border-white/40 p-0.5">
               <div className="bg-recover h-full w-[42%] rounded-md" />
@@ -299,7 +299,7 @@ function Phone() {
           </div>
         </div>
         <p className="font-display mt-4 text-sm font-bold tracking-wide uppercase">Today's session</p>
-        <div className="mt-1.5 flex items-center gap-3 rounded-2xl border border-white/10 bg-[#0f2219] p-3">
+        <div className="mt-1.5 flex items-center gap-3 rounded-2xl border border-white/10 bg-[#111b30] p-3">
           <span className="bg-pitch-200 text-pitch-900 flex h-10 w-10 items-center justify-center rounded-xl text-base font-extrabold">2</span>
           <span>
             <span className="block text-sm font-bold">Recovery</span>
@@ -547,7 +547,7 @@ function Roles() {
   const { tryAs, busy } = useTryAs();
   const r = ROLES[role];
   return (
-    <section id="roles" className="relative scroll-mt-20 border-y border-white/10 bg-[#0a1c14] py-20 md:py-28">
+    <section id="roles" className="relative scroll-mt-20 border-y border-white/10 bg-[#0b1428] py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-4 md:px-6">
         <SectionHead
           center
@@ -616,7 +616,7 @@ function Roles() {
 
 function MockFrame({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#0f2219] shadow-2xl shadow-black/40">
+    <div className="w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#111b30] shadow-2xl shadow-black/40">
       <div className="flex items-center gap-1.5 border-b border-white/10 px-4 py-2.5">
         {["bg-white/20", "bg-white/15", "bg-white/10"].map((c) => (
           <span key={c} className={cn("h-2.5 w-2.5 rounded-full", c)} aria-hidden />
@@ -815,8 +815,8 @@ function GrowthCurve() {
         {[40, 80, 120].map((y) => (
           <line key={y} x1={10} x2={310} y1={y} y2={y} stroke="rgb(255 255 255 / 0.07)" />
         ))}
-        <path d="M10 118 C 70 112, 110 104, 140 84 S 200 34, 230 26 S 290 18, 310 16" fill="none" stroke="#7ee0a8" strokeWidth={3} strokeLinecap="round" />
-        <circle cx={150} cy={74} r={6} fill="#fff" stroke="#22a061" strokeWidth={3} />
+        <path d="M10 118 C 70 112, 110 104, 140 84 S 200 34, 230 26 S 290 18, 310 16" fill="none" stroke="var(--brand-300)" strokeWidth={3} strokeLinecap="round" />
+        <circle cx={150} cy={74} r={6} fill="#fff" stroke="var(--brand-500)" strokeWidth={3} />
         <text x={150} y={60} textAnchor="middle" fill="#fff" fontSize={10} fontWeight={700}>
           You
         </text>
@@ -838,7 +838,7 @@ const LEVELS = ["Starter", "Grassroots", "Competitive amateur", "Elite amateur",
 
 function Pathway() {
   return (
-    <section className="border-y border-white/10 bg-[#0a1c14] py-20 md:py-24">
+    <section className="border-y border-white/10 bg-[#0b1428] py-20 md:py-24">
       <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 md:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
         <div>
           <SectionHead

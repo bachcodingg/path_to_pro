@@ -22,9 +22,9 @@ export function ProLayout() {
   }, [competition]);
 
   return (
-    <div className="bg-surface-2 text-ink min-h-full">
+    <div className="app-bg text-ink min-h-full">
       <SkipLink />
-      <header className="sticky top-0 z-30 bg-[#050f0a] text-white shadow-lg">
+      <header className="sticky top-0 z-30 bg-[#060b1a] text-white shadow-lg">
         <div className="flex items-center justify-between gap-3 px-4 pt-2.5 md:px-6">
           <Link to="/pro" className="flex items-center gap-2.5">
             <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="h-8 w-8" />

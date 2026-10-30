@@ -72,7 +72,7 @@ export function AdminHome() {
   const teamName = (id: string | null) => squads.find((s) => s.id === id)?.name ?? "No team";
 
   return (
-    <div className="bg-surface-2 text-ink min-h-full">
+    <div className="app-bg text-ink min-h-full">
       <SkipLink />
       <div className="bg-pitch-950 flex items-center justify-between px-4 py-2 text-sm text-white md:px-6">
         <span className="flex items-center gap-2">

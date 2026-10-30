@@ -109,12 +109,13 @@ export function BandBadge({ band, score }: { band: Band | null; score?: number |
 
 // Session intensity colour scale (lanes on the week pitch, strips in the inbox)
 export function intensityClass(kind: SessionKind, rpe: number): string {
-  if (kind === "match") return "bg-pitch-900 text-white";
+  // On the dark navy the scale runs the other way: easy is a faint tint, hard the brightest
+  if (kind === "match") return "bg-pitch-900 text-white dark:bg-pitch-950 dark:ring-1 dark:ring-inset dark:ring-pitch-300/70";
   if (kind === "rest") return "bg-surface-2 text-ink-2";
-  if (rpe <= 3) return "bg-pitch-200 text-pitch-900";
-  if (rpe <= 5) return "bg-pitch-400 text-pitch-950";
+  if (rpe <= 3) return "bg-pitch-200 text-pitch-900 dark:bg-pitch-500/20 dark:text-pitch-100";
+  if (rpe <= 5) return "bg-pitch-400 text-pitch-950 dark:bg-pitch-500/45 dark:text-white";
   if (rpe <= 7) return "bg-pitch-600 text-white";
-  return "bg-pitch-800 text-white";
+  return "bg-pitch-800 text-white dark:bg-pitch-400 dark:text-pitch-950";
 }
 
 export function Spinner({ label = "Loading" }: { label?: string }) {
