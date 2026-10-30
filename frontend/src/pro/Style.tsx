@@ -6,8 +6,8 @@ import { fmtMeasure, rankText, type Measure, type Standing, type StyleProfile } 
 import { usePro } from "./context";
 
 const VERDICT: Record<string, { label: string; tone: "green" | "red" | "neutral"; dot: string }> = {
-  strength: { label: "Strength", tone: "green", dot: "var(--color-ready-green)" },
-  weakness: { label: "Weakness", tone: "red", dot: "var(--color-ready-red)" },
+  strength: { label: "Strength", tone: "green", dot: "var(--color-ready)" },
+  weakness: { label: "Weakness", tone: "red", dot: "var(--color-recover)" },
   style: { label: "Habit", tone: "neutral", dot: "var(--color-pitch-500)" },
 };
 const KEY_NUMBERS = ["goals", "conceded", "xg", "xga", "possession", "pass_acc", "ppda", "aerial_win", "conversion", "shots"];
@@ -20,8 +20,8 @@ export function Overview({ p, vs, table, onPick, onTable }: { p: StyleProfile; v
     <div className={cn("grid gap-4", table.length > 0 && "lg:grid-cols-[minmax(0,1fr)_21rem]")}>
       <div className="space-y-5">
         <div className="grid gap-4 md:grid-cols-3">
-          <Summary title="Strengths" tone="var(--color-ready-green)" items={p.summary.strength} empty={`Nothing clearly better than ${rest}.`} />
-          <Summary title="Weaknesses" tone="var(--color-ready-red)" items={p.summary.weakness} empty={`Nothing clearly worse than ${rest}.`} />
+          <Summary title="Strengths" tone="var(--color-ready)" items={p.summary.strength} empty={`Nothing clearly better than ${rest}.`} />
+          <Summary title="Weaknesses" tone="var(--color-recover)" items={p.summary.weakness} empty={`Nothing clearly worse than ${rest}.`} />
           <Summary title="How they play" tone="var(--color-pitch-500)" items={p.summary.style} empty={`No habit stands out from ${rest}.`} />
         </div>
 

@@ -67,9 +67,9 @@ export function PhysioHome() {
           <ul className="space-y-2">
             {queue.data?.map((e) => (
               <li key={e.id}>
-                <Card className="border-ready-red/50 flex flex-wrap items-center justify-between gap-3">
+                <Card className="border-recover/50 flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-ready-red text-xs font-bold uppercase">{e.text}</p>
+                    <p className="text-recover text-xs font-bold uppercase">{e.text}</p>
                     <Link to={`/coach/players/${e.player.id}`} className="text-lg font-bold hover:underline">
                       {e.player.name}
                     </Link>
@@ -100,7 +100,7 @@ export function PhysioHome() {
                 <Link to={`/coach/players/${p.id}`} className="font-semibold hover:underline">
                   {p.name}
                 </Link>
-                <span className={p.in_window ? "text-ready-amber font-bold" : "text-ink-2"}>
+                <span className={p.in_window ? "text-caution font-bold" : "text-ink-2"}>
                   {p.maturity_offset > 0 ? "+" : ""}
                   {p.maturity_offset.toFixed(1)} y
                 </span>

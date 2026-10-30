@@ -72,7 +72,7 @@ export function AdminHome() {
   const teamName = (id: string | null) => squads.find((s) => s.id === id)?.name ?? "No team";
 
   return (
-    <div className="bg-surface-2 text-ink min-h-full">
+    <div className="app-bg text-ink min-h-full">
       <SkipLink />
       <div className="bg-pitch-950 flex items-center justify-between px-4 py-2 text-sm text-white md:px-6">
         <span className="flex items-center gap-2">
@@ -110,13 +110,13 @@ export function AdminHome() {
         />
         {DEMO && <Card>The club admin works with the full system only, not in the browser demo.</Card>}
         {ov.data?.email_mode === "log" && (
-          <Card className="border-ready-amber mb-4 text-sm">
+          <Card className="border-caution mb-4 text-sm">
             <strong>Emails are not being sent.</strong> The server has no mail server configured (PATHTOPRO_SMTP_HOST), so invitations
             only appear in the server log. Set it up before inviting real people.
           </Card>
         )}
         {note && (
-          <p role={note.ok ? "status" : "alert"} className={cn("mb-4 text-sm font-semibold", note.ok ? "text-ready-green" : "text-ready-red")}>
+          <p role={note.ok ? "status" : "alert"} className={cn("mb-4 text-sm font-semibold", note.ok ? "text-ready" : "text-recover")}>
             {note.text}
           </p>
         )}
@@ -531,17 +531,17 @@ function Import({ ov, onDone }: { ov: Overview; onDone: () => Promise<void> }) {
           </Button>
         </div>
         {error && (
-          <p role="alert" className="text-ready-red mt-3 text-sm font-medium">
+          <p role="alert" className="text-recover mt-3 text-sm font-medium">
             {error}
           </p>
         )}
         {result && (
           <div className="mt-4 text-sm" role="status">
             {result.saved ? (
-              <p className="text-ready-green font-semibold">{result.valid} players imported. Invitations are on their way.</p>
+              <p className="text-ready font-semibold">{result.valid} players imported. Invitations are on their way.</p>
             ) : result.errors.length ? (
               <>
-                <p className="text-ready-red font-semibold">
+                <p className="text-recover font-semibold">
                   {result.errors.length} row{result.errors.length > 1 ? "s" : ""} to fix ({result.valid} fine). Nothing was saved.
                 </p>
                 <ul className="mt-2 space-y-1">

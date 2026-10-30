@@ -74,7 +74,7 @@ export function Gym() {
           Every session has the same warm-up, injury prevention (Nordic curls, Copenhagen planks), core and cool-down for all
           players. The power and position blocks are chosen for your position.
         </p>
-        {msg && <p className="text-ready-red mt-2 text-sm">{msg}</p>}
+        {msg && <p className="text-recover mt-2 text-sm">{msg}</p>}
       </Card>
 
       {data.sessions.map(({ session, programme }) => (

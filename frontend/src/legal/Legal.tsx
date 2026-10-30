@@ -56,8 +56,8 @@ function Page({ title, children }: { title: string; children: ReactNode }) {
       </header>
       <main id="main" className="legal mx-auto max-w-3xl space-y-4 px-4 py-8 text-[15px] leading-relaxed md:px-6">
         {IS_TEMPLATE && (
-          <p role="note" className="border-ready-amber bg-ready-amber/10 flex gap-2 rounded-xl border p-3 text-sm">
-            <ShieldAlert className="h-5 w-5 shrink-0 text-amber-700 dark:text-ready-amber" aria-hidden />
+          <p role="note" className="border-caution bg-caution/10 flex gap-2 rounded-xl border p-3 text-sm">
+            <ShieldAlert className="h-5 w-5 shrink-0 text-amber-700 dark:text-caution" aria-hidden />
             <span>
               <strong>Template.</strong> The text in [brackets] has to be filled in by whoever runs this service, and the page
               reviewed by a lawyer or data-protection officer, before real players sign up.

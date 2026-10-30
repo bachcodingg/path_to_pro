@@ -1,28 +1,21 @@
 @import "tailwindcss";
 
-/* Design system (plan 5.4): pitch-green base; readiness in blue / amber / orange with
-   icons so colour-blind users can read it; Inter, 16px minimum on mobile.
+/* Design system (plan 5.4): a night-pitch navy base with one accent colour per role (players
+   teal, staff violet, family pink; see [data-role] below); readiness in blue / amber / orange
+   with icons so colour-blind users can read it; Inter, 16px minimum on mobile.
    Headings and big numbers in a condensed display face, as football broadcasts and the
    league websites set them (font-display). */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: "Barlow Condensed", "Arial Narrow", "Inter", ui-sans-serif, sans-serif;
 
-  --color-pitch-50: #effaf3;
-  --color-pitch-100: #d8f2e1;
-  --color-pitch-200: #b3e4c6;
-  --color-pitch-300: #7ee0a8;
-  --color-pitch-400: #46c17e;
-  --color-pitch-500: #22a061;
-  --color-pitch-600: #16804d;
-  --color-pitch-700: #136640;
-  --color-pitch-800: #0f3d2e;
-  --color-pitch-900: #0b2a20;
-  --color-pitch-950: #07170f;
+  /* Readiness only: blue / amber / orange. Buttons never use these, so a colour has one meaning */
+  --color-ready: #2f7fe0;
+  --color-caution: #e3a008;
+  --color-recover: #ea6a12;
 
-  --color-ready-green: #2f7fe0;
-  --color-ready-amber: #e3a008;
-  --color-ready-red: #ea6a12;
+  /* Destructive actions (delete account, delete player): a true red, not the readiness orange */
+  --color-danger: #c53030;
 
   /* Results: a letter is always shown too, so the colour is never the only cue */
   --color-win: #12a150;
@@ -40,6 +33,66 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* "pitch" is the brand scale every page uses (bg-pitch-600 buttons, text-pitch-300 accents...).
+   It points at --brand-*, which the signed-in role sets: 50-700 are the role's accent,
+   800-950 the shared navy. "inline" keeps utilities reading the variables at runtime. */
+@theme inline {
+  --color-pitch-50: var(--brand-50);
+  --color-pitch-100: var(--brand-100);
+  --color-pitch-200: var(--brand-200);
+  --color-pitch-300: var(--brand-300);
+  --color-pitch-400: var(--brand-400);
+  --color-pitch-500: var(--brand-500);
+  --color-pitch-600: var(--brand-600);
+  --color-pitch-700: var(--brand-700);
+  --color-pitch-800: var(--brand-800);
+  --color-pitch-900: var(--brand-900);
+  --color-pitch-950: var(--brand-950);
+}
+
+/* Players, and the public pages: teal into cyan */
+:root {
+  --brand-50: #ecfdf8;
+  --brand-100: #d1faf0;
+  --brand-200: #a5f3e0;
+  --brand-300: #6ee7cf;
+  --brand-400: #2dd4bf;
+  --brand-500: #14b8a6;
+  --brand-600: #0b7a76;
+  --brand-700: #0a625f;
+  --brand-800: #142a4d;
+  --brand-900: #0d1b33;
+  --brand-950: #080f22;
+  --band-end: #0e6660;
+  --tint: #19f5c8; /* neon, a hint of it in the dark backgrounds */
+}
+/* Staff (coach, physio, club admin): violet */
+:root[data-role="staff"] {
+  --brand-50: #f5f3ff;
+  --brand-100: #ede9fe;
+  --brand-200: #ddd6fe;
+  --brand-300: #c4b5fd;
+  --brand-400: #a78bfa;
+  --brand-500: #8b5cf6;
+  --brand-600: #7c3aed;
+  --brand-700: #6d28d9;
+  --band-end: #43308f;
+  --tint: #8b5cf6;
+}
+/* Family (guardians): pink, kept well clear of the danger red */
+:root[data-role="family"] {
+  --brand-50: #fdf2f8;
+  --brand-100: #fce7f3;
+  --brand-200: #fbcfe8;
+  --brand-300: #f9a8d4;
+  --brand-400: #f472b6;
+  --brand-500: #e64597;
+  --brand-600: #c0267a;
+  --brand-700: #9c1c63;
+  --band-end: #6d1d55;
+  --tint: #ec4899;
+}
+
 /* Theme surfaces as real colours, so every utility and variant works with them (bg-ink-2,
    ring-ink, divide-line, bg-surface/60, hover:bg-surface-2...). "inline" keeps them pointing at
    the variables below, which the .dark class (and the page-header band) redefines. */
@@ -53,18 +106,19 @@
 
 :root {
   --surface: #ffffff;
-  --surface-2: #f4f7f5;
-  --line: #dde5e0;
-  --ink: #102119;
-  --ink-2: #4a5d53;
+  --surface-2: #f3f6fb;
+  --line: #dce3ee;
+  --ink: #0e1a2e;
+  --ink-2: #4b5873;
 }
 
+/* Dark navy with a touch of the role's tint, so each kind of account can tell its pages apart */
 .dark {
-  --surface: #0f2219;
-  --surface-2: #142c21;
-  --line: #24402f;
-  --ink: #eef7f1;
-  --ink-2: #a9c2b3;
+  --surface: color-mix(in srgb, var(--tint) 6%, #0f192e);
+  --surface-2: color-mix(in srgb, var(--tint) 5%, #141f38);
+  --line: color-mix(in srgb, var(--tint) 16%, #22304a);
+  --ink: #eef3fb;
+  --ink-2: #a8b4c8;
 }
 
 html,
@@ -116,17 +170,144 @@ select:not([multiple]):not(.select-plain) {
 }
 
 :focus-visible {
-  outline: 3px solid var(--color-pitch-300);
+  outline: 3px solid var(--brand-300);
   outline-offset: 2px;
 }
 
-/* Page header band: night-pitch gradient with mown stripes */
+/* Signed-in page background: the tinted navy, with the role's colour glowing in from two corners */
+.app-bg {
+  background:
+    radial-gradient(70% 55% at 100% 0%, color-mix(in srgb, var(--tint) 13%, transparent), transparent 70%),
+    radial-gradient(60% 50% at 0% 100%, color-mix(in srgb, var(--tint) 9%, transparent), transparent 70%),
+    var(--surface-2);
+  background-attachment: fixed;
+}
+/* The staff column and phone bar: deep navy, tinted like the page */
+.app-rail {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--tint) 8%, #080f22),
+    color-mix(in srgb, var(--tint) 12%, #0d1b33) 600px,
+    color-mix(in srgb, var(--tint) 16%, #142a4d)
+  );
+}
+
+/* Page header band: navy into the role's colour, mown stripes, and the centre circle chalked
+   faintly on the right */
 .hero {
   color: #fff;
   background:
-    radial-gradient(110% 160% at 100% 0%, var(--hero-glow, rgb(126 224 168 / 0.22)), transparent 55%),
-    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.03) 0 56px, transparent 56px 112px),
-    linear-gradient(135deg, #07170f 0%, #0f3d2e 55%, #136640 100%);
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' fill='none' stroke='white' stroke-opacity='0.09' stroke-width='2'%3E%3Ccircle cx='100' cy='100' r='70'/%3E%3Ccircle cx='100' cy='100' r='3' fill='white' fill-opacity='0.12'/%3E%3Cpath d='M100 0v200'/%3E%3C/svg%3E")
+      right -40px center / 240px no-repeat,
+    radial-gradient(110% 160% at 100% 0%, var(--hero-glow, color-mix(in srgb, var(--brand-400) 30%, transparent)), transparent 55%),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.035) 0 56px, transparent 56px 112px),
+    linear-gradient(120deg, #0b1230 0%, #12355a 55%, var(--band-end) 100%);
+}
+
+/* Sign-in page: a pitch at night under floodlights, cyan and violet light over the green */
+.login-bg {
+  color: #fff;
+  background:
+    radial-gradient(55% 45% at 100% 0%, rgb(56 189 248 / 0.28), transparent 70%),
+    radial-gradient(45% 40% at 0% 0%, rgb(251 191 36 / 0.14), transparent 70%),
+    radial-gradient(60% 55% at 0% 100%, rgb(139 92 246 / 0.28), transparent 70%),
+    radial-gradient(70% 55% at 75% 100%, rgb(16 185 129 / 0.24), transparent 70%),
+    linear-gradient(160deg, #0a0f24 0%, #0c1a2e 50%, #08231d 100%);
+}
+/* The band behind the headline: mown-pitch stripes over navy into teal, with a gradient edge
+   below it (beside it on a laptop, where the band is the left column) */
+.login-band {
+  position: relative;
+  background:
+    radial-gradient(90% 140% at 100% 0%, rgb(56 189 248 / 0.32), transparent 60%),
+    radial-gradient(60% 90% at 0% 100%, rgb(139 92 246 / 0.22), transparent 70%),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.045) 0 56px, transparent 56px 112px),
+    linear-gradient(120deg, #0b1230 0%, #12355a 50%, #0e6660 100%);
+}
+.login-band::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 3px;
+  background: linear-gradient(90deg, #6ee7b7, #67e8f9, #c4b5fd);
+}
+@media (min-width: 1024px) {
+  .login-band::after {
+    inset: 0 0 0 auto;
+    width: 3px;
+    height: auto;
+    background: linear-gradient(180deg, #6ee7b7, #67e8f9, #c4b5fd);
+  }
+}
+
+/* A thin white layer over a button: a hairline edge and a soft gloss on the top half */
+.btn-gloss,
+.glass-btn {
+  position: relative;
+  overflow: hidden;
+}
+.btn-gloss::before,
+.glass-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.btn-gloss::before {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.38) 0%, rgb(255 255 255 / 0.1) 48%, transparent 52%);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.55),
+    inset 0 1px 0 rgb(255 255 255 / 0.9);
+}
+.glass-btn::before {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.1), transparent 50%);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.12),
+    inset 0 1px 0 rgb(255 255 255 / 0.32);
+}
+
+/* A set piece drawn on the night pitch behind the form, as on a coach's tactics board */
+.login-tactics {
+  position: absolute;
+  right: 3%;
+  bottom: 14%;
+  width: min(34vw, 340px);
+  color: rgb(255 255 255 / 0.14);
+}
+
+/* A floodlight beam from a top corner, swaying slowly */
+.login-beam {
+  position: absolute;
+  top: -10vmax;
+  width: 70vmax;
+  height: 110vmax;
+  transform-origin: 50% 0;
+  background: conic-gradient(from 165deg at 50% 0%, transparent 0deg, rgb(255 255 255 / 0.08) 15deg, transparent 30deg);
+  filter: blur(10px);
+  transform: rotate(var(--r));
+  animation: beam-sway 14s ease-in-out infinite alternate;
+}
+@keyframes beam-sway {
+  to {
+    transform: rotate(calc(var(--r) * 0.75));
+  }
+}
+/* Pitch markings lying flat in the distance, fading towards the top */
+.login-pitch {
+  position: absolute;
+  bottom: -6%;
+  left: 50%;
+  width: min(1400px, 160%);
+  color: rgb(255 255 255 / 0.09);
+  transform: translateX(-50%) perspective(900px) rotateX(60deg);
+  transform-origin: 50% 100%;
+  mask-image: linear-gradient(to top, black 30%, transparent 95%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-beam {
+    animation: none;
+  }
 }
 
 /* Form controls and secondary text placed on the band */

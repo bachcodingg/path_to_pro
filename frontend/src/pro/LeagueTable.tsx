@@ -79,7 +79,7 @@ export function LeagueTable({ tables, highlight, compare, onPick }: { tables: Ta
                   className={cn(
                     "border-line hover:bg-surface-2 border-b transition-colors last:border-0",
                     mine && "bg-pitch-500/12 hover:bg-pitch-500/15",
-                    theirs && "bg-ready-green/8",
+                    theirs && "bg-ready/8",
                   )}
                 >
                   <td className="relative py-2 pl-4 font-bold">
@@ -162,7 +162,7 @@ export function MiniTable({ rows, highlight, compare, onPick, onMore }: { rows: 
           {rows.map((t) => {
             const zone = zoneOf(t.position ?? 0, n);
             return (
-              <tr key={t.id} className={cn("border-line border-t", t.id === highlight && "bg-pitch-500/12 font-bold", t.id === compare && "bg-ready-green/8")}>
+              <tr key={t.id} className={cn("border-line border-t", t.id === highlight && "bg-pitch-500/12 font-bold", t.id === compare && "bg-ready/8")}>
                 <td className="relative py-1 pl-4">
                   {zone && <span className="absolute inset-y-0 left-0 w-1" style={{ background: zone.color }} title={zone.label} />}
                   {t.position}

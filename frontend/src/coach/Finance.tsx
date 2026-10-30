@@ -121,8 +121,8 @@ export function Finance() {
           label="Fees outstanding"
           value={eur(t.fees_due_cents)}
           sub={t.overdue_count ? `${t.overdue_count} overdue (${eur(t.fees_overdue_cents)})` : "none overdue"}
-          tone={t.overdue_count ? "text-amber-700 dark:text-ready-amber" : ""}
-          accent={t.overdue_count ? "var(--color-ready-amber)" : undefined}
+          tone={t.overdue_count ? "text-amber-700 dark:text-caution" : ""}
+          accent={t.overdue_count ? "var(--color-caution)" : undefined}
         />
       </div>
 
@@ -371,7 +371,7 @@ function AddContract({ data, onChange }: { data: FinanceView; onChange: (v: Fina
             </label>
           ))}
         {error && (
-          <p role="alert" className="text-ready-red text-sm sm:col-span-3">
+          <p role="alert" className="text-recover text-sm sm:col-span-3">
             {error}
           </p>
         )}

@@ -37,7 +37,7 @@ interface LogRow {
 type AgentKey = "monitor" | "planner" | "development_coach" | "coordinator";
 
 const AGENTS: Record<AgentKey, { label: string; icon: LucideIcon; dot: string; text: string }> = {
-  coordinator: { label: "Coordinator", icon: ShieldAlert, dot: "bg-ready-red text-white", text: "text-ready-red" },
+  coordinator: { label: "Coordinator", icon: ShieldAlert, dot: "bg-recover text-white", text: "text-recover" },
   planner: { label: "Planner", icon: CalendarCog, dot: "bg-pitch-600 text-white", text: "text-pitch-600 dark:text-pitch-300" },
   development_coach: { label: "Development Coach", icon: Target, dot: "bg-pitch-300 text-pitch-950", text: "text-pitch-700 dark:text-pitch-300" },
   monitor: { label: "Monitor", icon: Eye, dot: "bg-surface border-line text-ink-2 border", text: "text-ink-2" },
@@ -137,14 +137,14 @@ export function AgentLog() {
       {data && (
         <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <StatTile label="Escalated to staff" value={count("coordinator")} sub="Safety flags, no agent action" accent="var(--color-ready-red)" />
+            <StatTile label="Escalated to staff" value={count("coordinator")} sub="Safety flags, no agent action" accent="var(--color-recover)" />
             <StatTile label="Weeks planned" value={count("planner")} sub="Built or re-planned by the solver" accent="var(--color-pitch-600)" />
             <StatTile label="Goals set" value={count("development_coach")} sub="After test-day results" accent="var(--color-pitch-300)" />
             <StatTile
               label="Rule-based fallback"
               value={data.filter((r) => r.fallback).length}
               sub="Decided by rules, not the LLM"
-              accent="var(--color-ready-amber)"
+              accent="var(--color-caution)"
             />
           </div>
 
@@ -286,7 +286,7 @@ function Entry({ r, rail }: { r: LogRow; rail?: boolean }) {
   return (
     <li className={cn("relative", rail && "sm:pl-12")}>
       {rail && <Dot agent={r.agent} />}
-      <Card className={cn("p-3", r.decision === "escalate" && "border-l-ready-red border-l-4")}>
+      <Card className={cn("p-3", r.decision === "escalate" && "border-l-recover border-l-4")}>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
           <a.icon className={cn("h-4 w-4", a.text, rail && "sm:hidden")} aria-hidden />
           <span className={cn("font-bold tracking-wide uppercase", a.text)}>{a.label}</span>
@@ -296,7 +296,7 @@ function Entry({ r, rail }: { r: LogRow; rail?: boolean }) {
           </span>
           <span className={cn("text-ink-2", rail && "hidden sm:inline")}>· {TRIGGERS[r.trigger] ?? humanize(r.trigger)}</span>
           {r.fallback && (
-            <span className="inline-flex items-center gap-1 text-amber-700 dark:text-ready-amber" title="The LLM was not used: the rules decided">
+            <span className="inline-flex items-center gap-1 text-amber-700 dark:text-caution" title="The LLM was not used: the rules decided">
               <Bot className="h-3.5 w-3.5" aria-hidden /> rule-based
             </span>
           )}

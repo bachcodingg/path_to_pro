@@ -170,7 +170,7 @@ export function MyWeek() {
                 <p className="mt-2 text-sm">
                   <span className="font-semibold">{detail.match.team}</span> vs {detail.match.opponent}
                   {detail.minutes === 0 && (
-                    <span className="text-ready-amber block">
+                    <span className="text-caution block">
                       In the squad, but planned not to play: two matches on back-to-back days are too much for under-18s.
                     </span>
                   )}
@@ -181,7 +181,7 @@ export function MyWeek() {
                   <li>Effort: {detail.rpe} / 10</li>
                   <li>{detail.kind === "match" ? "Planned minutes" : "Duration"}: {detail.minutes} min</li>
                   <li>Planned load: {detail.load} AU</li>
-                  {detail.actual_load != null && <li className={cn(detail.actual_load > detail.load * 1.2 && "text-ready-amber")}>Actual load: {Math.round(detail.actual_load)} AU</li>}
+                  {detail.actual_load != null && <li className={cn(detail.actual_load > detail.load * 1.2 && "text-caution")}>Actual load: {Math.round(detail.actual_load)} AU</li>}
                 </ul>
               )}
               {detail.content && (

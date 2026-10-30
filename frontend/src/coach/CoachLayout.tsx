@@ -68,11 +68,11 @@ export function CoachLayout() {
   }
 
   return (
-    <div className="bg-surface-2 text-ink flex min-h-full">
+    <div className="app-bg text-ink flex min-h-full">
       <SkipLink />
       {/* The column runs the page's full height; its contents stay in view while scrolling */}
-      <aside className="hidden w-64 shrink-0 bg-[linear-gradient(180deg,#07170f,#0b2a20_600px,#0f3d2e)] text-white md:block">
-        <div className="sticky top-0 flex h-screen flex-col px-3 py-4">
+      <aside className="app-rail hidden w-64 shrink-0 text-white md:block">
+        <div className="sticky top-0 flex h-[calc(100vh-var(--banner-h,0px))] flex-col px-3 py-4">
           <div className="mb-5 flex items-center gap-2.5 px-2">
             <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="h-9 w-9" />
             <div className="leading-none">
@@ -131,7 +131,7 @@ export function CoachLayout() {
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="bg-pitch-950 sticky top-0 z-20 md:hidden">
+        <div className="app-rail sticky top-0 z-20 md:hidden">
           <div className="flex items-center justify-between px-4 pt-3">
             <span className="flex items-center gap-2 text-white">
               <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="h-7 w-7" />

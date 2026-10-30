@@ -141,11 +141,11 @@ export function MatchLineup({ rows, me, linkFor }: { rows: LineupRow[]; me?: str
               >
                 <circle
                   r={5.2}
-                  fill={selected === row.player.id ? "#fff" : "#0f2219"}
+                  fill={selected === row.player.id ? "#fff" : "#111b30"}
                   stroke={me === row.player.id ? "#f0c020" : "#fff"}
                   strokeWidth={me === row.player.id ? 1.4 : 0.6}
                 />
-                <text y={1.8} textAnchor="middle" fontSize={4.6} fontWeight={800} fill={selected === row.player.id ? "#0f2219" : "#fff"}>
+                <text y={1.8} textAnchor="middle" fontSize={4.6} fontWeight={800} fill={selected === row.player.id ? "#111b30" : "#fff"}>
                   {row.player.name[0]}
                 </text>
                 <rect x={2.5} y={-10} width={10} height={5.6} rx={1.4} fill={b ? HEX[b] : "#667"} />
@@ -164,7 +164,7 @@ export function MatchLineup({ rows, me, linkFor }: { rows: LineupRow[]; me?: str
                   </text>
                 )}
                 {assists > 0 && (
-                  <text x={5.5} y={4.5} fontSize={3.6} fill="#7ee0a8" fontWeight={800}>
+                  <text x={5.5} y={4.5} fontSize={3.6} fill="var(--brand-300)" fontWeight={800}>
                     A{assists > 1 ? assists : ""}
                   </text>
                 )}

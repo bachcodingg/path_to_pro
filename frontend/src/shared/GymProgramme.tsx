@@ -29,8 +29,8 @@ export function GymProgrammeView({ p, compact = false }: { p: GymProgramme; comp
       {p.adjustments.length > 0 && (
         <ul className="space-y-1">
           {p.adjustments.map((a) => (
-            <li key={a} className="border-ready-amber/40 bg-ready-amber/10 flex gap-2 rounded-xl border p-2 text-sm">
-              <ShieldCheck className="text-ready-amber h-4 w-4 shrink-0" aria-hidden />
+            <li key={a} className="border-caution/40 bg-caution/10 flex gap-2 rounded-xl border p-2 text-sm">
+              <ShieldCheck className="text-caution h-4 w-4 shrink-0" aria-hidden />
               {a}
             </li>
           ))}

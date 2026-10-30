@@ -117,10 +117,10 @@ export function Devices() {
       </div>
 
       {DEMO && (
-        <Card className="border-ready-amber/50 text-sm">This offline demo can't receive watch data: connect on the live server.</Card>
+        <Card className="border-caution/50 text-sm">This offline demo can't receive watch data: connect on the live server.</Card>
       )}
       {missing.length > 0 && (
-        <Card className="border-ready-amber/50 text-sm">
+        <Card className="border-caution/50 text-sm">
           Not stored until a parent agrees: {missing.map(([k]) => ({ hrv: "heart-rate variability", sleep: "sleep", wellness: "workouts" })[k as "hrv"]).join(", ")}.
         </Card>
       )}

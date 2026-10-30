@@ -46,7 +46,7 @@ function Tip({ active, payload }: { active?: boolean; payload?: { payload: Histo
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
   return (
-    <div className="rounded-lg border border-[#24402f] bg-[#0f2219] p-2 text-xs text-white">
+    <div className="rounded-lg border border-[#24324d] bg-[#111b30] p-2 text-xs text-white">
       <p className="font-bold">
         {p.label}: {p.rating.toFixed(1)}
       </p>
@@ -58,7 +58,7 @@ function Tip({ active, payload }: { active?: boolean; payload?: { payload: Histo
         {p.goals > 0 && ` · ${p.goals}G`}
         {p.assists > 0 && ` · ${p.assists}A`}
       </p>
-      <p className="text-[#a9c2b3]">
+      <p className="text-[#a8b4c8]">
         5-match average {p.rolling.toFixed(2)}
         {p.trend != null && ` · trend ${p.trend.toFixed(2)}`}
       </p>
@@ -69,8 +69,8 @@ function Tip({ active, payload }: { active?: boolean; payload?: { payload: Histo
 export function RatingHistory({ data, dark = true }: { data: RatingHistoryData; dark?: boolean }) {
   const { points, progress } = data;
   if (points.length === 0) return <Card className="text-ink-2 text-sm">No rated matches yet.</Card>;
-  const axis = dark ? "#a9c2b3" : "#5b6b62";
-  const grid = dark ? "rgba(255,255,255,0.08)" : "#e5ece8";
+  const axis = dark ? "#a8b4c8" : "#5b6780";
+  const grid = dark ? "rgba(255,255,255,0.08)" : "#e3e8f1";
   const Icon = progress.verdict === "improving" ? TrendingUp : progress.verdict === "dipping" ? TrendingDown : Minus;
   const tone = progress.verdict === "improving" ? "green" : progress.verdict === "dipping" ? "red" : "neutral";
   const sign = (x: number | null) => (x == null ? "–" : `${x > 0 ? "+" : ""}${x.toFixed(2)}`);
@@ -94,8 +94,8 @@ export function RatingHistory({ data, dark = true }: { data: RatingHistoryData; 
             <ReferenceLine y={7} stroke="#1fa05a" strokeDasharray="2 4" />
             <Tooltip content={<Tip />} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Line name="Match rating" dataKey="rating" stroke={dark ? "rgba(255,255,255,0.35)" : "#9aa8a0"} strokeWidth={1.5} dot={<Dot />} isAnimationActive={false} />
-            <Line name="5-match average" dataKey="rolling" stroke="#7ee0a8" strokeWidth={3} dot={false} isAnimationActive={false} />
+            <Line name="Match rating" dataKey="rating" stroke={dark ? "rgba(255,255,255,0.35)" : "#9aa5b8"} strokeWidth={1.5} dot={<Dot />} isAnimationActive={false} />
+            <Line name="5-match average" dataKey="rolling" stroke="var(--brand-300)" strokeWidth={3} dot={false} isAnimationActive={false} />
             {progress.slope_per_match != null && (
               <Line name="Trend" dataKey="trend" stroke="#f0a020" strokeWidth={2} strokeDasharray="6 4" dot={false} isAnimationActive={false} />
             )}

@@ -91,10 +91,10 @@ export function Career() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={data.ladder} margin={{ top: 12, right: 16, left: -16, bottom: 0 }}>
                     <CartesianGrid stroke="rgba(255,255,255,0.08)" />
-                    <XAxis dataKey="season" fontSize={11} stroke="#a9c2b3" />
-                    <YAxis domain={[0, 100]} fontSize={11} stroke="#a9c2b3" />
+                    <XAxis dataKey="season" fontSize={11} stroke="#a8b4c8" />
+                    <YAxis domain={[0, 100]} fontSize={11} stroke="#a8b4c8" />
                     <Tooltip
-                      contentStyle={{ background: "#0f2219", border: "1px solid #24402f" }}
+                      contentStyle={{ background: "#111b30", border: "1px solid #24324d" }}
                       formatter={(v: number, _n, p) => [`${p.payload.competition_label} (level ${v})`, "Highest league"]}
                     />
                     <Line type="stepAfter" dataKey="level" stroke="#f0a020" strokeWidth={3} dot={{ r: 5 }} />
@@ -253,7 +253,7 @@ function AddSeason({ data, onSaved }: { data: CareerData; onSaved: (c: CareerDat
           </label>
         ))}
         {error && (
-          <p role="alert" className="text-ready-red col-span-2 text-sm">
+          <p role="alert" className="text-recover col-span-2 text-sm">
             {error}
           </p>
         )}

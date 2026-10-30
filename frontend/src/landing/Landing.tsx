@@ -244,7 +244,7 @@ function HeroVisual() {
               </span>
             ))}
           </div>
-          <p className="bg-ready-green mt-2 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold">
+          <p className="bg-pitch-600 mt-2 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-white">
             <Check className="h-3.5 w-3.5" aria-hidden /> Approved by the coach
           </p>
         </FloatCard>
@@ -268,7 +268,7 @@ function HeroVisual() {
 }
 
 function FloatCard({ children }: { children: ReactNode }) {
-  return <div className="rounded-2xl border border-white/15 bg-[#0f2219]/90 p-3 shadow-2xl shadow-black/40 backdrop-blur">{children}</div>;
+  return <div className="rounded-2xl border border-white/15 bg-[#111b30]/90 p-3 shadow-2xl shadow-black/40 backdrop-blur">{children}</div>;
 }
 
 // The player's "Today" screen for Leon, the demo's tired U15 in his growth spurt
@@ -279,15 +279,15 @@ function Phone() {
         <div className="mx-auto mb-3 h-5 w-24 rounded-full bg-black" aria-hidden />
         <p className="text-[11px] text-white/50">Thursday 26 November</p>
         <p className="font-display text-3xl leading-none font-extrabold uppercase">Hi Leon</p>
-        <div className="mt-3 rounded-2xl border border-white/10 bg-[#0f2219] p-3">
+        <div className="mt-3 rounded-2xl border border-white/10 bg-[#111b30] p-3">
           <div className="flex items-center gap-3">
             <div className="relative h-11 flex-1 rounded-lg border-2 border-white/40 p-0.5">
-              <div className="bg-ready-red h-full w-[42%] rounded-md" />
+              <div className="bg-recover h-full w-[42%] rounded-md" />
               <div className="absolute top-1/2 -right-1.5 h-4 w-1 -translate-y-1/2 rounded-r bg-white/40" />
             </div>
             <div className="text-right">
               <p className="text-2xl leading-none font-extrabold">42</p>
-              <p className="text-ready-red text-[11px] font-bold">Recover</p>
+              <p className="text-recover text-[11px] font-bold">Recover</p>
             </div>
           </div>
           <div className="mt-2 flex flex-wrap gap-1">
@@ -299,7 +299,7 @@ function Phone() {
           </div>
         </div>
         <p className="font-display mt-4 text-sm font-bold tracking-wide uppercase">Today's session</p>
-        <div className="mt-1.5 flex items-center gap-3 rounded-2xl border border-white/10 bg-[#0f2219] p-3">
+        <div className="mt-1.5 flex items-center gap-3 rounded-2xl border border-white/10 bg-[#111b30] p-3">
           <span className="bg-pitch-200 text-pitch-900 flex h-10 w-10 items-center justify-center rounded-xl text-base font-extrabold">2</span>
           <span>
             <span className="block text-sm font-bold">Recovery</span>
@@ -335,7 +335,7 @@ function Ticker() {
     <div className="border-y border-white/10 bg-black/30" aria-label="Overnight agent actions from the demo season">
       <div className="mx-auto flex max-w-7xl items-stretch">
         <p className="bg-pitch-300 text-pitch-950 font-display z-10 flex shrink-0 items-center gap-2 px-4 text-sm font-extrabold tracking-wider uppercase">
-          <span className="bg-ready-red h-2 w-2 animate-pulse rounded-full" aria-hidden /> Night shift
+          <span className="bg-recover h-2 w-2 animate-pulse rounded-full" aria-hidden /> Night shift
         </p>
         <div className="relative min-w-0 flex-1 overflow-hidden [mask-image:linear-gradient(90deg,transparent,black_6%,black_94%,transparent)]">
           <ul className="animate-marquee flex w-max gap-10 py-3 hover:[animation-play-state:paused] motion-reduce:animate-none">
@@ -413,7 +413,7 @@ const STEPS: [LucideIcon, string, string, string][] = [
 const POLICY: [string, string, string][] = [
   ["Effort up or down by 1 point", "Applied, coach notified", "text-white/80"],
   ["A session swap or a load cut", "Coach approves", "text-pitch-300"],
-  ["A safety flag, such as pain", "Staff only, agents take no action", "text-ready-red"],
+  ["A safety flag, such as pain", "Staff only, agents take no action", "text-recover"],
 ];
 
 function HowItWorks() {
@@ -547,7 +547,7 @@ function Roles() {
   const { tryAs, busy } = useTryAs();
   const r = ROLES[role];
   return (
-    <section id="roles" className="relative scroll-mt-20 border-y border-white/10 bg-[#0a1c14] py-20 md:py-28">
+    <section id="roles" className="relative scroll-mt-20 border-y border-white/10 bg-[#0b1428] py-20 md:py-28">
       <div className="mx-auto max-w-7xl px-4 md:px-6">
         <SectionHead
           center
@@ -616,7 +616,7 @@ function Roles() {
 
 function MockFrame({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#0f2219] shadow-2xl shadow-black/40">
+    <div className="w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#111b30] shadow-2xl shadow-black/40">
       <div className="flex items-center gap-1.5 border-b border-white/10 px-4 py-2.5">
         {["bg-white/20", "bg-white/15", "bg-white/10"].map((c) => (
           <span key={c} className={cn("h-2.5 w-2.5 rounded-full", c)} aria-hidden />
@@ -663,7 +663,7 @@ function MiniHeatmap() {
     ["Elias O.", [57, 68, 29, 42, 38, 57, 70]],
     ["Emil L.", [67, 57, 43, 83, 49, 64, 88]],
   ];
-  const cell = (v: number) => (v >= 70 ? "bg-ready-green/25 text-[#7fb2f0]" : v >= 50 ? "bg-ready-amber/25 text-ready-amber" : "bg-ready-red text-white");
+  const cell = (v: number) => (v >= 70 ? "bg-ready/25 text-[#7fb2f0]" : v >= 50 ? "bg-caution/25 text-caution" : "bg-recover text-white");
   return (
     <MockFrame title="Dressing room">
       <table className="w-full border-separate border-spacing-1 text-[11px]">
@@ -718,8 +718,8 @@ function MiniFamily() {
 function MiniPhysio() {
   return (
     <MockFrame title="Physio queue">
-      <div className="border-ready-red/50 rounded-xl border border-l-4 bg-white/[0.03] p-3">
-        <p className="text-ready-red text-[11px] font-bold uppercase">Pain reported</p>
+      <div className="border-recover/50 rounded-xl border border-l-4 bg-white/[0.03] p-3">
+        <p className="text-recover text-[11px] font-bold uppercase">Pain reported</p>
         <p className="font-bold">Noah H.</p>
         <p className="text-xs text-white/55">In this queue within a second of the check-in</p>
         <span className="bg-pitch-600 mt-3 inline-flex rounded-lg px-3 py-1.5 text-xs font-bold">I've spoken to them</span>
@@ -733,7 +733,7 @@ function MiniPhysio() {
         ].map(([n, v]) => (
           <div key={n} className="flex justify-between py-1.5">
             <span>{n}</span>
-            <span className="text-ready-amber font-bold">{v}</span>
+            <span className="text-caution font-bold">{v}</span>
           </div>
         ))}
       </div>
@@ -815,8 +815,8 @@ function GrowthCurve() {
         {[40, 80, 120].map((y) => (
           <line key={y} x1={10} x2={310} y1={y} y2={y} stroke="rgb(255 255 255 / 0.07)" />
         ))}
-        <path d="M10 118 C 70 112, 110 104, 140 84 S 200 34, 230 26 S 290 18, 310 16" fill="none" stroke="#7ee0a8" strokeWidth={3} strokeLinecap="round" />
-        <circle cx={150} cy={74} r={6} fill="#fff" stroke="#22a061" strokeWidth={3} />
+        <path d="M10 118 C 70 112, 110 104, 140 84 S 200 34, 230 26 S 290 18, 310 16" fill="none" stroke="var(--brand-300)" strokeWidth={3} strokeLinecap="round" />
+        <circle cx={150} cy={74} r={6} fill="#fff" stroke="var(--brand-500)" strokeWidth={3} />
         <text x={150} y={60} textAnchor="middle" fill="#fff" fontSize={10} fontWeight={700}>
           You
         </text>
@@ -838,7 +838,7 @@ const LEVELS = ["Starter", "Grassroots", "Competitive amateur", "Elite amateur",
 
 function Pathway() {
   return (
-    <section className="border-y border-white/10 bg-[#0a1c14] py-20 md:py-24">
+    <section className="border-y border-white/10 bg-[#0b1428] py-20 md:py-24">
       <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 md:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
         <div>
           <SectionHead

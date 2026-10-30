@@ -12,7 +12,7 @@ import { useApi } from "../shared/useApi";
 import { PageHeader, Tabs } from "../shared/PageHeader";
 import { BAND_TEXT, BandIcon, Button, Card, Chip, ErrorNote, SectionTitle, Spinner, cn, fmtDay, intensityClass } from "../shared/ui";
 
-const BAND_RING = { green: "ring-ready-green", amber: "ring-ready-amber", red: "ring-ready-red" } as const;
+const BAND_RING = { green: "ring-ready", amber: "ring-caution", red: "ring-recover" } as const;
 const initials = (name: string) =>
   name
     .split(/\s+/)
@@ -249,7 +249,7 @@ function LoadChart({ series }: { series: Profile["series"] }) {
               <span className="bg-ink h-0.5 w-4 rounded-full" aria-hidden /> Readiness (0-100)
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="border-ready-red w-4 border-t-2 border-dashed" aria-hidden /> Recover below 50
+              <span className="border-recover w-4 border-t-2 border-dashed" aria-hidden /> Recover below 50
             </span>
           </p>
         </div>
@@ -264,7 +264,7 @@ function LoadChart({ series }: { series: Profile["series"] }) {
             <YAxis yAxisId="r" orientation="right" domain={[0, 100]} ticks={[0, 50, 100]} {...AXIS} width={28} />
             <Tooltip {...TOOLTIP} labelFormatter={(d: string) => fmtDay(d, { weekday: "short", day: "numeric", month: "short" })} />
             <Bar yAxisId="load" dataKey="load" name="Load (AU)" fill="var(--color-pitch-400)" radius={[3, 3, 0, 0]} maxBarSize={14} />
-            <ReferenceLine yAxisId="r" y={50} stroke="var(--color-ready-red)" strokeDasharray="4 4" />
+            <ReferenceLine yAxisId="r" y={50} stroke="var(--color-recover)" strokeDasharray="4 4" />
             <Line yAxisId="r" dataKey="readiness" name="Readiness" stroke="var(--ink)" strokeWidth={2} dot={false} connectNulls />
           </ComposedChart>
         </ResponsiveContainer>
@@ -323,7 +323,7 @@ function InstructionBox({ playerId, name, onApplied }: { playerId: string; name:
         </Button>
       </form>
       {error && (
-        <p role="alert" className="text-ready-red mt-2 text-sm font-medium">
+        <p role="alert" className="text-recover mt-2 text-sm font-medium">
           {error}
         </p>
       )}
@@ -353,11 +353,11 @@ function InstructionBox({ playerId, name, onApplied }: { playerId: string; name:
             <p className="text-ink-2 text-xs">Not possible within the safety rules: {preview.dropped.join("; ")}</p>
           )}
           {preview.applied ? (
-            <p role="status" className="text-ready-green text-sm font-semibold">
+            <p role="status" className="text-ready text-sm font-semibold">
               Applied. {name} sees the new week with your note.
             </p>
           ) : (
-            <Button variant="approve" onClick={() => send(true)} loading={busy}>
+            <Button variant="primary" onClick={() => send(true)} loading={busy}>
               Apply to {name}'s week
             </Button>
           )}

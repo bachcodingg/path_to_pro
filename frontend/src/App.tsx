@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { homeFor, useAuth } from "./shared/auth";
@@ -58,6 +58,14 @@ function Guard({ roles, children }: { roles: Role[]; children: React.ReactNode }
 
 export function App() {
   const { user, loading } = useAuth();
+  // Each kind of user has its own accent colour (index.css [data-role]); signed out shows the players' teal.
+  // Signed in, every page sits on the dark navy, as the player app does.
+  useEffect(() => {
+    const role = user?.role;
+    const root = document.documentElement;
+    root.dataset.role = role === "guardian" ? "family" : role && role !== "player" ? "staff" : "player";
+    root.classList.toggle("dark", !!role);
+  }, [user?.role]);
   return (
     <Suspense fallback={<Spinner />}>
     <Routes>

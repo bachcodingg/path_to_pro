@@ -99,7 +99,7 @@ const CLUBS: Record<string, ClubMeta> = {
 };
 
 const FALLBACK: [string, string][] = [
-  ["#0f3d2e", "#7ee0a8"],
+  ["#0b1230", "#6ee7cf"],
   ["#1e3a8a", "#ffffff"],
   ["#7f1d1d", "#fbbf24"],
   ["#111827", "#f97316"],
@@ -115,7 +115,7 @@ export function clubMeta(name: string): ClubMeta {
   for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   const words = name.replace(/[^\p{L}\p{N} ]/gu, "").split(/\s+/).filter(Boolean);
   const num = name.match(/\d+/)?.[0];
-  if (name.startsWith("PathToPro")) return { code: "PTP", colors: ["#0f3d2e", "#7ee0a8"] };
+  if (name.startsWith("PathToPro")) return { code: "PTP", colors: ["#0b1230", "#6ee7cf"] };
   const code = (num && words.length <= 2 ? words[0][0] + num : words.map((w) => w[0]).join("").slice(0, 3)).toUpperCase();
   return { code: code || "?", colors: FALLBACK[h % FALLBACK.length] };
 }

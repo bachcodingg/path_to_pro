@@ -49,7 +49,7 @@ export function Growth() {
           <Card>
             {data.in_phv_window ? (
               <p>
-                <strong className="text-ready-amber">You're in your growth spurt.</strong> Bones grow faster than muscles and tendons
+                <strong className="text-caution">You're in your growth spurt.</strong> Bones grow faster than muscles and tendons
                 right now, so jumps and sprints are kept short. It's temporary and normal.
               </p>
             ) : (
@@ -65,14 +65,14 @@ export function Growth() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={pts} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
                 <CartesianGrid stroke="rgba(255,255,255,0.08)" />
-                <XAxis dataKey="age" type="number" domain={["dataMin - 0.2", "dataMax + 0.4"]} tickFormatter={(v) => v.toFixed(1)} stroke="#a9c2b3" fontSize={12} />
-                <YAxis domain={["dataMin - 3", "dataMax + 3"]} stroke="#a9c2b3" fontSize={12} unit=" cm" width={60} />
+                <XAxis dataKey="age" type="number" domain={["dataMin - 0.2", "dataMax + 0.4"]} tickFormatter={(v) => v.toFixed(1)} stroke="#a8b4c8" fontSize={12} />
+                <YAxis domain={["dataMin - 3", "dataMax + 3"]} stroke="#a8b4c8" fontSize={12} unit=" cm" width={60} />
                 {data.phv_window && (
                   <ReferenceArea x1={data.phv_window[0]} x2={data.phv_window[1]} fill="#e3a008" fillOpacity={0.18} label={{ value: "Growth zone", fill: "#e3a008", fontSize: 11, position: "insideTop" }} />
                 )}
-                <Tooltip contentStyle={{ background: "#0f2219", border: "1px solid #24402f" }} labelFormatter={(v) => `Age ${Number(v).toFixed(1)}`} />
-                <Line type="monotone" dataKey="height_cm" stroke="#7ee0a8" strokeWidth={3} dot={{ r: 3 }} name="Height (cm)" />
-                {last && <ReferenceDot x={last.age} y={last.height_cm} r={7} fill="#fff" stroke="#22a061" strokeWidth={3} label={{ value: "You", position: "top", fill: "#fff", fontSize: 12 }} />}
+                <Tooltip contentStyle={{ background: "#111b30", border: "1px solid #24324d" }} labelFormatter={(v) => `Age ${Number(v).toFixed(1)}`} />
+                <Line type="monotone" dataKey="height_cm" stroke="var(--brand-300)" strokeWidth={3} dot={{ r: 3 }} name="Height (cm)" />
+                {last && <ReferenceDot x={last.age} y={last.height_cm} r={7} fill="#fff" stroke="var(--brand-500)" strokeWidth={3} label={{ value: "You", position: "top", fill: "#fff", fontSize: 12 }} />}
               </LineChart>
             </ResponsiveContainer>
           </Card>

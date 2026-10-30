@@ -122,7 +122,7 @@ export function Schedule() {
         subtitle="The team's training week and its fixtures. The planner builds each player's week from these, then adapts it to their readiness, growth and load."
       />
       {note && (
-        <p role={note.ok ? "status" : "alert"} className={cn("text-sm font-semibold", note.ok ? "text-ready-green" : "text-ready-red")}>
+        <p role={note.ok ? "status" : "alert"} className={cn("text-sm font-semibold", note.ok ? "text-ready" : "text-recover")}>
           {note.text}
         </p>
       )}
@@ -206,7 +206,7 @@ export function Schedule() {
           <p className="text-ink-2 mt-2 text-xs">
             Sessions are planned {data.weeks_ahead} weeks ahead and extended every Sunday. At least one rest day a week; on match days the
             match replaces training. Players in a growth spurt or with a load spike get a safer version automatically.
-            {trainingDays > 6 && <strong className="text-ready-red"> Leave at least one rest day.</strong>}
+            {trainingDays > 6 && <strong className="text-recover"> Leave at least one rest day.</strong>}
           </p>
           {data.next_sessions.length > 0 && (
             <div className="mt-6">

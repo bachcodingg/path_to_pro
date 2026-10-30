@@ -134,7 +134,7 @@ export function TrainingPitch() {
               className={cn(
                 "tap cursor-grab rounded-xl px-3 py-2 text-sm font-bold active:cursor-grabbing",
                 intensityClass(p.kind, p.rpe),
-                picked === i && "ring-pitch-500 ring-2 ring-offset-2",
+                picked === i && "ring-pitch-500 ring-offset-surface ring-2 ring-offset-2",
               )}
             >
               {p.label}
@@ -172,7 +172,7 @@ export function TrainingPitch() {
             <Button variant="ghost" size="sm" onClick={() => setPreview(null)}>
               Cancel
             </Button>
-            <Button variant="approve" size="sm" loading={busy} onClick={() => place(preview.day, true)}>
+            <Button variant="primary" size="sm" loading={busy} onClick={() => place(preview.day, true)}>
               Apply to squad
             </Button>
           </span>
@@ -197,7 +197,7 @@ export function TrainingPitch() {
                     onDragOver={(e) => !past && canPlan && (e.preventDefault(), setOver(d))}
                     onDragLeave={() => setOver(null)}
                     onDrop={(e) => !past && canPlan && onDrop(e, d)}
-                    className={cn("rounded-lg p-1 text-center align-top", over === d && "bg-pitch-100", d === data.today && "text-pitch-700")}
+                    className={cn("rounded-lg p-1 text-center align-top", over === d && "bg-pitch-100 dark:bg-white/10", d === data.today && "text-pitch-700 dark:text-pitch-300")}
                   >
                     <div className="font-bold">{fmtDay(d, { weekday: "short", day: "numeric" })}</div>
                     {canPlan &&
@@ -237,9 +237,9 @@ export function TrainingPitch() {
                           className={cn(
                             "rounded-lg p-1.5 text-center",
                             intensityClass(show.kind, show.rpe),
-                            changed && pl.status === "ok" && "ring-ready-green ring-2",
-                            changed && pl.status === "adjusted" && "ring-ready-amber ring-2",
-                            changed && pl.status === "unchanged" && "ring-ready-red ring-2",
+                            changed && pl.status === "ok" && "ring-ready ring-2",
+                            changed && pl.status === "adjusted" && "ring-caution ring-2",
+                            changed && pl.status === "unchanged" && "ring-recover ring-2",
                           )}
                           title={changed && pl.reasons.length ? pl.reasons.join("; ") : undefined}
                         >

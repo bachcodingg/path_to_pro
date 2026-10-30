@@ -18,8 +18,7 @@ const button = cva(
         primary: "bg-pitch-600 text-white hover:bg-pitch-700",
         secondary: "bg-surface border border-line text-ink hover:bg-surface-2",
         ghost: "text-ink-2 hover:bg-surface-2",
-        danger: "bg-ready-red text-white hover:brightness-95",
-        approve: "bg-ready-green text-white hover:brightness-95",
+        danger: "bg-danger text-white hover:brightness-95",
       },
       size: { md: "h-11", sm: "h-11 px-3 text-sm", lg: "h-14 text-base px-6" },
     },
@@ -58,9 +57,9 @@ export function SectionTitle({ children, action }: { children: ReactNode; action
 export function Chip({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | Band | "win" }) {
   const tones = {
     neutral: "bg-surface-2 text-ink border-line",
-    green: "bg-ready-green/10 text-ready-green border-ready-green/30",
-    amber: "bg-ready-amber/10 text-amber-700 dark:text-ready-amber border-ready-amber/40",
-    red: "bg-ready-red/10 text-ready-red border-ready-red/40",
+    green: "bg-ready/10 text-ready border-ready/30",
+    amber: "bg-caution/10 text-amber-700 dark:text-caution border-caution/40",
+    red: "bg-recover/10 text-recover border-recover/40",
     win: "bg-win/10 text-win border-win/30",
   };
   return (
@@ -72,10 +71,26 @@ export function Chip({ children, tone = "neutral" }: { children: ReactNode; tone
 
 export const BAND_TEXT: Record<Band, string> = { green: "Ready", amber: "Take care", red: "Recover" };
 export const BAND_BG: Record<Band, string> = {
-  green: "bg-ready-green",
-  amber: "bg-ready-amber",
-  red: "bg-ready-red",
+  green: "bg-ready",
+  amber: "bg-caution",
+  red: "bg-recover",
 };
+
+// Band lines and the safety-first buffer (backend/config/readiness.yaml): a worse colour applies
+// at once, a better one only HOLD_UP points past its line, so a score can sit above its line
+// and still show the lower colour. The UI says so wherever that happens.
+export const BAND_MIN = { green: 70, amber: 50 } as const;
+export const HOLD_UP = 8;
+
+export function heldBack(band: Band | null, score: number | null | undefined): boolean {
+  if (score == null) return false;
+  return (band === "amber" && score >= BAND_MIN.green) || (band === "red" && score >= BAND_MIN.amber);
+}
+
+export function holdNote(band: Band | null): string {
+  const next = band === "red" ? BAND_MIN.amber : BAND_MIN.green;
+  return `Stays ${band ? BAND_TEXT[band] : ""} until ${next + HOLD_UP}: a colour only improves when the score is clearly past its line, so it doesn't flicker day to day.`;
+}
 
 export function BandIcon({ band, className }: { band: Band | null; className?: string }) {
   const Icon = band === "green" ? BatteryFull : band === "amber" ? BatteryMedium : band === "red" ? BatteryLow : BatteryWarning;
@@ -94,12 +109,13 @@ export function BandBadge({ band, score }: { band: Band | null; score?: number |
 
 // Session intensity colour scale (lanes on the week pitch, strips in the inbox)
 export function intensityClass(kind: SessionKind, rpe: number): string {
-  if (kind === "match") return "bg-pitch-900 text-white";
+  // On the dark navy the scale runs the other way: easy is a faint tint, hard the brightest
+  if (kind === "match") return "bg-pitch-900 text-white dark:bg-pitch-950 dark:ring-1 dark:ring-inset dark:ring-pitch-300/70";
   if (kind === "rest") return "bg-surface-2 text-ink-2";
-  if (rpe <= 3) return "bg-pitch-200 text-pitch-900";
-  if (rpe <= 5) return "bg-pitch-400 text-pitch-950";
+  if (rpe <= 3) return "bg-pitch-200 text-pitch-900 dark:bg-pitch-500/20 dark:text-pitch-100";
+  if (rpe <= 5) return "bg-pitch-400 text-pitch-950 dark:bg-pitch-500/45 dark:text-white";
   if (rpe <= 7) return "bg-pitch-600 text-white";
-  return "bg-pitch-800 text-white";
+  return "bg-pitch-800 text-white dark:bg-pitch-400 dark:text-pitch-950";
 }
 
 export function Spinner({ label = "Loading" }: { label?: string }) {
@@ -145,8 +161,8 @@ export function StatTile({ label, value, sub, accent, className }: { label: Reac
 
 export function ErrorNote({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <Card className="border-ready-red/40">
-      <p className="text-ready-red font-semibold">Something went wrong</p>
+    <Card className="border-recover/40">
+      <p className="text-recover font-semibold">Something went wrong</p>
       <p className="text-ink-2 mt-1 text-sm">{message}</p>
       {onRetry && (
         <Button variant="secondary" size="sm" className="mt-3" onClick={onRetry}>

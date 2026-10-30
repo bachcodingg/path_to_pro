@@ -90,7 +90,7 @@ export function MoneyCard() {
                 <span className="font-semibold">{c.title}</span>
                 <span className="text-ink-2 block text-xs">{c.team}</span>
               </span>
-              <span className={cn("font-bold tabular-nums", c.direction === "expense" ? "text-ready-green" : "")}>
+              <span className={cn("font-bold tabular-nums", c.direction === "expense" ? "text-ready" : "")}>
                 {c.direction === "expense" ? "you get " : "you pay "}
                 {eur(c.amount_cents)} {PERIOD[c.period]}
               </span>
@@ -109,11 +109,11 @@ export function MoneyCard() {
           {earns && (
             <>
               <div>
-                <p className="text-ready-green text-lg font-extrabold">{eur(data.salary_cents)}</p>
+                <p className="text-ready text-lg font-extrabold">{eur(data.salary_cents)}</p>
                 <p className="text-ink-2 text-xs">salary this season</p>
               </div>
               <div>
-                <p className="text-ready-green text-lg font-extrabold">{eur(data.bonus_cents)}</p>
+                <p className="text-ready text-lg font-extrabold">{eur(data.bonus_cents)}</p>
                 <p className="text-ink-2 text-xs">bonuses earned</p>
               </div>
             </>
@@ -123,7 +123,7 @@ export function MoneyCard() {
             <p className="text-ink-2 text-xs">fees paid</p>
           </div>
           <div>
-            <p className={cn("text-lg font-extrabold", data.fees_due_cents > 0 && "text-ready-amber")}>{eur(data.fees_due_cents)}</p>
+            <p className={cn("text-lg font-extrabold", data.fees_due_cents > 0 && "text-caution")}>{eur(data.fees_due_cents)}</p>
             <p className="text-ink-2 text-xs">fees due</p>
           </div>
         </div>

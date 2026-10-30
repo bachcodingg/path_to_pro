@@ -107,13 +107,13 @@ export function Pathway() {
             </section>
           ) : (
             <Card className="flex items-center gap-3">
-              <Trophy className="text-ready-amber h-8 w-8" aria-hidden />
+              <Trophy className="text-caution h-8 w-8" aria-hidden />
               <p>Top level. Keep your benchmarks up and ask your club coach about trials and showcases.</p>
             </Card>
           )}
 
           {data.guardian_invite && (
-            <Card className="border-ready-amber/50">
+            <Card className="border-caution/50">
               <p className="font-bold">Ask a parent to join</p>
               <p className="text-ink-2 text-sm">
                 You're under 16, so a parent has to agree before we store your check-ins and test results. They sign up at{" "}
@@ -136,7 +136,7 @@ export function Pathway() {
                   onClick={() => setTest(r.test)}
                   aria-pressed={r.test === current}
                 >
-                  {r.met ? <CheckCircle2 className="text-ready-green h-5 w-5 shrink-0" aria-label="met" /> : <Circle className="text-ink-2 h-5 w-5 shrink-0" aria-label="not met" />}
+                  {r.met ? <CheckCircle2 className="text-ready h-5 w-5 shrink-0" aria-label="met" /> : <Circle className="text-ink-2 h-5 w-5 shrink-0" aria-label="not met" />}
                   <span className="min-w-0 flex-1">
                     <span className="block font-semibold">{r.label}</span>
                     <span className="text-ink-2 text-xs">{r.kind === "technical" ? "Ball skill" : "Athletic"}</span>
@@ -183,7 +183,7 @@ export function Pathway() {
                   </Button>
                 </form>
               ) : (
-                <p className="text-ready-amber text-sm font-semibold">Test results are saved once a parent has agreed.</p>
+                <p className="text-caution text-sm font-semibold">Test results are saved once a parent has agreed.</p>
               )}
               {msg && (
                 <p role="status" className="mt-2 text-sm font-semibold">
@@ -204,7 +204,7 @@ export function Pathway() {
                         {l.level}. {l.name}
                       </p>
                       {l.level === a.level && <Chip tone="green">You</Chip>}
-                      {l.level < a.level && <CheckCircle2 className="text-ready-green h-5 w-5" aria-label="done" />}
+                      {l.level < a.level && <CheckCircle2 className="text-ready h-5 w-5" aria-label="done" />}
                     </div>
                     <p className="text-ink-2 text-sm">{l.who}</p>
                     <p className="text-ink-2 mt-1 text-xs">
@@ -295,7 +295,7 @@ function Progress({ label, value, done }: { label: string; value: number; done: 
     <div>
       <p className="mb-1 text-sm font-semibold">{label}</p>
       <div className="bg-surface-2 h-3 rounded-full" role="progressbar" aria-valuenow={Math.round(Math.min(1, value) * 100)} aria-valuemin={0} aria-valuemax={100} aria-label={label}>
-        <div className={cn("h-full rounded-full", done ? "bg-ready-green" : "bg-pitch-500")} style={{ width: `${Math.min(1, value) * 100}%` }} />
+        <div className={cn("h-full rounded-full", done ? "bg-ready" : "bg-pitch-500")} style={{ width: `${Math.min(1, value) * 100}%` }} />
       </div>
     </div>
   );

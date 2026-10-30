@@ -135,10 +135,10 @@ export function TacticsBoard() {
         </Card>
         <div className="space-y-3">
           {hover && (
-            <Card className={cn(hover.flags.some(isAlarm) && "border-l-ready-red border-l-4")}>
+            <Card className={cn(hover.flags.some(isAlarm) && "border-l-recover border-l-4")}>
               <div className="flex items-center justify-between">
                 <p className="flex items-center gap-2 font-bold">
-                  {hover.flags.some(isAlarm) && <AlertTriangle className="text-ready-red h-4 w-4" aria-label="Needs attention" />}
+                  {hover.flags.some(isAlarm) && <AlertTriangle className="text-recover h-4 w-4" aria-label="Needs attention" />}
                   {hover.name}
                 </p>
                 <BandBadge band={hover.band} score={hover.readiness} />
@@ -172,7 +172,7 @@ export function TacticsBoard() {
                   >
                     <span className="font-medium">
                       {p.name}
-                      {p.phv && <span className="text-ready-amber ml-1 text-xs">growth</span>}
+                      {p.phv && <span className="text-caution ml-1 text-xs">growth</span>}
                     </span>
                     <BandBadge band={p.band} score={p.readiness} />
                   </button>

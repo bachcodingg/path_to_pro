@@ -8,7 +8,7 @@ import { useAuth } from "../shared/auth";
 import { t } from "../shared/i18n";
 import type { SessionKind, Today, WhyCard } from "../shared/types";
 import { useApi } from "../shared/useApi";
-import { BAND_BG, BAND_TEXT, BandIcon, Button, Card, Chip, ErrorNote, SectionTitle, Spinner, cn, intensityClass } from "../shared/ui";
+import { BAND_BG, BAND_MIN, BAND_TEXT, BandIcon, Button, Card, Chip, ErrorNote, HOLD_UP, SectionTitle, Spinner, cn, heldBack, intensityClass } from "../shared/ui";
 import { MatchDiary } from "./MatchDiary";
 import { TipBody, type TipsData } from "./Tips";
 
@@ -36,7 +36,7 @@ export function TodayScreen() {
           <h1 className="text-2xl font-extrabold">Hi {data.name.split(" ")[0]}</h1>
         </div>
         {data.streak > 0 && (
-          <span className="text-ready-amber flex items-center gap-1 font-bold" title="Check-in streak">
+          <span className="text-caution flex items-center gap-1 font-bold" title="Check-in streak">
             <Flame className="h-5 w-5" aria-hidden /> {data.streak}
           </span>
         )}
@@ -58,8 +58,8 @@ export function TodayScreen() {
       )}
 
       {data.safety?.map((msg) => (
-        <Card key={msg} className="border-ready-red/50 flex gap-3" role="alert">
-          <ShieldAlert className="text-ready-red h-6 w-6 shrink-0" aria-hidden />
+        <Card key={msg} className="border-recover/50 flex gap-3" role="alert">
+          <ShieldAlert className="text-recover h-6 w-6 shrink-0" aria-hidden />
           <p>{msg}</p>
         </Card>
       ))}
@@ -73,7 +73,7 @@ export function TodayScreen() {
 
           {data.consent && !data.consent.wellness ? (
             <Link to="/player/levels" className="block">
-              <Card className="border-ready-amber/50">
+              <Card className="border-caution/50">
                 <p className="font-bold">Check-ins are waiting for a parent</p>
                 <p className="text-ink-2 text-sm">You're under 16: a parent links with your invite code first. Tap to see the code.</p>
               </Card>
@@ -105,8 +105,12 @@ export function TodayScreen() {
           <section>
             <SectionTitle>{t("today.session")}</SectionTitle>
             <Card className="flex items-center gap-4">
-              <div className={cn("flex h-14 w-14 items-center justify-center rounded-xl text-lg font-extrabold", intensityClass(data.session.kind, data.session.rpe))}>
-                {data.session.kind === "rest" ? "–" : data.session.rpe}
+              <div
+                className={cn("flex h-14 w-14 flex-col items-center justify-center rounded-xl leading-none", intensityClass(data.session.kind, data.session.rpe))}
+                aria-hidden
+              >
+                <span className="text-lg font-extrabold">{data.session.kind === "rest" ? "–" : data.session.rpe}</span>
+                {data.session.kind !== "rest" && <span className="mt-0.5 text-[10px] font-semibold tracking-wide uppercase opacity-80">effort</span>}
               </div>
               <div>
                 <p className="text-lg font-bold">{data.session.label}</p>
@@ -253,6 +257,12 @@ export function Battery({
         {t("today.battery")} from sleep{hrv ? ", heart-rate variability" : ""} and your check-in.
         {stale && " Showing your last reading: check in to update it."}
       </p>
+      {heldBack(band, score) && (
+        <p className="text-ink-2 mt-1 text-sm">
+          Still {band ? BAND_TEXT[band] : ""}: after a tougher day your colour comes back at{" "}
+          {(band === "red" ? BAND_MIN.amber : BAND_MIN.green) + HOLD_UP}, so one good night doesn't flip it.
+        </p>
+      )}
     </Card>
   );
 }

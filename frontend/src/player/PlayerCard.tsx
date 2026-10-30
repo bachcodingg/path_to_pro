@@ -82,10 +82,10 @@ export function PlayerCard() {
               <div className="h-40">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={selected.history} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-                    <XAxis dataKey="date" tickFormatter={(d) => d.slice(5)} fontSize={11} stroke="#a9c2b3" />
-                    <YAxis domain={["auto", "auto"]} reversed={selected.unit === "s"} fontSize={11} stroke="#a9c2b3" />
-                    <Tooltip contentStyle={{ background: "#0f2219", border: "1px solid #24402f" }} />
-                    <Line dataKey="value" stroke="#7ee0a8" strokeWidth={3} dot />
+                    <XAxis dataKey="date" tickFormatter={(d) => d.slice(5)} fontSize={11} stroke="#a8b4c8" />
+                    <YAxis domain={["auto", "auto"]} reversed={selected.unit === "s"} fontSize={11} stroke="#a8b4c8" />
+                    <Tooltip contentStyle={{ background: "#111b30", border: "1px solid #24324d" }} />
+                    <Line dataKey="value" stroke="var(--brand-300)" strokeWidth={3} dot />
                   </LineChart>
                 </ResponsiveContainer>
               </div>

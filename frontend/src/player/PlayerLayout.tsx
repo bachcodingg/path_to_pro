@@ -86,8 +86,24 @@ function extrasFor(selfGuided: boolean) {
 
 // Mobile-first PWA shell, dark by default (players use it in the evening). From tablet
 // width up: a sidebar instead of the bottom tabs, and pages lay out in columns.
+// The player's initials in a circle of their colour, as staff have in their column
+function Avatar({ initials, className }: { initials: string; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "bg-pitch-300 text-pitch-950 font-display ring-pitch-300/30 flex shrink-0 items-center justify-center rounded-full font-bold ring-4",
+        className,
+      )}
+      aria-hidden
+    >
+      {initials}
+    </span>
+  );
+}
+
 export function PlayerLayout() {
   const { user, logout } = useAuth();
+  const initials = (user?.name ?? "?").split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   const selfGuided = user?.pathway === "amateur";
   const NAV = navFor(selfGuided);
   const EXTRAS = extrasFor(selfGuided);
@@ -100,9 +116,9 @@ export function PlayerLayout() {
         : "text-ink-2 hover:bg-white/5 hover:text-ink",
     );
   return (
-    <div className="dark display-headings bg-surface-2 text-ink min-h-full md:flex">
+    <div className="dark display-headings app-bg text-ink min-h-full md:flex">
       <SkipLink />
-      <aside className="bg-surface border-line sticky top-0 hidden h-screen w-60 shrink-0 flex-col border-r p-4 md:flex">
+      <aside className="bg-surface border-line sticky top-0 hidden h-[calc(100vh-var(--banner-h,0px))] w-60 shrink-0 flex-col border-r p-4 md:flex">
         <div className="mb-6 flex items-center gap-2">
           <img
             src={`${import.meta.env.BASE_URL}icon.svg`}
@@ -127,19 +143,26 @@ export function PlayerLayout() {
             </NavLink>
           ))}
         </nav>
-        <div className="border-line border-t pt-3 text-sm">
-          <p className="font-semibold">{user?.name}</p>
-          <p className="text-ink-2">
-            {selfGuided ? "Self-guided player" : "Academy player"}
-          </p>
-          <Link to="/account" className="tap text-ink-2 hover:text-ink mt-1 flex items-center gap-1">
-            <Settings className="h-4 w-4" aria-hidden /> {t("nav.account")}
+        <div className="border-line flex items-center gap-3 border-t pt-3 text-sm">
+          <Link to="/account" className="group flex min-w-0 flex-1 items-center gap-3" title={t("nav.account")}>
+            <span className="relative">
+              <Avatar initials={initials} className="h-9 w-9 text-base" />
+              <span className="bg-surface border-line text-ink-2 group-hover:text-ink absolute -right-1.5 -bottom-1.5 flex h-5 w-5 items-center justify-center rounded-full border">
+                <Settings className="h-3 w-3" aria-hidden />
+              </span>
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate font-semibold group-hover:underline">{user?.name}</span>
+              <span className="text-ink-2 block truncate text-xs">{selfGuided ? "Self-guided player" : "Academy player"}</span>
+            </span>
           </Link>
           <button
             onClick={logout}
-            className="tap text-ink-2 hover:text-ink flex items-center gap-1"
+            className="tap text-ink-2 hover:text-ink flex items-center justify-center"
+            aria-label={t("common.signout")}
+            title={t("common.signout")}
           >
-            <LogOut className="h-4 w-4" aria-hidden /> {t("common.signout")}
+            <LogOut className="h-4 w-4" aria-hidden />
           </button>
         </div>
       </aside>
@@ -164,10 +187,10 @@ export function PlayerLayout() {
             </Link>
             <Link
               to="/account"
-              className="tap text-ink-2 flex h-11 w-11 items-center justify-center"
+              className="tap flex h-11 w-11 items-center justify-center"
               aria-label={t("nav.account")}
             >
-              <Settings className="h-5 w-5" aria-hidden />
+              <Avatar initials={initials} className="h-8 w-8 text-sm" />
             </Link>
             <Link
               to="/player/devices"
@@ -181,7 +204,6 @@ export function PlayerLayout() {
               onClick={logout}
               aria-label={t("common.signout")}
             >
-              <span className="max-w-[9rem] truncate">{user?.name}</span>
               <LogOut className="h-4 w-4" aria-hidden />
             </button>
           </span>
