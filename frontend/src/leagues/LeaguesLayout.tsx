@@ -1,24 +1,25 @@
-// The pro-league section's own shell, apart from the staff and player apps: a top bar with
-// the competitions as tabs (as on the league websites) and a way back to the user's app.
-// Light theme for everyone, players included: it is a reading section, like a league site.
-import { ArrowLeft, Trophy } from "lucide-react";
+// The Pro League app's shell: a top bar with the competitions as tabs (as on the league
+// websites), a link over to PathToPro, and sign-out. Light theme for everyone: it is for
+// reading, like a league site.
+import { ArrowUpRight, LogOut, Trophy } from "lucide-react";
 import { useEffect } from "react";
 import { Link, NavLink, Outlet, useMatch } from "react-router-dom";
-import { homeFor, useAuth } from "../shared/auth";
+import { APPS } from "../shared/apps";
+import { useAuth } from "../shared/auth";
 import { SkipLink } from "../shared/SkipLink";
 import { useApi } from "../shared/useApi";
 import { cn } from "../shared/ui";
 import { COMP_COLOR, ProContext, type Competition } from "./context";
 
-export function ProLayout() {
-  const { user } = useAuth();
-  const match = useMatch("/pro/:comp/*");
+export function LeaguesLayout() {
+  const { user, logout } = useAuth();
+  const match = useMatch("/:comp/*");
   const comp = match?.params.comp;
   const comps = useApi<Competition[]>("/api/pro/competitions");
   const competition = comps.data?.find((c) => c.id === comp) ?? null;
 
   useEffect(() => {
-    document.title = `${competition ? `${competition.name} · ` : ""}Pro leagues · PathToPro`;
+    document.title = `${competition ? `${competition.name} · ` : ""}${APPS.leagues.name}`;
   }, [competition]);
 
   return (
@@ -26,21 +27,39 @@ export function ProLayout() {
       <SkipLink />
       <header className="sticky top-0 z-30 bg-[#060b1a] text-white shadow-lg">
         <div className="flex items-center justify-between gap-3 px-4 pt-2.5 md:px-6">
-          <Link to="/pro" className="flex items-center gap-2.5">
-            <img src={`${import.meta.env.BASE_URL}icon.svg`} alt="" className="h-8 w-8" />
-            <span className="font-display text-xl font-extrabold tracking-wide uppercase">
-              PathToPro <span className="text-pitch-300">Pro leagues</span>
+          <Link to="/" className="flex min-w-0 items-center gap-2.5" aria-label={`${APPS.leagues.name}, all competitions`}>
+            <img src={APPS.leagues.icon} alt="" className="h-8 w-8" />
+            <span className="font-display truncate text-xl font-extrabold tracking-wide uppercase">
+              Pro League <span className="text-pitch-300 hidden sm:inline">Data Tracking</span>
             </span>
           </Link>
-          {user && (
-            <Link to={homeFor(user.role)} className="tap flex items-center gap-1.5 text-sm font-semibold text-white/80 hover:text-white">
-              <ArrowLeft className="h-4 w-4" aria-hidden /> <span className="hidden sm:inline">Back to</span> my app
-            </Link>
-          )}
+          <span className="flex shrink-0 items-center gap-1">
+            <a
+              href={APPS.pathtopro.url}
+              aria-label="Open PathToPro"
+              className="tap flex items-center gap-1.5 rounded-md px-2 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white"
+            >
+              <img src={APPS.pathtopro.icon} alt="" className="h-5 w-5" />
+              <span>
+                Open <span className="hidden sm:inline">PathToPro</span>
+              </span>
+              <ArrowUpRight className="h-4 w-4" aria-hidden />
+            </a>
+            {user && (
+              <button
+                onClick={logout}
+                aria-label="Sign out"
+                className="tap flex items-center gap-1.5 rounded-md px-2 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white"
+                title={`Signed in as ${user.name}`}
+              >
+                <LogOut className="h-4 w-4" aria-hidden /> <span className="hidden sm:inline">Sign out</span>
+              </button>
+            )}
+          </span>
         </div>
         <nav aria-label="Competitions" className="no-scrollbar mt-1 flex gap-1 overflow-x-auto px-2 md:px-4">
           <NavLink
-            to="/pro"
+            to="/"
             end
             className={({ isActive }) =>
               cn("tap flex shrink-0 items-center gap-1.5 border-b-[3px] px-3 py-2 text-sm font-bold", isActive ? "border-pitch-300" : "border-transparent text-white/65 hover:text-white")
@@ -51,7 +70,7 @@ export function ProLayout() {
           {comps.data?.map((c) => (
             <NavLink
               key={c.id}
-              to={`/pro/${c.id}`}
+              to={`/${c.id}`}
               className={({ isActive }) =>
                 cn("tap flex shrink-0 items-center gap-2 border-b-[3px] px-3 py-2 text-sm font-bold", isActive ? "text-white" : "border-transparent text-white/65 hover:text-white")
               }

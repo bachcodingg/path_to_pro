@@ -49,7 +49,7 @@ export function Results({ data }: { data: MatchList }) {
             {list.map((m) => (
               <Link
                 key={m.id}
-                to={`/pro/${comp}/matches/${m.id}`}
+                to={`/${comp}/matches/${m.id}`}
                 aria-label={`${m.home} ${m.home_goals}-${m.away_goals} ${m.away}${m.date ? `, ${day(m.date)}` : ""}`}
                 className="hover:bg-surface-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 px-4 py-2.5 transition-colors"
               >
@@ -122,7 +122,7 @@ export function MatchCentre() {
       <PageHeader
         accent={COMP_COLOR[comp]}
         eyebrow={
-          <Link to={`/pro/${comp}?tab=results`} className="hover:underline">
+          <Link to={`/${comp}?tab=results`} className="hover:underline">
             ← {data.competition.name} {data.competition.season}
             {data.week && data.competition.coverage !== "finals" ? ` · matchday ${data.week}` : ""}
           </Link>

@@ -166,11 +166,13 @@ test("club finances: fees, salaries, bonuses and the ledger", async ({ page }) =
   await expect(page.getByRole("link", { name: "Club finances" })).toHaveCount(0);
 });
 
-test("pro leagues: its own section; an opponent's style, shots, set pieces and players", async ({ page }) => {
+test("pro league app: a separate app; an opponent's style, shots, set pieces and players", async ({ page }) => {
   await login(page, "coach@demo.pathtopro");
-  await page.getByRole("link", { name: "Pro leagues" }).click();
-  await expect(page.getByRole("heading", { name: "Pro league analysis" })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Staff navigation" })).toHaveCount(0); // a section of its own
+  await page.getByRole("link", { name: "Open the Pro League Data Tracking app" }).click();
+  await expect(page).toHaveURL(/\/leagues\/$/);
+  await expect(page.getByRole("heading", { name: "Pro league analysis" })).toBeVisible(); // same account, no second sign-in
+  await expect(page).toHaveTitle("Pro League Data Tracking");
+  await expect(page.getByRole("navigation", { name: "Staff navigation" })).toHaveCount(0); // an app of its own
   await page.screenshot({ path: `${SHOTS}/pro-leagues.png` });
   await page.getByRole("link", { name: "La Liga 2015/16" }).click();
   await page.getByRole("link", { name: /Real Madrid/ }).first().click();
@@ -199,7 +201,7 @@ test("pro leagues: its own section; an opponent's style, shots, set pieces and p
   await expect(page.getByRole("button", { name: /Pass %/ })).toBeVisible();
 
   await page.getByLabel("Team", { exact: true }).selectOption("atletico-madrid");
-  await expect(page).toHaveURL(/\/pro\/la-liga\/teams\/atletico-madrid\?/);
+  await expect(page).toHaveURL(/\/leagues\/la-liga\/teams\/atletico-madrid\?/);
   await expect(page.getByRole("cell", { name: "Antoine Griezmann" })).toBeVisible();
 
   // Full table as on the league site: all / home / away, zones, form; the club strip switches team
@@ -211,17 +213,18 @@ test("pro leagues: its own section; an opponent's style, shots, set pieces and p
   await expect(table.getByRole("row").nth(1)).toContainText("19");
   await page.screenshot({ path: `${SHOTS}/coach-league-table.png`, fullPage: true });
   await page.getByRole("navigation", { name: "Clubs" }).getByRole("button", { name: "Barcelona" }).click();
-  await expect(page).toHaveURL(/\/pro\/la-liga\/teams\/barcelona\?/);
+  await expect(page).toHaveURL(/\/leagues\/la-liga\/teams\/barcelona\?/);
   await expect(page.getByRole("heading", { name: "Team analysis: Barcelona" })).toBeVisible();
 
-  // The old staff address still works
+  // The old staff address opens the Pro League app
   await page.goto("coach/analysis/real-madrid");
-  await expect(page).toHaveURL(/\/pro\/la-liga$/);
+  await expect(page).toHaveURL(/\/leagues\/la-liga$/);
 });
 
 test("pro leagues: Premier League, Leverkusen's unbeaten season, a Champions League final", async ({ page }) => {
   await login(page, "p03@demo.pathtopro"); // players can study the pros too
-  await page.goto("pro/premier-league?tab=table");
+  await page.goto("pro/premier-league?tab=table"); // an old address: the Pro League app opens there
+  await expect(page).toHaveURL(/\/leagues\/premier-league\?tab=table$/);
   const table = page.getByRole("table", { name: "League table" });
   await expect(table.getByRole("row").nth(1)).toContainText("Leicester City");
   await expect(table.getByRole("row").nth(1)).toContainText("81");
@@ -242,8 +245,19 @@ test("pro leagues: Premier League, Leverkusen's unbeaten season, a Champions Lea
   await expect(page.getByRole("listitem").filter({ hasText: "Steven Gerrard" })).toContainText("54'");
   await expect(page.getByRole("img", { name: /Shot map/ })).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/pro-match-centre.png`, fullPage: true });
-  await page.getByRole("link", { name: "my app" }).click();
+  await page.getByRole("link", { name: "Open PathToPro" }).click();
   await expect(page.getByRole("heading", { name: /^Hi / })).toBeVisible();
+});
+
+test("pro league app: its own sign-in, and a deep link survives it", async ({ page }) => {
+  await page.goto("leagues/champions-league?tab=finals");
+  await expect(page.getByRole("heading", { name: "Pro League Data Tracking" })).toBeVisible();
+  await expect(page.getByText("Use your PathToPro account.")).toBeVisible();
+  await page.getByRole("button", { name: "Look around with a demo account" }).click();
+  await expect(page.getByRole("tab", { name: "Finals" })).toBeVisible();
+  await expect(page).toHaveURL(/\/leagues\/champions-league\?tab=finals$/);
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page.getByRole("button", { name: "Look around with a demo account" })).toBeVisible();
 });
 
 test("player app on a laptop: sidebar instead of bottom tabs, pages in columns", async ({ page }) => {

@@ -82,7 +82,7 @@ export const PROSPECTS: Prospect[] = [
   },
 ];
 
-// One face for each competition in Pro leagues, from the club or season the data covers
+// One face for each competition in the Pro League app, from the club or season the data covers
 export const COMP_FACES: Record<string, Photo & { name: string; team: string }> = {
   "la-liga": {
     name: "Lionel Messi",

@@ -1,8 +1,11 @@
 # Pro league analysis
 
-**Pro leagues** is a section of its own (`/pro`), apart from the staff and player apps and
-open to every signed-in account: it is public match data with nothing about our players
-in it. Coaches use it to study an opponent's style; players to see how the pros in their
+Pro league analysis is a separate app, **Pro League Data Tracking** (`/leagues/`), built
+on the same platform as PathToPro: one account, one API and one design system, but its own
+entry page (`frontend/leagues/index.html`, `frontend/src/leagues/`), name, icon, colours and
+install manifest. A PathToPro account signs in to it, and it is open to every kind of
+account: it is public match data with nothing about our players in it. PathToPro links to it
+from the staff column and the player sidebar; old `/pro/...` addresses open it. Coaches use it to study an opponent's style; players to see how the pros in their
 position play. It shows how a team passes, where they shoot from, how they do in the air,
 how hard they press, how they take and defend set pieces, and which players do what, plus
 every result with a match centre. It is built on real match events, not on the synthetic
@@ -16,7 +19,7 @@ academy season.
 | Bundesliga 2023/24 | Bayer Leverkusen's 34 matches only (the unbeaten season) | Leverkusen against their opponents in those matches, no ranks and no table; results |
 | Champions League | the final of 14 seasons, 2004-2019 | the finals with a match centre each; no team comparison from one match a year |
 
-A team's page (`/pro/<competition>/teams/<team>`):
+A team's page (`/leagues/<competition>/teams/<team>`):
 
 | Tab | What it shows |
 | --- | --- |
