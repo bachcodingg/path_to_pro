@@ -101,13 +101,13 @@ test("PathToPro in two minutes", async ({ page }) => {
   await expect(page.getByText("Pain reported").first()).toBeVisible();
   await shot(page, "Pain or a red mood goes straight to a named adult by email and push; the agents step back", 3400);
 
-  // Pro leagues
+  // Pro League Data Tracking: a separate app, same account
   await signIn(page, "coach@demo.pathtopro");
-  await page.getByRole("link", { name: "Pro leagues" }).click();
+  await page.getByRole("link", { name: "Open the Pro League Data Tracking app" }).click();
   await page.getByRole("link", { name: "La Liga 2015/16" }).click();
   await page.getByRole("link", { name: /Real Madrid/ }).first().click();
   await expect(page.getByRole("heading", { name: "Team analysis: Real Madrid" })).toBeVisible();
-  await shot(page, "Pro leagues: how real teams play, from StatsBomb open data", 3200);
+  await shot(page, "Pro League, a separate app on the same account: how real teams play, from StatsBomb open data", 3200);
 
   // Club setup
   await signIn(page, "admin@demo.pathtopro", "e2e-admin-password");

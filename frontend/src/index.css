@@ -92,6 +92,19 @@
   --band-end: #6d1d55;
   --tint: #ec4899;
 }
+/* The Pro League app: sky blue on the shared navy, light pages like a league website */
+:root[data-role="leagues"] {
+  --brand-50: #f0f9ff;
+  --brand-100: #e0f2fe;
+  --brand-200: #bae6fd;
+  --brand-300: #7dd3fc;
+  --brand-400: #38bdf8;
+  --brand-500: #0ea5e9;
+  --brand-600: #0369a1;
+  --brand-700: #075985;
+  --band-end: #0c4a6e;
+  --tint: #38bdf8;
+}
 
 /* Theme surfaces as real colours, so every utility and variant works with them (bg-ink-2,
    ring-ink, divide-line, bg-surface/60, hover:bg-surface-2...). "inline" keeps them pointing at

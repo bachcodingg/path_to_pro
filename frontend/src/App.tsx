@@ -1,11 +1,12 @@
 import { lazy, Suspense, useEffect } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { homeFor, useAuth } from "./shared/auth";
 import { Login } from "./shared/Login";
 import { Register, RegisterGuardian } from "./shared/Register";
 import { ForgotPassword, SetPassword, VerifyEmail } from "./shared/AuthPages";
 import { Imprint, Privacy, Terms } from "./legal/Legal";
+import { leaguesUrl } from "./shared/apps";
 import type { Role } from "./shared/types";
 import { Spinner } from "./shared/ui";
 
@@ -32,11 +33,6 @@ const MatchReport = lazy(() => import("./coach/Matches").then((m) => ({ default:
 const Devices = lazy(() => import("./player/Devices").then((m) => ({ default: m.Devices })));
 const MatchView = lazy(() => import("./player/MatchView").then((m) => ({ default: m.MatchView })));
 const Finance = lazy(() => import("./coach/Finance").then((m) => ({ default: m.Finance })));
-const TeamAnalysis = lazy(() => import("./pro/TeamAnalysis").then((m) => ({ default: m.TeamAnalysis })));
-const ProLayout = lazy(() => import("./pro/ProLayout").then((m) => ({ default: m.ProLayout })));
-const ProHome = lazy(() => import("./pro/ProHome").then((m) => ({ default: m.ProHome })));
-const CompetitionPage = lazy(() => import("./pro/Competition").then((m) => ({ default: m.CompetitionPage })));
-const MatchCentre = lazy(() => import("./pro/Matches").then((m) => ({ default: m.MatchCentre })));
 const Skills = lazy(() => import("./player/Skills").then((m) => ({ default: m.Skills })));
 const Tips = lazy(() => import("./player/Tips").then((m) => ({ default: m.Tips })));
 const Gym = lazy(() => import("./player/Gym").then((m) => ({ default: m.Gym })));
@@ -47,6 +43,19 @@ const PlayerCard = lazy(() => import("./player/PlayerCard").then((m) => ({ defau
 const PlayerLayout = lazy(() => import("./player/PlayerLayout").then((m) => ({ default: m.PlayerLayout })));
 const RoadToPro = lazy(() => import("./player/RoadToPro").then((m) => ({ default: m.RoadToPro })));
 const TodayScreen = lazy(() => import("./player/Today").then((m) => ({ default: m.TodayScreen })));
+
+// Pro leagues is its own app now (Pro League Data Tracking): old addresses open it there
+function ToLeagues({ path }: { path?: string }) {
+  const { pathname, search } = useLocation();
+  const { loading } = useAuth();
+  useEffect(() => {
+    // Not while the saved session is being checked: leaving the page would abort that check,
+    // and an aborted check signs the browser out of both apps
+    if (loading) return;
+    window.location.replace(leaguesUrl((path ?? pathname.replace(/^\/pro/, "")) + (path ? "" : search)));
+  }, [loading, path, pathname, search]);
+  return <Spinner label="Opening Pro League" />;
+}
 
 function Guard({ roles, children }: { roles: Role[]; children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -136,8 +145,8 @@ export function App() {
         <Route path="matches/:id" element={<MatchReport />} />
         <Route path="finance" element={<Finance />} />
         <Route path="tactics" element={<TacticsBoard />} />
-        {/* Team analysis moved to its own section, /pro */}
-        <Route path="analysis/*" element={<Navigate to="/pro/la-liga" replace />} />
+        {/* Team analysis moved to the Pro League app */}
+        <Route path="analysis/*" element={<ToLeagues path="/la-liga" />} />
         <Route path="players/:id" element={<PlayerProfile />} />
         <Route path="log" element={<AgentLog />} />
         <Route path="calibration" element={<Calibration />} />
@@ -152,20 +161,8 @@ export function App() {
       >
         <Route index element={<PhysioHome />} />
       </Route>
-      {/* Pro league analysis: its own section, open to every signed-in account (public match data) */}
-      <Route
-        path="/pro"
-        element={
-          <Guard roles={["player", "coach", "physio", "guardian"]}>
-            <ProLayout />
-          </Guard>
-        }
-      >
-        <Route index element={<ProHome />} />
-        <Route path=":comp" element={<CompetitionPage />} />
-        <Route path=":comp/teams/:teamId" element={<TeamAnalysis />} />
-        <Route path=":comp/matches/:matchId" element={<MatchCentre />} />
-      </Route>
+      {/* Pro league analysis is the Pro League Data Tracking app (leagues/); old links go there */}
+      <Route path="/pro/*" element={<ToLeagues />} />
       <Route
         path="/guardian"
         element={

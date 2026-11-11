@@ -1,4 +1,4 @@
-// Pro leagues home: one card per competition, saying honestly how much of it the open data covers.
+// Pro League app home: one card per competition, saying honestly how much of it the open data covers.
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "../shared/PageHeader";
@@ -25,7 +25,7 @@ export function ProHome() {
       />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {data.map((c) => (
-          <Link key={c.id} to={`/pro/${c.id}`} className="group" aria-label={`${c.name} ${c.season}`}>
+          <Link key={c.id} to={`/${c.id}`} className="group" aria-label={`${c.name} ${c.season}`}>
             <Card className="relative h-full overflow-hidden p-0 transition-shadow group-hover:shadow-md">
               <div className="h-1.5" style={{ background: COMP_COLOR[c.id] }} aria-hidden />
               <div className="space-y-2 p-4">

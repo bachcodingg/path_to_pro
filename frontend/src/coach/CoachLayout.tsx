@@ -1,7 +1,8 @@
-import { type LucideIcon, CalendarDays, CalendarRange, CalendarCheck, ClipboardList, Euro, Gauge, Grid3x3, LogOut, MessageSquareText, Play, Settings, Star, Stethoscope, Trophy, Users } from "lucide-react";
+import { type LucideIcon, CalendarDays, CalendarRange, CalendarCheck, ClipboardList, Euro, Gauge, Grid3x3, LogOut, MessageSquareText, Play, Settings, Star, Stethoscope, Users } from "lucide-react";
 import { useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { api } from "../shared/api";
+import { AppLink } from "../shared/AppLink";
 import { useAuth } from "../shared/auth";
 import { t } from "../shared/i18n";
 import { SkipLink } from "../shared/SkipLink";
@@ -28,10 +29,6 @@ const nav = (): { group: string; items: NavItem[] }[] => [
       { to: "/coach/matches", label: t("nav.matches"), icon: Star },
       { to: "/coach/log", label: t("nav.log"), icon: MessageSquareText },
     ],
-  },
-  {
-    group: "Scouting",
-    items: [{ to: "/pro", label: t("nav.pro"), icon: Trophy }],
   },
   {
     group: "Club",
@@ -106,6 +103,8 @@ export function CoachLayout() {
               </div>
             ))}
           </nav>
+          {/* Scouting the pros happens in the Pro League app, which this opens; always in view */}
+          <AppLink app="leagues" className="text-pitch-100 mt-3 rounded-md border border-white/15 px-3 py-2 text-[15px] font-semibold hover:bg-white/6 hover:text-white" />
           {user?.role === "coach" && (
             <Button variant="secondary" size="sm" onClick={runNightly} loading={running} className="mt-3 mb-2 border-0 bg-white/10 text-white hover:bg-white/15">
               <Play className="h-4 w-4" aria-hidden /> Run agents now
@@ -138,6 +137,7 @@ export function CoachLayout() {
               <span className="font-display text-lg font-extrabold tracking-wide uppercase">PathToPro</span>
             </span>
             <span className="flex items-center gap-1">
+              <AppLink app="leagues" iconOnly className="h-11 w-11 justify-center" />
               <Link to="/account" className="tap text-pitch-200 flex h-11 w-11 items-center justify-center" aria-label={t("nav.account")}>
                 <Settings className="h-4 w-4" aria-hidden />
               </Link>

@@ -94,7 +94,7 @@ export function Imprint() {
       <p>{OPERATOR.register}</p>
       <H>Data used under licence</H>
       <p>
-        The Pro leagues section uses StatsBomb Open Data (https://github.com/statsbomb/open-data) under its terms of use. Club and
+        The Pro League Data Tracking app uses StatsBomb Open Data (https://github.com/statsbomb/open-data) under its terms of use. Club and
         competition names are used to identify the data; there is no affiliation with the clubs, leagues or StatsBomb.
       </p>
     </Page>

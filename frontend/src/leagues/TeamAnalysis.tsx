@@ -49,7 +49,7 @@ export function TeamAnalysis() {
     else next.delete(key);
     setParams(next, { replace: true });
   }
-  const pickTeam = (id: string) => navigate(`/pro/${comp}/teams/${id}${params.size ? `?${params}` : ""}`);
+  const pickTeam = (id: string) => navigate(`/${comp}/teams/${id}${params.size ? `?${params}` : ""}`);
 
   if (list.error) return <ErrorNote message={list.error} onRetry={list.reload} />;
   const teams = list.data?.teams ?? [];
@@ -67,7 +67,7 @@ export function TeamAnalysis() {
         accent={c1 === "#ffffff" ? c2 : c1}
         eyebrow={
           c && (
-            <Link to={`/pro/${comp}`} className="hover:underline">
+            <Link to={`/${comp}`} className="hover:underline">
               ← {c.name} {c.season}
             </Link>
           )

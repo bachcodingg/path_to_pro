@@ -26,8 +26,8 @@ app (PWA). Sign-up, club setup, emails and plain-words coach instructions need t
 | Leon, U15 (tired, growth zone) | Check-in, Today, why-cards, growth zone, position gym session, ball skills for a striker (growth-zone version), match tips |
 | Dual-squad player (U19 + men's team) | Dual registration: 90 minutes shared over a Saturday + Sunday double; Career tab with ratings; match diary |
 | Self-guided player | Levels: log a wall-pass test of 18+ and she moves up to level 3 |
-| Coach | Heatmap, approval inbox, training pitch, match ratings, tactics board, profile with gym preview and instruction box, calibration; Pro leagues (below) |
-| Any account | **Pro leagues**, a section of its own: La Liga, Premier League and Ligue 1 2015/16, Leverkusen's 2023/24 Bundesliga season, Champions League finals 2004-2019: how a team passes, shoots, defends and takes set pieces, player by player; tables with form; every result with a match centre |
+| Coach | Heatmap, approval inbox, training pitch, match ratings, tactics board, profile with gym preview and instruction box, calibration; a link to the Pro League app (below) |
+| Any account | **Pro League Data Tracking**, a separate app at `/leagues/` with the same account (its own page, icon, colours and install): La Liga, Premier League and Ligue 1 2015/16, Leverkusen's 2023/24 Bundesliga season, Champions League finals 2004-2019: how a team passes, shoots, defends and takes set pieces, player by player; tables with form; every result with a match centre |
 | Men's team coach | Second team's view of the dual-registered players (sees, but the primary coach approves) |
 | Physio, Guardian | Escalation queue; consent per data type |
 
@@ -89,7 +89,7 @@ rule-based agents: the LLM's contribution has not been evaluated yet.
 | Teams, careers, ratings | `backend/performance/` + `config/competitions.yaml`: dual registration with rule H8, league ladder (Finland first), career CV, match diary, 3-10 match ratings with a breakdown, coach training pitch |
 | Club finances | `backend/finance/`: contracts (academy fees, semi-pro/pro salaries, staff), running costs and income, automatic match bonuses and title bonuses, ledger; coach page, player and parent views. See [docs/finances.md](docs/finances.md) |
 | Apple Watch | `backend/devices/`: iPhone Shortcut ingest with write-only device codes, Apple Health export upload (safe streaming XML parser), HRV (SDNN) + sleep + workouts into readiness and load. See [docs/apple-watch.md](docs/apple-watch.md) |
-| User interface | Laid out like the LaLiga and Premier League sites: every page opens with a header band (title in a condensed display face, the page's key number, its tabs), club badges and W/D/L form next to team names, a split-screen sign-in with the demo accounts grouped by role; skip link and a tab title per page. `frontend/`: player PWA (check-in, Today, week pitch, gym, growth, card, season map, levels) for phone and laptop: bottom tabs on a phone, a sidebar and two-column pages from tablet width; coach (heatmap, inbox with A/E/R, tactics board, scouting report with instruction box, match commentary, calibration), physio queue, guardian view, sign-up; the Pro leagues section with its own competition switcher |
+| User interface | Laid out like the LaLiga and Premier League sites: every page opens with a header band (title in a condensed display face, the page's key number, its tabs), club badges and W/D/L form next to team names, a split-screen sign-in with the demo accounts grouped by role; skip link and a tab title per page. `frontend/`: player PWA (check-in, Today, week pitch, gym, growth, card, season map, levels) for phone and laptop: bottom tabs on a phone, a sidebar and two-column pages from tablet width; coach (heatmap, inbox with A/E/R, tactics board, scouting report with instruction box, match commentary, calibration), physio queue, guardian view, sign-up. A second app on the same build, Pro League Data Tracking (`frontend/leagues/index.html`, `src/leagues/`), with its own competition switcher, sign-in and install manifest |
 | Architecture | FastAPI, SQLAlchemy 2, Alembic, PostgreSQL, APScheduler, JWT + RBAC, `docker-compose.yml` |
 | Simulator | `backend/simulator/`: 25 players x 40 weeks, seeded, 3 injury models, pluggable policy |
 | Evaluation | `backend/eval/`: `python -m eval`, 54-case safety suite, equal-load and heuristic-coach baselines, 10-seed CIs (`python -m eval.seeds`), report in [docs/evaluation/report.md](docs/evaluation/report.md) |
@@ -154,6 +154,6 @@ cd frontend && npx playwright test        # 30 end-to-end tests (API on :8000, w
 ```
 
 All academy demo data is synthetic. No real player data is stored. Benchmarks and norms are
-placeholder values until validated against club data. The one exception is the Pro leagues section,
+placeholder values until validated against club data. The one exception is the Pro League app,
 which uses published professional match events: data from StatsBomb Open Data
 (https://github.com/statsbomb/open-data), credited as their terms require.
