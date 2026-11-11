@@ -31,6 +31,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { homeFor, useAuth } from "../shared/auth";
 import { COMP_COLOR } from "../pro/context";
 import { Button, cn } from "../shared/ui";
+import { ALL_PHOTOS, COMP_FACES, PROSPECTS, photoUrl } from "./players";
 
 const SOURCE = "https://github.com/bachcodingg/path_to_pro";
 
@@ -94,6 +95,7 @@ export function Landing() {
           <HowItWorks />
           <Roles />
           <Safety />
+          <Prospects />
           <Pathway />
           <ProLeagues />
           <Faq />
@@ -836,6 +838,57 @@ function GrowthCurve() {
 
 const LEVELS = ["Starter", "Grassroots", "Competitive amateur", "Elite amateur", "Trial-ready"];
 
+// --------------------------------------------------------------------------- prospects
+
+// Famous players photographed near the start of their careers
+function Prospects() {
+  return (
+    <section id="prospects" className="mx-auto max-w-7xl scroll-mt-20 px-4 py-20 md:px-6 md:py-28">
+      <SectionHead
+        eyebrow="Before they were stars"
+        title={
+          <>
+            They were <span className="text-pitch-300">your age once.</span>
+          </>
+        }
+        lead="Every one of them was a teenager learning to handle a full season, a body that was still growing and a big jump in level. Here they are near the start."
+      />
+      <ul className="mt-10 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-5">
+        {PROSPECTS.map((p, i) => (
+          <Reveal key={p.name} delay={i * 0.06} className={cn(i === PROSPECTS.length - 1 && "col-span-2 mx-auto w-[calc(50%-0.375rem)] md:col-span-1 md:w-auto")}>
+            <li className="group h-full overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] transition-colors hover:border-white/25">
+              <div className="relative aspect-[4/5] overflow-hidden">
+                <img
+                  src={photoUrl(p.file)}
+                  alt={p.alt}
+                  width={440}
+                  height={550}
+                  loading="lazy"
+                  decoding="async"
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                />
+                <span className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/70 to-transparent" aria-hidden />
+                <span className="bg-pitch-300 text-pitch-950 absolute bottom-3 left-3 flex flex-col items-center rounded-xl px-2.5 py-1 leading-none" aria-hidden>
+                  <span className="text-[10px] font-bold tracking-wider uppercase">Age</span>
+                  <span className="font-display text-3xl font-extrabold">{p.age}</span>
+                </span>
+              </div>
+              <div className="p-4">
+                <p className="font-display text-xl leading-tight font-bold uppercase">{p.name}</p>
+                <p className="text-sm font-semibold text-white/70">
+                  {p.team}, {p.year}
+                </p>
+                <p className="mt-2 border-t border-white/10 pt-2 text-sm text-white/50">{p.later}</p>
+              </div>
+            </li>
+          </Reveal>
+        ))}
+      </ul>
+      <p className="mt-4 text-xs text-white/40">Photos from Wikimedia Commons, credited at the bottom of the page. These players have no connection with PathToPro.</p>
+    </section>
+  );
+}
+
 function Pathway() {
   return (
     <section className="border-y border-white/10 bg-[#0b1428] py-20 md:py-24">
@@ -929,6 +982,22 @@ function ProLeagues() {
               <p className="font-display mt-6 text-2xl leading-tight font-bold uppercase">{name}</p>
               <p className="text-sm font-semibold text-white/70">{season}</p>
               <p className="mt-2 text-sm text-white/50">{note}</p>
+              <figure className="mt-5 flex items-center gap-3 border-t border-white/10 pt-4">
+                <img
+                  src={photoUrl(COMP_FACES[id].file)}
+                  alt={COMP_FACES[id].alt}
+                  width={240}
+                  height={240}
+                  loading="lazy"
+                  decoding="async"
+                  className="h-12 w-12 shrink-0 rounded-full object-cover"
+                  style={{ boxShadow: `0 0 0 2px ${COMP_COLOR[id]}` }}
+                />
+                <figcaption className="min-w-0 text-sm leading-tight font-semibold">
+                  {COMP_FACES[id].name}
+                  <span className="block font-normal text-white/50">{COMP_FACES[id].team}</span>
+                </figcaption>
+              </figure>
             </li>
           </Reveal>
         ))}
@@ -1050,6 +1119,26 @@ function Footer() {
           </a>
         </nav>
         <p className="w-full text-xs text-white/35">Demo with synthetic players. Team analysis uses StatsBomb Open Data.</p>
+        <details className="w-full text-xs text-white/45">
+          <summary className="cursor-pointer font-semibold hover:text-white">Photo credits</summary>
+          <p className="mt-2 max-w-4xl">
+            Player photos are cropped from Wikimedia Commons and reused under the Creative Commons licences below; the crops are shared under the same
+            licences. The players shown have no connection with PathToPro and do not endorse it.
+          </p>
+          <ul className="mt-2 grid gap-x-6 gap-y-1 md:grid-cols-2">
+            {ALL_PHOTOS.map((p) => (
+              <li key={p.file}>
+                <a href={p.source} className="underline hover:text-white">
+                  {p.name}
+                </a>{" "}
+                by {p.author},{" "}
+                <a href={p.licenseUrl} className="underline hover:text-white">
+                  {p.license}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </details>
       </div>
     </footer>
   );
