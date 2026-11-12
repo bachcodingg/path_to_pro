@@ -3,7 +3,7 @@
 // reading, like a league site.
 import { ArrowUpRight, LogOut, Trophy, Users } from "lucide-react";
 import { useEffect } from "react";
-import { Link, NavLink, Outlet, useMatch } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation, useMatch } from "react-router-dom";
 import { APPS } from "../shared/apps";
 import { useAuth } from "../shared/auth";
 import { SkipLink } from "../shared/SkipLink";
@@ -17,6 +17,12 @@ export function LeaguesLayout() {
   const comp = match?.params.comp;
   const comps = useApi<Competition[]>("/api/pro/competitions");
   const competition = comps.data?.find((c) => c.id === comp) ?? null;
+
+  // A new page starts at its top, not where the last one was scrolled to
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
 
   useEffect(() => {
     document.title = `${competition ? `${competition.name} · ` : ""}${APPS.leagues.name}`;

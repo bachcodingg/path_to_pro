@@ -373,3 +373,156 @@ select:not([multiple]):not(.select-plain) {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* ---- The Pro League app: a league website's furniture. Scoped to its role, so the other
+   apps keep their own look. ---- */
+@theme {
+  /* Performance: better / worse than the league (never readiness, which keeps its own colours) */
+  --color-good: #0b8a4b;
+  --color-bad: #d2333f;
+  /* The two sides of a match, in stats and on shot maps */
+  --color-home: #1597d0;
+  --color-away: #e59a0c;
+}
+:root[data-role="leagues"] {
+  --turf-a: #1c6a45;
+  --turf-b: #19613f;
+}
+[data-role="leagues"] body {
+  background: var(--surface-2);
+}
+
+[data-role="leagues"] .hero {
+  box-shadow: inset 0 -3px 0 var(--brand-300);
+}
+
+/* Headings in capitals, as everywhere else in this design */
+:root[data-role="leagues"] :is(h1, h2, h3).font-display {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* In the components layer, so a utility on the same element still wins */
+@layer components {
+  /* Small capitals over numbers and columns */
+  .lg-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    line-height: 1.2;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  /* Panel: a card whose header is part of it */
+  .lg-panel {
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    box-shadow: 0 1px 2px rgb(12 26 61 / 0.05);
+  }
+
+  /* Tables: capital column heads on a tinted line, rows that light up */
+  .lg-table {
+    width: 100%;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+    border-collapse: collapse;
+  }
+  .lg-table thead th {
+    padding: 0.5rem 0.75rem;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line);
+    color: var(--ink-2);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .lg-table tbody td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+  }
+  .lg-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .lg-table tbody tr {
+    transition: background-color 0.12s;
+  }
+  .lg-table tbody tr:hover {
+    background: var(--surface-2);
+  }
+  .lg-table caption {
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 700;
+  }
+
+  /* Segmented switch */
+  .lg-seg {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    padding: 2px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface-2);
+  }
+  .lg-seg > button {
+    min-height: 44px;
+    padding: 0 0.75rem;
+    border-radius: 6px;
+    color: var(--ink-2);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    white-space: nowrap;
+    transition:
+      background-color 0.12s,
+      color 0.12s;
+  }
+  @media (min-width: 768px) {
+    .lg-seg > button {
+      min-height: 34px;
+    }
+  }
+  .lg-seg > button:hover {
+    color: var(--ink);
+  }
+  .lg-seg > button[aria-pressed="true"],
+  .lg-seg > button[aria-selected="true"] {
+    background: #0b1230;
+    color: #fff;
+    box-shadow: 0 1px 2px rgb(12 26 61 / 0.3);
+  }
+
+  /* Scoreboard digits */
+  .lg-score {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.75rem;
+    border-radius: 4px;
+    background: #0b1230;
+    color: #fff;
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    line-height: 1;
+  }
+}
+
+/* Match centre: the centre circle sits behind the scoreboard */
+.hero.match-hero {
+  background-position:
+    center -20px,
+    0 0,
+    0 0,
+    0 0;
+  background-size:
+    320px,
+    auto,
+    auto,
+    auto;
+}

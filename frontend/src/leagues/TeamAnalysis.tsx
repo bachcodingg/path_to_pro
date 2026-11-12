@@ -8,6 +8,7 @@ import { Crest, FormGuide, clubMeta } from "../shared/Club";
 import { PageHeader, Tabs } from "../shared/PageHeader";
 import { useApi } from "../shared/useApi";
 import { ErrorNote, PageSkeleton, cn } from "../shared/ui";
+import { Fact } from "./ui";
 import { usePro, type Competition } from "./context";
 import { LeagueTable, type Tables } from "./LeagueTable";
 import { Players } from "./Players";
@@ -61,111 +62,119 @@ export function TeamAnalysis() {
   const [c1, c2] = clubMeta(name).colors;
   const field = "rounded-lg border px-3 py-2 text-sm font-semibold";
   const c = list.data?.competition;
+  const goalDiff = standing ? standing.gf - standing.ga : 0;
   return (
-    <div className="space-y-4">
-      <PageHeader
-        accent={c1 === "#ffffff" ? c2 : c1}
-        eyebrow={
-          c && (
-            <Link to={`/${comp}`} className="hover:underline">
-              ← {c.name} {c.season}
-            </Link>
-          )
-        }
-        title={
-          <>
-            <span className="sr-only">Team analysis: </span>
-            {name}
-          </>
-        }
-        leading={name && <Crest name={name} size={64} className="drop-shadow-lg" />}
-        subtitle={
-          standing && (
-            <span className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-              {standing.position != null && (
-                <span>
-                  <span className="font-display text-2xl font-bold text-white">{ordinal(standing.position)}</span> in the league
-                </span>
-              )}
-              <span>
-                <span className="font-display text-2xl font-bold text-white">{standing.points}</span> pts
-              </span>
-              <span className="num">
-                W{standing.won} D{standing.drawn} L{standing.lost} · goals {standing.gf}-{standing.ga}
-              </span>
-              {standing.form && <FormGuide form={standing.form} />}
-            </span>
-          )
-        }
-        actions={
-          league && (
+    <div className="space-y-4 md:space-y-5">
+      <div>
+        {/* The league sites' club bar: every club's badge in table order, one tap to switch */}
+        {table.length > 1 && (
+          <nav aria-label="Clubs" className="bg-surface border-line no-scrollbar -mx-4 -mt-4 flex gap-0.5 overflow-x-auto border-b px-2 md:-mx-6 md:-mt-6 md:justify-center md:px-4">
+            {table.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => pickTeam(t.id)}
+                aria-label={t.team}
+                aria-current={t.id === teamId ? "page" : undefined}
+                title={t.team}
+                className={cn(
+                  "tap relative flex shrink-0 items-center justify-center px-2 py-1.5 transition",
+                  t.id === teamId ? "bg-surface-2" : "opacity-75 hover:opacity-100",
+                )}
+              >
+                <Crest name={t.team} size={28} />
+                {t.id === teamId && <span className="bg-pitch-500 absolute inset-x-0 bottom-0 h-[3px]" aria-hidden />}
+              </button>
+            ))}
+          </nav>
+        )}
+        <PageHeader
+          className={table.length > 1 ? "mt-0 mb-0 md:mt-0 md:mb-0" : "mb-0 md:mb-0"}
+          accent={c1 === "#ffffff" ? c2 : c1}
+          eyebrow={
+            c && (
+              <Link to={`/${comp}`} className="hover:underline">
+                ← {c.name} {c.season}
+              </Link>
+            )
+          }
+          title={
             <>
-              <label className="flex items-center gap-2 text-sm font-semibold">
-                Team
-                <select aria-label="Team" className={field} value={teamId} onChange={(e) => pickTeam(e.target.value)}>
-                  {teams.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex items-center gap-2 text-sm font-semibold">
-                Compare with
-                <select aria-label="Compare with" className={field} value={vsId ?? ""} onChange={(e) => set("vs", e.target.value || null)}>
-                  <option value="">No comparison</option>
-                  {teams
-                    .filter((t) => t.id !== teamId)
-                    .map((t) => (
+              <span className="sr-only">Team analysis: </span>
+              {name}
+            </>
+          }
+          leading={name && <Crest name={name} size={72} className="drop-shadow-lg" />}
+          actions={
+            league && (
+              <>
+                <label className="flex items-center gap-2 text-sm font-semibold">
+                  Team
+                  <select aria-label="Team" className={field} value={teamId} onChange={(e) => pickTeam(e.target.value)}>
+                    {teams.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.name}
                       </option>
                     ))}
-                </select>
-              </label>
-            </>
-          )
-        }
-        bottom={
-          <>
-            {!league && c && <p className="mb-3 max-w-3xl text-sm text-white/80">{c.note}</p>}
-            {versus && (
-              <p className="mb-3 flex flex-wrap items-center gap-2 text-sm text-white/80">
-                <span className="font-display text-base font-bold tracking-wide text-white uppercase">vs</span>
-                <Crest name={versus.team} size={22} />
-                <span className="font-semibold text-white">{versus.team}</span>
-                {versus.standing.position != null && `${ordinal(versus.standing.position)}, `}
-                {versus.standing.points} pts · shown as rings on the bars and "vs" numbers
-                <button className="tap ml-1 underline" onClick={() => set("vs", null)}>
-                  Clear
-                </button>
-              </p>
-            )}
-            <Tabs label="Analysis sections" items={tabs} value={tab} onChange={(k) => set("tab", k === "overview" ? null : k)} />
-          </>
-        }
-      />
-
-      {/* The league sites' club strip: every club's badge, one click to switch */}
-      {table.length > 1 && (
-        <nav aria-label="Clubs" className="no-scrollbar -mt-1 flex gap-1 overflow-x-auto pb-1">
-          {table.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => pickTeam(t.id)}
-              aria-label={t.team}
-              aria-current={t.id === teamId ? "page" : undefined}
-              title={t.team}
-              className={cn(
-                "tap flex shrink-0 flex-col items-center justify-center rounded-lg px-1.5 py-1 transition",
-                t.id === teamId ? "bg-surface border-line border shadow-sm" : "opacity-70 hover:opacity-100",
+                  </select>
+                </label>
+                <label className="flex items-center gap-2 text-sm font-semibold">
+                  Compare with
+                  <select aria-label="Compare with" className={field} value={vsId ?? ""} onChange={(e) => set("vs", e.target.value || null)}>
+                    <option value="">No comparison</option>
+                    {teams
+                      .filter((t) => t.id !== teamId)
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              </>
+            )
+          }
+          bottom={
+            <>
+              {!league && c && <p className="mb-3 max-w-3xl text-sm text-white/95">{c.note}</p>}
+              {standing && (
+                <div className="mb-3 flex flex-wrap items-end gap-x-8 gap-y-3 border-t border-white/20 pt-3 md:gap-x-12">
+                  {standing.position != null && <Fact label="League position">{ordinal(standing.position)}</Fact>}
+                  <Fact label="Points">{standing.points}</Fact>
+                  <Fact label="Record">
+                    W{standing.won} D{standing.drawn} L{standing.lost}
+                  </Fact>
+                  <Fact label="Goals">
+                    {standing.gf}:{standing.ga}{" "}
+                    <span className="text-base font-bold text-white/85">
+                      ({goalDiff > 0 ? "+" : ""}
+                      {goalDiff})
+                    </span>
+                  </Fact>
+                  {standing.form && (
+                    <div>
+                      <span className="lg-label mb-1 block !text-white/80">Form</span>
+                      <FormGuide form={standing.form} size="md" />
+                    </div>
+                  )}
+                </div>
               )}
-            >
-              <Crest name={t.team} size={28} />
-            </button>
-          ))}
-        </nav>
-      )}
+              {versus && (
+                <p className="mb-3 flex flex-wrap items-center gap-2 text-sm text-white/95">
+                  <span className="font-display rounded bg-white px-1.5 py-0.5 text-xs leading-none font-black text-[#0c1a3d]">VS</span>
+                  <Crest name={versus.team} size={22} />
+                  <span className="font-semibold text-white">{versus.team}</span>
+                  {versus.standing.position != null && `${ordinal(versus.standing.position)}, `}
+                  {versus.standing.points} pts · shown as gold rings on the bars and "vs" numbers
+                  <button className="tap ml-1 underline" onClick={() => set("vs", null)}>
+                    Clear
+                  </button>
+                </p>
+              )}
+              <Tabs label="Analysis sections" items={tabs} value={tab} onChange={(k) => set("tab", k === "overview" ? null : k)} />
+            </>
+          }
+        />
+      </div>
 
       <div role="tabpanel" aria-label={tabs.find(([k]) => k === tab)?.[1]}>
         {tab === "set-pieces" ? (
@@ -181,7 +190,7 @@ export function TeamAnalysis() {
         ) : tab === "overview" ? (
           <Overview p={p} vs={versus} table={table} onPick={pickTeam} onTable={() => set("tab", "table")} />
         ) : tab === "attack" ? (
-          <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="grid items-start gap-4 md:gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <ShotMap teamId={teamId} />
             <MeasureList p={p} vs={versus} groups={["shooting"]} />
           </div>

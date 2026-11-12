@@ -1,7 +1,9 @@
 // Team analysis, set pieces tab: corners for and against, penalties and direct free kicks.
 import { useState } from "react";
 import { useApi } from "../shared/useApi";
-import { Card, Chip, ErrorNote, SectionTitle, Spinner, cn } from "../shared/ui";
+import { Card, ErrorNote, SectionTitle, Spinner, cn } from "../shared/ui";
+import { HalfPitch } from "./pitch";
+import { Label, Segmented } from "./ui";
 import { usePro } from "./context";
 
 export interface Source {
@@ -102,7 +104,7 @@ const ZONE_SHORT: Record<string, string> = {
   edge: "Edge of box",
 };
 const FOOT: Record<string, string> = { R: "Right", L: "Left", other: "Other" };
-const RESULT_COLOUR = { goal: "#e3a008", shot: "#2f7fe0", none: "rgba(255,255,255,0.6)" };
+const RESULT_COLOUR = { goal: "#ffc93c", shot: "#5ad1ff", none: "rgba(255,255,255,0.6)" };
 export const pct = (x: number | null | undefined) => (x == null ? "–" : `${Math.round(x)}%`);
 
 export function SetPieces({ teamId }: { teamId: string }) {
@@ -117,13 +119,16 @@ function TeamView({ p }: { p: Profile }) {
   const { rest } = usePro();
   const c = p.corners;
   return (
-    <>
-      <Card>
+    <div className="space-y-4 md:space-y-5">
+      <Card className="border-l-pitch-500 border-l-4">
         <SectionTitle>Scouting notes</SectionTitle>
         {p.notes.length ? (
-          <ul className="list-disc space-y-1 pl-5 text-sm">
+          <ul className="grid gap-x-8 gap-y-1.5 text-sm md:grid-cols-2">
             {p.notes.map((n) => (
-              <li key={n}>{n}</li>
+              <li key={n} className="flex gap-2">
+                <span className="bg-pitch-500 mt-2 h-1.5 w-1.5 shrink-0 rounded-full" aria-hidden />
+                <span>{n}</span>
+              </li>
             ))}
           </ul>
         ) : (
@@ -160,35 +165,35 @@ function TeamView({ p }: { p: Profile }) {
       </section>
 
       <Card className="overflow-x-auto p-0">
-        <table className="w-full text-sm">
-          <caption className="p-3 text-left font-bold">Corner takers</caption>
-          <thead className="text-ink-2 text-left">
+        <table className="lg-table">
+          <caption>Corner takers</caption>
+          <thead className="text-left">
             <tr>
-              <th className="p-3">Player</th>
-              <th className="p-3">Corners</th>
-              <th className="p-3">Foot</th>
-              <th className="p-3">Left / right side</th>
-              <th className="p-3">In / out-swinging</th>
-              <th className="p-3">Usual target</th>
-              <th className="p-3">Shots / goals</th>
+              <th>Player</th>
+              <th>Corners</th>
+              <th>Foot</th>
+              <th>Left / right side</th>
+              <th>In / out-swinging</th>
+              <th>Usual target</th>
+              <th>Shots / goals</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[color:var(--line)]">
+          <tbody>
             {p.corner_takers.slice(0, 6).map((t) => (
               <tr key={t.name}>
-                <td className="p-3 font-semibold">{t.name}</td>
-                <td className="p-3">
+                <td className="font-bold">{t.name}</td>
+                <td>
                   {t.n} <span className="text-ink-2">({pct(t.share_pct)})</span>
                 </td>
-                <td className="p-3">{FOOT[t.foot] ?? t.foot}</td>
-                <td className="p-3">
+                <td>{FOOT[t.foot] ?? t.foot}</td>
+                <td>
                   {t.sides.L} / {t.sides.R}
                 </td>
-                <td className="p-3">
+                <td>
                   {t.technique.in ?? 0} / {t.technique.out ?? 0}
                 </td>
-                <td className="p-3">{ZONE_SHORT[t.main_zone]}</td>
-                <td className="p-3">
+                <td>{ZONE_SHORT[t.main_zone]}</td>
+                <td>
                   {t.shots} / {t.goals}
                 </td>
               </tr>
@@ -212,24 +217,26 @@ function TeamView({ p }: { p: Profile }) {
 
       <KickSection title="Penalties" block={p.penalties} minN={p.min_n} showMinute />
       <KickSection title="Direct free kicks" block={p.free_kicks} minN={p.min_n} />
-    </>
+    </div>
   );
 }
 
 function Stats({ items, foot }: { items: [string, string, string | undefined][]; foot: string }) {
   const pro = usePro();
   return (
-    <Card>
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <Card className="p-0">
+      <dl className="divide-line grid grid-cols-2 divide-x sm:grid-cols-4">
         {items.map(([label, value, league]) => (
-          <div key={label}>
-            <dt className="text-ink-2 text-xs">{label}</dt>
-            <dd className="text-xl font-extrabold">{value}</dd>
+          <div key={label} className="px-4 py-3">
+            <dt>
+              <Label>{label}</Label>
+            </dt>
+            <dd className="font-display num mt-0.5 text-2xl leading-tight font-extrabold">{value}</dd>
             {league !== undefined && <dd className="text-ink-2 text-xs">{pro.label} {league}</dd>}
           </div>
         ))}
       </dl>
-      <p className="text-ink-2 mt-2 text-xs">{foot}</p>
+      <p className="text-ink-2 border-line bg-surface-2/60 border-t px-4 py-2 text-xs">{foot}</p>
     </Card>
   );
 }
@@ -248,15 +255,15 @@ function ShareBars({ rows, labels, minN }: { rows: Share[]; labels?: Record<stri
             </span>
           </div>
           <div className="bg-surface-2 relative mt-1 h-2.5 rounded-full" aria-hidden>
-            <div className="bg-pitch-500 h-full rounded-full" style={{ width: `${r.pct ?? 0}%` }} />
+            <div className={cn("h-full rounded-full", r.flag ? "bg-pitch-600" : "bg-pitch-400")} style={{ width: `${r.pct ?? 0}%` }} />
             {r.league_pct != null && (
-              <div className="absolute -top-1 h-[18px] w-0.5" style={{ left: `${r.league_pct}%`, background: "var(--ink)" }} title={rest} />
+              <div className="bg-ink absolute -top-1 h-[18px] w-0.5 rounded-full" style={{ left: `${r.league_pct}%` }} title={rest} />
             )}
           </div>
           {r.flag && (
-            <div className="mt-1">
-              <Chip tone={r.flag === "more" ? "amber" : "neutral"}>{r.flag === "more" ? `More than ${rest}` : `Less than ${rest}`}</Chip>
-            </div>
+            <p className="bg-pitch-500/12 text-pitch-700 mt-1.5 inline-block rounded px-1.5 py-0.5 text-[11px] leading-none font-bold tracking-wide uppercase">
+              {r.flag === "more" ? `More than ${rest}` : `Less than ${rest}`}
+            </p>
           )}
         </div>
       ))}
@@ -281,29 +288,9 @@ function CornerMap({ points }: { points: Profile["corner_points"] }) {
     <div>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-bold">Corner deliveries</h3>
-        <div className="flex gap-1" role="group" aria-label="Corner side">
-          {(["all", "L", "R"] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setSide(s)}
-              aria-pressed={side === s}
-              className={cn("tap rounded-lg border border-line px-2.5 py-1 text-xs font-semibold", side === s && "bg-pitch-700 text-white")}
-            >
-              {s === "all" ? "All" : s === "L" ? "From left" : "From right"}
-            </button>
-          ))}
-        </div>
+        <Segmented value={side} options={{ all: "All", L: "From left", R: "From right" }} onChange={setSide} label="Corner side" />
       </div>
-      <svg viewBox="-3 -5 86 52" className="w-full rounded-xl" role="img" aria-label={`${shown.length} corner deliveries on the attacking half`}>
-        <rect x={-3} y={-5} width={86} height={52} fill="#1d6b44" />
-        <g fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth={0.35}>
-          <rect x={0} y={0} width={80} height={60} />
-          <rect x={18} y={0} width={44} height={18} />
-          <rect x={30} y={0} width={20} height={6} />
-          <rect x={36} y={-2.2} width={8} height={2.2} />
-          <path d="M 32.7 18 A 10 10 0 0 0 47.3 18" />
-        </g>
-        <circle cx={40} cy={12} r={0.4} fill="rgba(255,255,255,0.7)" />
+      <HalfPitch depth={47} label={`${shown.length} corner deliveries on the attacking half`}>
         <g stroke="rgba(255,255,255,0.35)" strokeWidth={0.25} strokeDasharray="1 1">
           <line x1={nearX} y1={0} x2={nearX} y2={18} />
           <line x1={80 - nearX} y1={0} x2={80 - nearX} y2={18} />
@@ -315,16 +302,16 @@ function CornerMap({ points }: { points: Profile["corner_points"] }) {
         <text x={80 - nearX + (side === "L" ? 1 : -1)} y={20.5} fontSize={2} fill="rgba(255,255,255,0.75)" textAnchor={side === "L" ? "start" : "end"}>
           far post
         </text>
-        <circle cx={flagX} cy={0} r={1.2} fill="#e3a008" />
+        <circle cx={flagX} cy={0} r={1.2} fill="#ff8433" />
         {shown.map((pt, i) => (
           <circle key={i} cx={pt.sx} cy={pt.sy} r={pt.result === "none" ? 0.7 : 0.9} fill={RESULT_COLOUR[pt.result]} opacity={0.9} />
         ))}
-      </svg>
+      </HalfPitch>
       <Legend
         items={[
           ["Goal within 15 s", RESULT_COLOUR.goal],
           ["Shot", RESULT_COLOUR.shot],
-          ["No shot", "#9db3a6"],
+          ["No shot", "#a9b6c9"],
         ]}
         extra={side === "all" ? "All corners drawn as if taken from the right flag (orange dot)." : undefined}
       />
@@ -345,7 +332,7 @@ export function Legend({ items, extra }: { items: [string, string][]; extra?: st
   );
 }
 
-const KICK_COLOUR: Record<string, string> = { Goal: "#e3a008", Saved: "#2f7fe0", "Saved to Post": "#2f7fe0" };
+const KICK_COLOUR: Record<string, string> = { Goal: "#ffc93c", Saved: "#5ad1ff", "Saved to Post": "#5ad1ff" };
 
 function KickSection({ title, block, minN, showMinute }: { title: string; block: KickBlock; minN: number; showMinute?: boolean }) {
   const { label } = usePro();
@@ -373,24 +360,24 @@ function KickSection({ title, block, minN, showMinute }: { title: string; block:
         </Card>
       </div>
       <Card className="mt-4 overflow-x-auto p-0">
-        <table className="w-full text-sm">
-          <thead className="text-ink-2 text-left">
+        <table className="lg-table">
+          <thead className="text-left">
             <tr>
-              <th className="p-3">Kicker</th>
-              <th className="p-3">Taken / scored</th>
-              <th className="p-3">Foot</th>
-              <th className="p-3">On target: left / centre / right</th>
+              <th>Kicker</th>
+              <th>Taken / scored</th>
+              <th>Foot</th>
+              <th>On target: left / centre / right</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[color:var(--line)]">
+          <tbody>
             {block.takers.map((t) => (
               <tr key={t.name}>
-                <td className="p-3 font-semibold">{t.name}</td>
-                <td className="p-3">
+                <td className="font-bold">{t.name}</td>
+                <td>
                   {t.n} / {t.scored}
                 </td>
-                <td className="p-3">{FOOT[t.foot] ?? t.foot}</td>
-                <td className="p-3">
+                <td>{FOOT[t.foot] ?? t.foot}</td>
+                <td>
                   {t.left} / {t.centre} / {t.right}
                 </td>
               </tr>
@@ -420,8 +407,8 @@ function GoalMouth({ kicks }: { kicks: Kick[] }) {
   const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
   return (
     <div>
-      <svg viewBox="33 -1.3 14 4.6" className="w-full rounded-xl" role="img" aria-label={`${kicks.length} kicks on the goal mouth`}>
-        <rect x={33} y={-1.3} width={14} height={4.6} fill="#1d6b44" />
+      <svg viewBox="33 -1.3 14 4.6" className="w-full rounded-md" role="img" aria-label={`${kicks.length} kicks on the goal mouth`}>
+        <rect x={33} y={-1.3} width={14} height={4.6} fill="var(--turf-b, #19613f)" />
         <rect x={36} y={0} width={8} height={2.67} fill="rgba(255,255,255,0.08)" stroke="#fff" strokeWidth={0.12} />
         <g stroke="rgba(255,255,255,0.35)" strokeWidth={0.05} strokeDasharray="0.2 0.2">
           <line x1={38.67} y1={0} x2={38.67} y2={2.67} />
