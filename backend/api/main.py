@@ -135,11 +135,13 @@ if settings.static_dir and Path(settings.static_dir, "index.html").exists():
 
     @app.get("/{path:path}", include_in_schema=False)
     def website(path: str):
-        """Serve the built React app; unknown paths get index.html (client-side routing)."""
+        """Serve the built website; unknown paths get their app's page (client-side routing):
+        leagues/index.html inside the Pro League app, index.html (PathToPro) everywhere else."""
         if path.startswith("api/"):
             raise HTTPException(404, "Not found")
         target = (_static / path).resolve()
         if path and target.is_file() and _static in target.parents:
             headers = {"Cache-Control": "public, max-age=31536000, immutable"} if path.startswith("assets/") else {}
             return FileResponse(target, headers=headers)
-        return FileResponse(_static / "index.html", headers={"Cache-Control": "no-cache"})
+        page = "leagues/index.html" if path == "leagues" or path.startswith("leagues/") else "index.html"
+        return FileResponse(_static / page, headers={"Cache-Control": "no-cache"})

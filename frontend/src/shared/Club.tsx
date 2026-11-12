@@ -1,6 +1,8 @@
 // Club identity for tables, match cards and headers: a badge in the club's colours with its
 // three-letter code (LaLiga's abbreviations), and the W / D / L form guide.
-// The badges are drawn from colours, not the clubs' crests, which are their trademarks.
+// A club's real crest where it is free to reuse (crests.ts); every other club gets a badge
+// drawn from its colours, not its crest.
+import { realCrest } from "./crests";
 import { cn } from "./ui";
 
 interface ClubMeta {
@@ -131,6 +133,19 @@ function luminance(hex: string): number {
 
 // Shield split diagonally in the club's two colours; the code is printed from 28 px up.
 export function Crest({ name, size = 28, className }: { name: string; size?: number; className?: string }) {
+  const real = realCrest(name);
+  if (real)
+    return (
+      <img
+        src={`${import.meta.env.BASE_URL}crests/${real.file}`}
+        alt=""
+        aria-hidden
+        width={size}
+        height={Math.round(size * 1.15)}
+        loading="lazy"
+        className={cn("shrink-0 object-contain", className)}
+      />
+    );
   const { code, colors } = clubMeta(name);
   const [a, b] = colors;
   const ink = luminance(a) > 0.45 ? "#111" : "#fff";

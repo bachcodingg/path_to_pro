@@ -2,3 +2,6 @@
 # The public RFC 6238 TOTP test key ("12345678901234567890" in base32), not a secret;
 # later commits derive it in code instead of writing it out.
 2875b294367e0796d355aca2f5ccd0d949167a53:backend/tests/test_team_and_notifications.py:generic-api-key:55
+# A tuple of per-90 measure names in scouting/players.py read as a key and value (and this note's first wording)
+095591de89e0ea3c177b8454c7486e937f1606a9:backend/scouting/players.py:generic-api-key:123
+79e3e3fe290b5ce123b8ce985062efb0a464d769:.gitleaksignore:generic-api-key:5

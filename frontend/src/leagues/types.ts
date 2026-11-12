@@ -44,7 +44,7 @@ export interface StyleProfile {
   summary: { strength: string[]; weakness: string[]; style: string[] };
 }
 
-export type PlayerRow = Record<string, number | string | null> & { name: string; position: string | null; minutes: number };
+export type PlayerRow = Record<string, number | string | null> & { name: string; id: string; position: string | null; minutes: number };
 
 export interface Shots {
   team: string;

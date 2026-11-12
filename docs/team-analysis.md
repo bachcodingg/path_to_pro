@@ -1,8 +1,11 @@
 # Pro league analysis
 
-**Pro leagues** is a section of its own (`/pro`), apart from the staff and player apps and
-open to every signed-in account: it is public match data with nothing about our players
-in it. Coaches use it to study an opponent's style; players to see how the pros in their
+Pro league analysis is a separate app, **Pro League Data Tracking** (`/leagues/`), built
+on the same platform as PathToPro: one account, one API and one design system, but its own
+entry page (`frontend/leagues/index.html`, `frontend/src/leagues/`), name, icon, colours and
+install manifest. A PathToPro account signs in to it, and it is open to every kind of
+account: it is public match data with nothing about our players in it. PathToPro links to it
+from the staff column and the player sidebar; old `/pro/...` addresses open it. Coaches use it to study an opponent's style; players to see how the pros in their
 position play. It shows how a team passes, where they shoot from, how they do in the air,
 how hard they press, how they take and defend set pieces, and which players do what, plus
 every result with a match centre. It is built on real match events, not on the synthetic
@@ -14,9 +17,10 @@ academy season.
 | Premier League 2015/16 | all 380 matches (Leicester City's title) | the same |
 | Ligue 1 2015/16 | 377 of 380 (three missing, so a few teams have 37) | the same |
 | Bundesliga 2023/24 | Bayer Leverkusen's 34 matches only (the unbeaten season) | Leverkusen against their opponents in those matches, no ranks and no table; results |
+| Ligue 1 2021/22 and 2022/23 | Paris Saint-Germain's 58 league matches only (26 and 32) | PSG against their opponents, no ranks and no table; Mbappé, Messi and Neymar's player pages |
 | Champions League | the final of 14 seasons, 2004-2019 | the finals with a match centre each; no team comparison from one match a year |
 
-A team's page (`/pro/<competition>/teams/<team>`):
+A team's page (`/leagues/<competition>/teams/<team>`):
 
 | Tab | What it shows |
 | --- | --- |
@@ -115,6 +119,57 @@ It is a screen, not proof: with about 60 measures per team, two or three labels 
 chance. The bars on each measure show where the team sits between the league's lowest
 and highest team, so a label can always be checked against the spread.
 
+## Players
+
+The **Players** tab of the Pro League app (`/leagues/players`) analyses players from two
+sources.
+
+| | Match events (StatsBomb Open Data) | 2024/25 season (API-Football) |
+| --- | --- | --- |
+| What it is | Every event of the matches in the free data | League season totals per player |
+| Seasons | La Liga, Premier League, Ligue 1 2015/16; PSG's league matches 2021/22 and 2022/23 (Mbappé, Messi, Neymar); Leverkusen 2023/24 | 2024/25: Premier League, La Liga, Ligue 1, Bundesliga, Serie A |
+| Full squads | Real Madrid, Barcelona, PSG (2015/16 and 2021-23), Manchester City, Manchester United, Chelsea, Liverpool, Arsenal | The same nine clubs, Bayern included |
+| A player's page | Totals, per-90 rates, percentiles, every shot on a pitch map | Totals, per-90 rates, rating, percentiles |
+| Needs | Nothing: the data is committed | An API-Football key, imported once on the server |
+
+- **Bayern Munich** have no league season in the free event data (only their matches
+  against Leverkusen), so their squad is in the 2024/25 numbers only.
+- **Best of the rest**: one player for every other club, the most goals plus assists among
+  players with 900+ minutes (more minutes break a tie). A plain rule anyone can check; it
+  favours attackers.
+- **Percentiles** compare a player's per-90 numbers with the regulars (900+ minutes) in
+  the same position group: in that league for the event data, across the five leagues for
+  2024/25. Ties count half and the player is part of his own group, so 50 is the middle. A
+  club season (one club's matches only) has no fair group, so its pages show the numbers
+  without percentiles. Per-90 rates start at 450 minutes.
+- **The 2024/25 import** (`python -m scouting.apifootball`, with `APIFOOTBALL_KEY` set):
+  API-Football's free plan allows 100 requests a day and seasons from two to four years
+  back, so 2024/25 is the newest it gives (the current season needs a paid plan). It also
+  reads only the first 3 pages of any list, so a whole league (50+ pages) is out of reach.
+  The script therefore reads each club's own players (2-3 pages) and its transfers (1), the
+  featured clubs first: about 320 requests for the five leagues, so four days. The transfers
+  are needed because the API files a player's whole season under the club he is at now as
+  well as the one he played for (Joan García's Espanyol season also shows as Barcelona's):
+  a player counts for a club only if its transfer list puts him there for a month or more
+  of the season. A few big clubs list more than 60
+  players (youth and departed players included), so their fourth page is out of reach; the
+  data file names them (`lists_cut_after_3_pages`). For Real Madrid every player with league
+  minutes was in the first three. It caches every page and carries
+  on the next day; until every club is in, the page says how many are.
+  It keeps numbers only, never the API's player photos or club logos. Its output,
+  `backend/scouting/data/season_2024_25.json`, is in `.gitignore`: check API-Football's
+  terms before publishing it. Without it, the app says the season is not imported.
+
+## Club crests
+
+A club's real crest is shown only where it is free to reuse
+(`frontend/src/shared/crests.ts`, files in `frontend/public/crests/`): public domain on
+Wikimedia Commons (mostly simple text logos, such as Bayern, Dortmund, Juventus, Inter and
+AC Milan), public domain in the US where the site is hosted (Barcelona, PSG, Bordeaux,
+Eibar), or CC BY-SA (Köln). They stay trademarks of their clubs. Real Madrid, the English
+clubs and the rest are copyrighted, so they keep a badge drawn from their colours. The Pro
+League home page lists every crest with its licence and source.
+
 ## Limits
 
 - **Mostly one season, ten years old.** Squads and coaches change; the method carries
@@ -132,6 +187,7 @@ and highest team, so a label can always be checked against the spread.
   events logged for the club's matches; that logging doesn't exist yet.
 
 Code: `backend/scouting/` (`statsbomb.py` import, `play.py` open-play counts,
-`analysis.py` set pieces, `style.py` team measures, players and shots),
+`analysis.py` set pieces, `style.py` team measures, players and shots, `players.py` player
+profiles, `apifootball.py` and `season.py` the 2024/25 season),
 `api/routers/analysis.py`, `frontend/src/coach/analysis/`. Tests:
-`tests/test_scouting.py`, `tests/test_scouting_play.py`.
+`tests/test_scouting.py`, `tests/test_scouting_play.py`, `tests/test_scouting_players.py`.

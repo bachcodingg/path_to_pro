@@ -1,5 +1,7 @@
 // Players tab: the opponent's squad with shooting, passing, duel and defending numbers; sortable.
+// Every name opens the player's own page (PlayerProfile).
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useApi } from "../shared/useApi";
 import { Card, ErrorNote, Spinner, cn } from "../shared/ui";
 import type { PlayerRow } from "./types";
@@ -70,7 +72,8 @@ function fmt(v: unknown, kind: Kind): string {
 }
 
 export function Players({ teamId }: { teamId: string }) {
-  const { base } = usePro();
+  const { base, comp } = usePro();
+  const profile = (p: PlayerRow) => `/${comp}/teams/${teamId}/players/${p.id}`;
   const { data, error, loading, reload } = useApi<{ team: string; min_minutes: number; players: PlayerRow[] }>(
     `${base}/teams/${encodeURIComponent(teamId)}/players`,
   );
@@ -88,7 +91,7 @@ export function Players({ teamId }: { teamId: string }) {
     .sort((a, b) => (b[key] == null ? -1 : a[key] == null ? 1 : Number(b[key]) - Number(a[key])));
   return (
     <div className="space-y-3">
-      <Leaders players={data.players} />
+      <Leaders players={data.players} profile={profile} />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-1" role="group" aria-label="Category">
           {Object.entries(CATEGORIES).map(([k, c]) => (
@@ -128,7 +131,11 @@ export function Players({ teamId }: { teamId: string }) {
           <tbody className="divide-y divide-[color:var(--line)]">
             {rows.map((p) => (
               <tr key={p.name}>
-                <td className="p-3 font-semibold whitespace-nowrap">{p.name}</td>
+                <td className="p-3 font-semibold whitespace-nowrap">
+                  <Link to={profile(p)} className="hover:underline">
+                    {p.name}
+                  </Link>
+                </td>
                 <td className="text-ink-2 p-3 whitespace-nowrap">{p.position ?? "–"}</td>
                 <td className="p-3 text-right">{p.minutes}</td>
                 {cols.map(([k, , kind]) => (
@@ -158,7 +165,7 @@ const LEADERS: [string, string, Kind][] = [
   ["tackles_int90", "Tackles + interceptions /90", "num"],
 ];
 
-function Leaders({ players }: { players: PlayerRow[] }) {
+function Leaders({ players, profile }: { players: PlayerRow[]; profile: (p: PlayerRow) => string }) {
   return (
     <section aria-label="Squad leaders" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
       {LEADERS.map(([k, label, kind]) => {
@@ -174,7 +181,9 @@ function Leaders({ players }: { players: PlayerRow[] }) {
               {first ? (
                 <div className="mt-1 flex items-end justify-between gap-2">
                   <span className="min-w-0">
-                    <span className="block truncate font-bold">{first.name}</span>
+                    <Link to={profile(first)} className="block truncate font-bold hover:underline">
+                      {first.name}
+                    </Link>
                     <span className="block truncate text-xs text-white/70">{first.position ?? ""}</span>
                   </span>
                   <span className="font-display text-4xl leading-none font-bold">{fmt(first[k], kind)}</span>
@@ -187,7 +196,9 @@ function Leaders({ players }: { players: PlayerRow[] }) {
               {rest.map((p, i) => (
                 <li key={p.name} className="flex items-center gap-2 px-3 py-1.5">
                   <span className="text-ink-2 w-4 text-xs font-bold">{i + 2}</span>
-                  <span className="min-w-0 flex-1 truncate">{p.name}</span>
+                  <Link to={profile(p)} className="min-w-0 flex-1 truncate hover:underline">
+                    {p.name}
+                  </Link>
                   <span className="num font-semibold">{fmt(p[k], kind)}</span>
                 </li>
               ))}

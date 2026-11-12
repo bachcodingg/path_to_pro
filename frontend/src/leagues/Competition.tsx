@@ -50,7 +50,7 @@ export function CompetitionPage() {
           {teams.data.teams.map((t) => {
             const row = teams.data!.table?.find((x) => x.id === t.id);
             return (
-              <Link key={t.id} to={`/pro/${comp}/teams/${t.id}`} className="group">
+              <Link key={t.id} to={`/${comp}/teams/${t.id}`} className="group">
                 <Card className="flex h-full flex-col items-center gap-2 p-4 text-center transition-shadow group-hover:shadow-md">
                   <Crest name={t.name} size={48} />
                   <span className="font-bold leading-tight">{t.name}</span>
@@ -64,7 +64,7 @@ export function CompetitionPage() {
         </div>
       )}
       {tab === "table" && (
-        <LeagueTable tables={teams.data} highlight="" onPick={(id) => navigate(`/pro/${comp}/teams/${id}`)} />
+        <LeagueTable tables={teams.data} highlight="" onPick={(id) => navigate(`/${comp}/teams/${id}`)} />
       )}
       {tab === "results" &&
         (matches.data ? <Results data={matches.data} /> : matches.error ? <ErrorNote message={matches.error} onRetry={matches.reload} /> : <PageSkeleton />)}

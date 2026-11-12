@@ -49,7 +49,7 @@ export function TeamAnalysis() {
     else next.delete(key);
     setParams(next, { replace: true });
   }
-  const pickTeam = (id: string) => navigate(`/pro/${comp}/teams/${id}${params.size ? `?${params}` : ""}`);
+  const pickTeam = (id: string) => navigate(`/${comp}/teams/${id}${params.size ? `?${params}` : ""}`);
 
   if (list.error) return <ErrorNote message={list.error} onRetry={list.reload} />;
   const teams = list.data?.teams ?? [];
@@ -67,7 +67,7 @@ export function TeamAnalysis() {
         accent={c1 === "#ffffff" ? c2 : c1}
         eyebrow={
           c && (
-            <Link to={`/pro/${comp}`} className="hover:underline">
+            <Link to={`/${comp}`} className="hover:underline">
               ← {c.name} {c.season}
             </Link>
           )
@@ -197,7 +197,7 @@ export function TeamAnalysis() {
       <p className="text-ink-2 text-xs">
         Data: <a className="underline" href={list.data?.source_url ?? "https://github.com/statsbomb/open-data"}>StatsBomb Open Data</a>,
         used under StatsBomb's open-data terms. Numbers are compared with the {label}
-        {league ? " (the other teams)" : " in the same matches"}. Club badges are drawn from club colours, not the clubs' crests.
+        {league ? " (the other teams)" : " in the same matches"}. Real crests only where free to reuse; other clubs' badges are drawn from their colours.
         Definitions: docs/team-analysis.md.
       </p>
     </div>

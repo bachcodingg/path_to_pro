@@ -1,10 +1,11 @@
-// Pro leagues home: one card per competition, saying honestly how much of it the open data covers.
+// Pro League app home: one card per competition, saying honestly how much of it the open data covers.
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "../shared/PageHeader";
 import { useApi } from "../shared/useApi";
 import { Card, Chip, ErrorNote, PageSkeleton } from "../shared/ui";
 import { COMP_COLOR, type Competition } from "./context";
+import { CrestCredits } from "./PlayerParts";
 
 export const COVERAGE: Record<Competition["coverage"], string> = {
   league: "Full season",
@@ -23,9 +24,23 @@ export function ProHome() {
         title="Pro league analysis"
         subtitle="How the pros play: passing, shooting, pressing, set pieces and players, from StatsBomb's free event data. Study an opponent's style, or the players in your position."
       />
+      <Link to="/players" className="group block">
+        <Card className="flex flex-wrap items-center justify-between gap-3 p-4 transition-shadow group-hover:shadow-md">
+          <span>
+            <span className="font-display block text-2xl leading-tight font-bold">Pro player analysis</span>
+            <span className="text-ink-2 text-sm">
+              Full squads of Real Madrid, Barcelona, PSG, Manchester City, Manchester United, Chelsea, Liverpool, Arsenal and Bayern, and the best player of every
+              other club.
+            </span>
+          </span>
+          <span className="text-pitch-600 flex items-center gap-1 font-semibold">
+            Open Players <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" aria-hidden />
+          </span>
+        </Card>
+      </Link>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {data.map((c) => (
-          <Link key={c.id} to={`/pro/${c.id}`} className="group" aria-label={`${c.name} ${c.season}`}>
+          <Link key={c.id} to={`/${c.id}`} className="group" aria-label={`${c.name} ${c.season}`}>
             <Card className="relative h-full overflow-hidden p-0 transition-shadow group-hover:shadow-md">
               <div className="h-1.5" style={{ background: COMP_COLOR[c.id] }} aria-hidden />
               <div className="space-y-2 p-4">
@@ -56,8 +71,9 @@ export function ProHome() {
       </div>
       <p className="text-ink-2 text-xs">
         Data: <a className="underline" href="https://github.com/statsbomb/open-data">StatsBomb Open Data</a>, used under StatsBomb's
-        open-data terms. Competition and club names only; no league or club logos.
+        open-data terms. No league logos; club crests only where free to reuse.
       </p>
+      <CrestCredits />
     </div>
   );
 }

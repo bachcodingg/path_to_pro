@@ -35,5 +35,6 @@ export const COMP_COLOR: Record<string, string> = {
   "premier-league": "#6b1d7a",
   "ligue-1": "#c9d41b",
   bundesliga: "#d20515",
+  "ligue-1-psg": "#0d3b8c",
   "champions-league": "#2a4bb0",
 };

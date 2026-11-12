@@ -362,6 +362,7 @@ def player_rows(team_id: str, comp: str = DEFAULT) -> dict | None:
         air = p.get("aerial_won", 0) + p.get("aerial_lost", 0)
         rows.append({
             "name": p["name"],
+            "id": slug(p["name"]),  # the player's page: scouting.players.profile
             "position": p["position"],
             "matches": p["matches"],
             "minutes": round(p["minutes"]),

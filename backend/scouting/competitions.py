@@ -72,6 +72,12 @@ COMPETITIONS: dict[str, Competition] = {
             featured="Bayer Leverkusen",
         ),
         Competition(
+            "ligue-1-psg", "PSG in Ligue 1", "2021/22 and 2022/23", "ligue1_psg_2021_23", 7, (108, 235), "club",
+            "Paris Saint-Germain's 58 league matches over two seasons (26 of 38, then 32 of 38): Mbappé, Messi and "
+            "Neymar together. Only PSG's matches are in the open data, so PSG are compared with their opponents.",
+            featured="Paris Saint-Germain",
+        ),
+        Competition(
             "champions-league", "Champions League", "Finals 2004-2019", "champions_league_finals", 16,
             (44, 37, 39, 41, 21, 22, 23, 24, 25, 26, 27, 2, 1, 4), "finals",
             "The open data has the final of each season (14 finals from 2004 to 2019), not the earlier rounds.",
