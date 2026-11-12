@@ -175,7 +175,8 @@ test("pro league app: a separate app; an opponent's style, shots, set pieces and
   await expect(page.getByRole("navigation", { name: "Staff navigation" })).toHaveCount(0); // an app of its own
   await page.screenshot({ path: `${SHOTS}/pro-leagues.png` });
   await page.getByRole("link", { name: "La Liga 2015/16" }).click();
-  await expect(page).toHaveURL(/\/leagues\/la-liga$/); // else the home page's Players card ("…Real Madrid…") is still there
+  // The page itself, not just its address: until it shows, the home page's Players card ("…Real Madrid…") is still there
+  await expect(page.getByRole("heading", { level: 1, name: "La Liga 2015/16" })).toBeVisible();
   await page.getByRole("link", { name: /Real Madrid/ }).first().click();
   await expect(page.getByRole("heading", { name: "Team analysis: Real Madrid" })).toBeVisible();
   await expect(page.getByLabel("Form, oldest first: won, won, won, won, won").first()).toBeVisible();
