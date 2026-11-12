@@ -2,8 +2,11 @@
 // and situation, with tap-in / box / long-shot totals computed from what is shown.
 import { useState, type ReactNode } from "react";
 import { useApi } from "../shared/useApi";
-import { Card, ErrorNote, Spinner, cn } from "../shared/ui";
+import { Crosshair } from "lucide-react";
+import { ErrorNote, Spinner } from "../shared/ui";
+import { HalfPitch } from "./pitch";
 import { Legend } from "./SetPieces";
+import { Label, Panel, Segmented } from "./ui";
 import type { Shots } from "./types";
 import { usePro } from "./context";
 
@@ -15,7 +18,7 @@ const ZONES = [
   ["box", "Rest of the box"],
   ["out", "Outside the box"],
 ] as const;
-const COLOUR = { goal: "#e3a008", target: "#2f7fe0", other: "rgba(255,255,255,0.55)" };
+const COLOUR = { goal: "#ffc93c", target: "#5ad1ff", other: "rgba(255,255,255,0.6)" };
 
 function zone(x: number, y: number): "six" | "box" | "out" {
   if (x >= 114 && y >= 30 && y <= 50) return "six";
@@ -47,7 +50,7 @@ export function ShotMap({ teamId }: { teamId: string }) {
   return (
     <ShotView
       all={rowsToShots(data.columns, data[side])}
-      toggle={<Toggle value={side} options={{ for: `${data.team} shots`, against: "Shots conceded" }} onChange={setSide} label="Whose shots" />}
+      toggle={<Segmented value={side} options={{ for: `${data.team} shots`, against: "Shots conceded" }} onChange={setSide} label="Whose shots" />}
     />
   );
 }
@@ -72,95 +75,84 @@ function ShotView({ all, toggle, title = "Shot map" }: { all: Shot[]; toggle?: R
   const goals = shots.filter((s) => s.outcome === "Goal").length;
   const xg = shots.reduce((a, s) => a + s.xg, 0);
   return (
-    <Card>
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-bold">{title}</h3>
-        {toggle}
+    <Panel title={title} icon={Crosshair} level={3} action={toggle} bodyClassName="p-0">
+      <dl className="divide-line border-line grid grid-cols-4 divide-x border-b text-center">
+        {(
+          [
+            ["Shots", shots.length],
+            ["Goals", goals],
+            ["xG", xg.toFixed(1)],
+            ["Scored", shots.length ? `${Math.round((100 * goals) / shots.length)}%` : "–"],
+          ] as const
+        ).map(([k, v]) => (
+          <div key={k} className="px-2 py-2.5">
+            <dt>
+              <Label>{k}</Label>
+            </dt>
+            <dd className="font-display num text-2xl leading-tight font-extrabold">{v}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="flex flex-wrap gap-x-4 gap-y-2 px-3 pt-3">
+        <Segmented value={body} options={BODY} onChange={setBody} label="Body part" />
+        <Segmented value={sit} options={SITUATION} onChange={setSit} label="Situation" />
       </div>
-      <div className="mb-2 flex flex-wrap gap-2">
-        <Toggle value={body} options={BODY} onChange={setBody} label="Body part" />
-        <Toggle value={sit} options={SITUATION} onChange={setSit} label="Situation" />
-      </div>
-      <svg viewBox="-3 -5 86 55" className="w-full rounded-xl" role="img" aria-label={`${shots.length} shots on the attacking half`}>
-        <rect x={-3} y={-5} width={86} height={55} fill="#1d6b44" />
-        <g fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth={0.35}>
-          <rect x={0} y={0} width={80} height={60} />
-          <rect x={18} y={0} width={44} height={18} />
-          <rect x={30} y={0} width={20} height={6} />
-          <rect x={36} y={-2.2} width={8} height={2.2} />
-          <path d="M 32.7 18 A 10 10 0 0 0 47.3 18" />
-        </g>
-        <circle cx={40} cy={12} r={0.4} fill="rgba(255,255,255,0.7)" />
+      <div className="p-3">
+      <HalfPitch label={`${shots.length} shots on the attacking half`}>
         {shots
           .slice()
           .sort((a, b) => b.xg - a.xg)
           .map((s, i) => {
             const fill = s.outcome === "Goal" ? COLOUR.goal : s.outcome === "Saved" || s.outcome === "Saved to Post" ? COLOUR.target : COLOUR.other;
             return (
-              <circle key={i} cx={s.y} cy={Math.min(49, 120 - s.x)} r={0.5 + 2.6 * Math.sqrt(s.xg)} fill={fill} fillOpacity={0.8} stroke="#0b2a20" strokeWidth={0.12}>
+              <circle key={i} cx={s.y} cy={Math.min(49, 120 - s.x)} r={0.5 + 2.6 * Math.sqrt(s.xg)} fill={fill} fillOpacity={0.85} stroke="#0c1a3d" strokeWidth={0.14}>
                 <title>{`${s.minute}' ${s.player}: ${s.outcome.toLowerCase()}, xG ${s.xg.toFixed(2)}`}</title>
               </circle>
             );
           })}
-      </svg>
+      </HalfPitch>
       <Legend
         items={[
           ["Goal", COLOUR.goal],
           ["Saved", COLOUR.target],
-          ["Missed or blocked", "#9db3a6"],
+          ["Missed or blocked", "#a9b6c9"],
         ]}
         extra="Bigger dot = better chance (xG)."
       />
-      <table className="mt-3 w-full text-sm">
-        <thead className="text-ink-2 text-left text-xs">
+      </div>
+      <table className="lg-table border-line border-t">
+        <thead className="text-left">
           <tr>
-            <th className="py-1">Where</th>
-            <th className="py-1 text-right">Shots</th>
-            <th className="py-1 text-right">Goals</th>
-            <th className="py-1 text-right">Scored</th>
-            <th className="py-1 text-right">xG</th>
+            <th>Where</th>
+            <th className="text-right">Shots</th>
+            <th className="text-right">Goals</th>
+            <th className="text-right">Scored</th>
+            <th className="text-right">xG</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-[color:var(--line)]">
+        <tbody>
           {ZONES.map(([key, label]) => {
             const z = shots.filter((s) => zone(s.x, s.y) === key);
             const g = z.filter((s) => s.outcome === "Goal").length;
             return (
               <tr key={key}>
-                <td className="py-1.5">{label}</td>
-                <td className="py-1.5 text-right">{z.length}</td>
-                <td className="py-1.5 text-right">{g}</td>
-                <td className="py-1.5 text-right">{z.length ? `${Math.round((100 * g) / z.length)}%` : "–"}</td>
-                <td className="py-1.5 text-right">{z.reduce((a, s) => a + s.xg, 0).toFixed(1)}</td>
+                <td>{label}</td>
+                <td className="text-right">{z.length}</td>
+                <td className="text-right">{g}</td>
+                <td className="text-right">{z.length ? `${Math.round((100 * g) / z.length)}%` : "–"}</td>
+                <td className="text-right">{z.reduce((a, s) => a + s.xg, 0).toFixed(1)}</td>
               </tr>
             );
           })}
-          <tr className="font-bold">
-            <td className="py-1.5">All shown</td>
-            <td className="py-1.5 text-right">{shots.length}</td>
-            <td className="py-1.5 text-right">{goals}</td>
-            <td className="py-1.5 text-right">{shots.length ? `${Math.round((100 * goals) / shots.length)}%` : "–"}</td>
-            <td className="py-1.5 text-right">{xg.toFixed(1)}</td>
+          <tr className="bg-surface-2 font-extrabold">
+            <td>All shown</td>
+            <td className="text-right">{shots.length}</td>
+            <td className="text-right">{goals}</td>
+            <td className="text-right">{shots.length ? `${Math.round((100 * goals) / shots.length)}%` : "–"}</td>
+            <td className="text-right">{xg.toFixed(1)}</td>
           </tr>
         </tbody>
       </table>
-    </Card>
-  );
-}
-
-function Toggle<K extends string>({ value, options, onChange, label }: { value: K; options: Record<K, string>; onChange: (k: K) => void; label: string }) {
-  return (
-    <div className="flex flex-wrap gap-1" role="group" aria-label={label}>
-      {(Object.keys(options) as K[]).map((k) => (
-        <button
-          key={k}
-          onClick={() => onChange(k)}
-          aria-pressed={value === k}
-          className={cn("tap rounded-lg border border-line px-2.5 py-1 text-xs font-semibold", value === k && "bg-pitch-700 text-white")}
-        >
-          {options[k]}
-        </button>
-      ))}
-    </div>
+    </Panel>
   );
 }

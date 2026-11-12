@@ -2,8 +2,7 @@
 // away, a coloured bar for the European and relegation places, badges and the form guide.
 import { useState } from "react";
 import { Crest, FormGuide, clubMeta } from "../shared/Club";
-import { Tabs } from "../shared/PageHeader";
-import { Card, cn } from "../shared/ui";
+import { cn } from "../shared/ui";
 import type { Standing } from "./types";
 
 // 2015/16 rules: top four to the Champions League, fifth and sixth to the Europa League,
@@ -16,6 +15,11 @@ const ZONES = [
 const zoneOf = (p: number, n: number) => ZONES.find((z) => z.has(p, n));
 
 type Venue = "all" | "home" | "away";
+const VENUES: [Venue, string][] = [
+  ["all", "All matches"],
+  ["home", "Home"],
+  ["away", "Away"],
+];
 export interface Tables {
   table: Standing[];
   table_home?: Standing[];
@@ -26,33 +30,30 @@ const gd = (t: Standing) => {
   const d = t.gf - t.ga;
   return d > 0 ? `+${d}` : String(d);
 };
+const gdTone = (t: Standing) => (t.gf > t.ga ? "text-good" : t.gf < t.ga ? "text-bad" : "text-ink-2");
 
 export function LeagueTable({ tables, highlight, compare, onPick }: { tables: Tables; highlight: string; compare?: string | null; onPick: (id: string) => void }) {
   const [venue, setVenue] = useState<Venue>("all");
   const rows = (venue === "home" ? tables.table_home : venue === "away" ? tables.table_away : tables.table) ?? tables.table;
   const n = rows.length;
   return (
-    <Card className="overflow-hidden p-0">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-3">
-        <h2 className="font-display text-xl font-bold uppercase">League table</h2>
-        <Tabs
-          tone="plain"
-          label="Matches counted"
-          value={venue}
-          onChange={setVenue}
-          items={[
-            ["all", "All matches"],
-            ["home", "Home"],
-            ["away", "Away"],
-          ]}
-        />
+    <section className="lg-panel">
+      <div className="border-line flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5">
+        <h2 className="font-display text-[1.05rem] font-extrabold">League table</h2>
+        <div role="tablist" aria-label="Matches counted" className="lg-seg">
+          {VENUES.map(([k, text]) => (
+            <button key={k} role="tab" aria-selected={venue === k} onClick={() => setVenue(k)}>
+              {text}
+            </button>
+          ))}
+        </div>
       </div>
       <div className="overflow-x-auto">
-        <table aria-label="League table" className="num w-full min-w-[640px] text-sm">
-          <thead className="text-ink-2 border-line border-b text-xs font-bold uppercase">
+        <table aria-label="League table" className="lg-table min-w-[640px]">
+          <thead>
             <tr>
-              <th className="w-12 py-2 pl-4 text-left">Pos</th>
-              <th className="py-2 text-left">Club</th>
+              <th className="w-14 !pl-5 text-left">Pos</th>
+              <th className="text-left">Club</th>
               <Th title="Played">Pl</Th>
               <Th title="Won">W</Th>
               <Th title="Drawn">D</Th>
@@ -65,7 +66,7 @@ export function LeagueTable({ tables, highlight, compare, onPick }: { tables: Ta
               </Th>
               <Th title="Goal difference">GD</Th>
               <Th title="Points">Pts</Th>
-              <th className="py-2 pr-4 pl-3 text-left">Form</th>
+              <th className="!pr-4 text-left">Form</th>
             </tr>
           </thead>
           <tbody>
@@ -74,21 +75,14 @@ export function LeagueTable({ tables, highlight, compare, onPick }: { tables: Ta
               const mine = t.id === highlight,
                 theirs = t.id === compare;
               return (
-                <tr
-                  key={t.id}
-                  className={cn(
-                    "border-line hover:bg-surface-2 border-b transition-colors last:border-0",
-                    mine && "bg-pitch-500/12 hover:bg-pitch-500/15",
-                    theirs && "bg-ready/8",
-                  )}
-                >
-                  <td className="relative py-2 pl-4 font-bold">
+                <tr key={t.id} className={cn(mine && "!bg-pitch-500/12", theirs && "!bg-away/10")}>
+                  <td className="relative !pl-5">
                     {zone && <span className="absolute inset-y-0 left-0 w-1" style={{ background: zone.color }} title={zone.label} />}
-                    {t.position}
+                    <span className="font-display text-base font-extrabold">{t.position}</span>
                   </td>
-                  <td className="py-1.5">
-                    <button className="tap flex items-center gap-2.5 text-left font-semibold hover:underline" onClick={() => onPick(t.id)}>
-                      <Crest name={t.team} size={24} />
+                  <td className="!py-0.5">
+                    <button className="tap flex items-center gap-3 text-left font-bold hover:underline" onClick={() => onPick(t.id)}>
+                      <Crest name={t.team} size={26} />
                       <span className="hidden sm:inline">{t.team}</span>
                       <span className="sm:hidden">{clubMeta(t.team).code}</span>
                     </button>
@@ -99,9 +93,11 @@ export function LeagueTable({ tables, highlight, compare, onPick }: { tables: Ta
                   <Td>{t.lost}</Td>
                   <Td wide>{t.gf}</Td>
                   <Td wide>{t.ga}</Td>
-                  <Td>{gd(t)}</Td>
-                  <td className="px-2 py-2 text-center text-base font-extrabold">{t.points}</td>
-                  <td className="py-2 pr-4 pl-3">{t.form && <FormGuide form={t.form} />}</td>
+                  <td className={cn("!px-2 text-center font-semibold", gdTone(t))}>{gd(t)}</td>
+                  <td className="!px-2 text-center">
+                    <span className="font-display text-lg leading-none font-extrabold">{t.points}</span>
+                  </td>
+                  <td className="!pr-4">{t.form && <FormGuide form={t.form} />}</td>
                 </tr>
               );
             })}
@@ -109,7 +105,7 @@ export function LeagueTable({ tables, highlight, compare, onPick }: { tables: Ta
         </table>
       </div>
       {venue === "all" && (
-        <ul className="text-ink-2 border-line flex flex-wrap gap-x-5 gap-y-1 border-t px-4 py-2.5 text-xs" aria-label="Key">
+        <ul className="text-ink-2 border-line bg-surface-2/60 flex flex-wrap gap-x-5 gap-y-1 border-t px-4 py-2.5 text-xs" aria-label="Key">
           {ZONES.map((z) => (
             <li key={z.label} className="flex items-center gap-1.5">
               <span className="h-3 w-1 rounded-full" style={{ background: z.color }} aria-hidden />
@@ -119,13 +115,13 @@ export function LeagueTable({ tables, highlight, compare, onPick }: { tables: Ta
           <li>Form: last five matches, newest on the right</li>
         </ul>
       )}
-    </Card>
+    </section>
   );
 }
 
 function Th({ children, title, wide }: { children: string; title: string; wide?: boolean }) {
   return (
-    <th className={cn("px-2 py-2 text-center", wide && "hidden md:table-cell")}>
+    <th className={cn("!px-2 text-center", wide && "hidden md:table-cell")}>
       <abbr title={title} className="no-underline">
         {children}
       </abbr>
@@ -134,53 +130,53 @@ function Th({ children, title, wide }: { children: string; title: string; wide?:
 }
 
 function Td({ children, wide }: { children: number | string; wide?: boolean }) {
-  return <td className={cn("px-2 py-2 text-center", wide && "hidden md:table-cell")}>{children}</td>;
+  return <td className={cn("!px-2 text-center", wide && "hidden md:table-cell")}>{children}</td>;
 }
 
 // Narrow version for the overview's side column: position, badge, points, form
 export function MiniTable({ rows, highlight, compare, onPick, onMore }: { rows: Standing[]; highlight: string; compare?: string | null; onPick: (id: string) => void; onMore: () => void }) {
   const n = rows.length;
   return (
-    <Card className="overflow-hidden p-0">
-      <div className="flex items-center justify-between px-4 pt-3 pb-1">
-        <h2 className="font-display text-xl font-bold uppercase">League table</h2>
-        <button className="tap text-pitch-600 text-sm font-semibold hover:underline" onClick={onMore}>
+    <section className="lg-panel">
+      <div className="border-line flex items-center justify-between border-b py-0.5 pr-2 pl-4">
+        <h2 className="font-display text-[1.05rem] font-extrabold">League table</h2>
+        <button className="tap text-pitch-600 px-2 text-sm font-bold hover:underline" onClick={onMore}>
           Full table →
         </button>
       </div>
-      <table aria-label="League table" className="num w-full text-sm">
-        <thead className="text-ink-2 text-xs font-bold uppercase">
+      <table aria-label="League table" className="lg-table">
+        <thead>
           <tr>
-            <th className="w-10 py-1 pl-4 text-left">#</th>
-            <th className="py-1 text-left">Club</th>
-            <th className="px-1 py-1 text-right">GD</th>
-            <th className="px-2 py-1 text-right">Pts</th>
-            <th className="py-1 pr-4 pl-2 text-left">Form</th>
+            <th className="w-10 !pl-4 text-left">#</th>
+            <th className="!px-1 text-left">Club</th>
+            <th className="!px-1 text-right">GD</th>
+            <th className="!px-2 text-right">Pts</th>
+            <th className="!pr-4 !pl-2 text-left">Form</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((t) => {
             const zone = zoneOf(t.position ?? 0, n);
             return (
-              <tr key={t.id} className={cn("border-line border-t", t.id === highlight && "bg-pitch-500/12 font-bold", t.id === compare && "bg-ready/8")}>
-                <td className="relative py-1 pl-4">
+              <tr key={t.id} className={cn(t.id === highlight && "!bg-pitch-500/12 font-bold", t.id === compare && "!bg-away/10")}>
+                <td className="relative !py-1 !pl-4">
                   {zone && <span className="absolute inset-y-0 left-0 w-1" style={{ background: zone.color }} title={zone.label} />}
                   {t.position}
                 </td>
-                <td className="py-0.5">
+                <td className="!px-1 !py-0">
                   <button className="tap flex items-center gap-2 text-left hover:underline" onClick={() => onPick(t.id)} aria-label={t.team}>
-                    <Crest name={t.team} size={18} />
+                    <Crest name={t.team} size={20} />
                     {clubMeta(t.team).code}
                   </button>
                 </td>
-                <td className="px-1 py-1 text-right">{gd(t)}</td>
-                <td className="px-2 py-1 text-right font-bold">{t.points}</td>
-                <td className="py-1 pr-4 pl-2">{t.form && <FormGuide form={t.form.slice(-3)} />}</td>
+                <td className={cn("!px-1 !py-1 text-right", gdTone(t))}>{gd(t)}</td>
+                <td className="!px-2 !py-1 text-right font-bold">{t.points}</td>
+                <td className="!py-1 !pr-4 !pl-2">{t.form && <FormGuide form={t.form.slice(-3)} />}</td>
               </tr>
             );
           })}
         </tbody>
       </table>
-    </Card>
+    </section>
   );
 }

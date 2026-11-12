@@ -177,6 +177,9 @@ test("pro league app: a separate app; an opponent's style, shots, set pieces and
   await page.getByRole("link", { name: "La Liga 2015/16" }).click();
   // The page itself, not just its address: until it shows, the home page's Players card ("…Real Madrid…") is still there
   await expect(page.getByRole("heading", { level: 1, name: "La Liga 2015/16" })).toBeVisible();
+  // The league's overview: table, the season at a glance and the last matchday's match cards
+  await expect(page.getByRole("heading", { name: "Season at a glance" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Matchday 38" })).toBeVisible();
   await page.getByRole("link", { name: /Real Madrid/ }).first().click();
   await expect(page.getByRole("heading", { name: "Team analysis: Real Madrid" })).toBeVisible();
   await expect(page.getByLabel("Form, oldest first: won, won, won, won, won").first()).toBeVisible();
@@ -184,6 +187,7 @@ test("pro league app: a separate app; an opponent's style, shots, set pieces and
   await expect(page.getByRole("table", { name: "League table" })).toBeVisible();
   await page.getByLabel("Compare with").selectOption("barcelona");
   await expect(page).toHaveURL(/vs=barcelona/);
+  await expect(page.getByRole("region", { name: "Real Madrid compared with Barcelona" })).toContainText("Goals a match");
   await page.screenshot({ path: `${SHOTS}/coach-team-analysis.png`, fullPage: true });
 
   await page.getByRole("tab", { name: "Attack" }).click();
@@ -230,6 +234,13 @@ test("pro leagues: Premier League, Leverkusen's unbeaten season, a Champions Lea
   const table = page.getByRole("table", { name: "League table" });
   await expect(table.getByRole("row").nth(1)).toContainText("Leicester City");
   await expect(table.getByRole("row").nth(1)).toContainText("81");
+  // Results a matchday at a time, or one club's whole season
+  await page.getByRole("tab", { name: "Results" }).click();
+  await expect(page.getByRole("heading", { name: /Matchday 38/ })).toBeVisible();
+  await page.getByRole("button", { name: "Previous matchday" }).click();
+  await expect(page.getByRole("heading", { name: /Matchday 37/ })).toBeVisible();
+  await page.getByLabel("Club").selectOption("Leicester City");
+  await expect(page.getByRole("heading", { name: /Leicester City: every match/ })).toContainText("38 matches");
 
   await page.getByRole("navigation", { name: "Competitions" }).getByRole("link", { name: "Bundesliga" }).click();
   await page.getByRole("link", { name: /Bayer Leverkusen/ }).first().click();
