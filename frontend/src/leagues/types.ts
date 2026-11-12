@@ -1,4 +1,5 @@
 // Shapes of /api/pro/{comp}/teams/{id}/style, /players and /shots (backend/scouting/style.py).
+import type { Photo } from "../shared/PlayerPhoto";
 
 export interface Measure {
   key: string;
@@ -44,7 +45,13 @@ export interface StyleProfile {
   summary: { strength: string[]; weakness: string[]; style: string[] };
 }
 
-export type PlayerRow = Record<string, number | string | null> & { name: string; id: string; position: string | null; minutes: number };
+export type PlayerRow = Record<string, number | string | null | Photo> & {
+  name: string;
+  id: string;
+  position: string | null;
+  minutes: number;
+  photo?: Photo | null;
+};
 
 export interface Shots {
   team: string;

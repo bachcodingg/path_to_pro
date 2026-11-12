@@ -127,15 +127,17 @@ def main(out: Path) -> None:
             for m in rec[f"{base}/matches"]["matches"]:
                 rec[f"{base}/matches/{m['id']}"] = get(h, f"{base}/matches/{m['id']}")
             pro[comp["id"]] = rec
-        # The player hub (event data), and the 2024/25 season when it has been imported
+        # The player hub (event data), and the API-Football seasons that have been imported
         pro["players"] = {"/api/pro/players": get(h, "/api/pro/players")}
         season = {"/api/pro/season": get(h, "/api/pro/season")}
-        if season["/api/pro/season"].get("available"):
-            hub = season["/api/pro/season"]
+        for s in season["/api/pro/season"]["seasons"]:
+            hub = season[f"/api/pro/season?year={s['year']}"] = get(h, f"/api/pro/season?year={s['year']}")
+            if not hub.get("available"):
+                continue
             for team_id, p in [(f["team_id"], p) for f in hub["featured"] for p in f["players"]] + [
                 (b["team_id"], b["player"]) for b in hub["best"]
             ]:
-                path = f"/api/pro/season/teams/{team_id}/players/{p['id']}"
+                path = f"/api/pro/season/teams/{team_id}/players/{p['id']}?year={s['year']}"
                 season[path] = get(h, path)
         pro["season"] = season
 

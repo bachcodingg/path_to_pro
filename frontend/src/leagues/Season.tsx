@@ -1,11 +1,12 @@
-// The 2024/25 season from API-Football's season totals: a featured club's full squad, and one
-// player's page. Season totals, not match events, so there are no shot maps; but these are the
-// squads as they are now (Mbappé at Real Madrid), and Bayern Munich, whom the free event data
-// does not have.
+// The API-Football seasons (2024/25, 2025/26) from its season totals: a featured club's full
+// squad, and one player's page. Season totals, not match events, so there are no shot maps; but
+// these are recent squads (Mbappé at Real Madrid), and Bayern Munich, whom the free event data
+// does not have. The season is the year it starts, in the address: ?year=2025.
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Crest, clubMeta } from "../shared/Club";
 import { PageHeader } from "../shared/PageHeader";
+import { PhotoCredit, PlayerPhoto } from "../shared/PlayerPhoto";
 import { useApi } from "../shared/useApi";
 import { Card, ErrorNote, PageSkeleton, StatTile, cn } from "../shared/ui";
 import { PercentileBars, TotalsTable, type PlayerMeasure, type PlayerSummary } from "./PlayerParts";
@@ -16,7 +17,10 @@ export interface SeasonPlayer extends PlayerSummary {
 
 export interface SeasonHub {
   available: boolean;
+  year: number;
   season: string;
+  /** Every season the app knows, the latest first */
+  seasons: { year: number; season: string; available: boolean }[];
   source: string;
   source_url: string;
   fetched?: string;
@@ -24,11 +28,22 @@ export interface SeasonHub {
   clubs?: number | null;
   clubs_total?: number | null;
   regular_minutes?: number;
-  featured?: { team_id: number; team: string; league: string; players: SeasonPlayer[] }[];
-  best?: { league: string; team_id: number; team: string; player: SeasonPlayer }[];
+  featured?: { team_id: number; team: string; logo?: string | null; league: string; players: SeasonPlayer[] }[];
+  best?: { league: string; team_id: number; team: string; logo?: string | null; player: SeasonPlayer }[];
 }
 
-export const seasonPlayerUrl = (teamId: number, playerId: number | string) => `/season/teams/${teamId}/players/${playerId}`;
+export const DEFAULT_YEAR = 2024;
+
+/** The season in the address (?year=2025), 2024/25 without one */
+export function useYear(): number {
+  const y = Number(useSearchParams()[0].get("year"));
+  return Number.isInteger(y) && y > 2000 ? y : DEFAULT_YEAR;
+}
+
+export const seasonApi = (year: number) => `/api/pro/season?year=${year}`;
+export const seasonSquadUrl = (teamId: number, year: number) => `/season/teams/${teamId}?year=${year}`;
+export const seasonPlayerUrl = (teamId: number, playerId: number | string, year: number) =>
+  `/season/teams/${teamId}/players/${playerId}?year=${year}`;
 
 /** "38 of 96 clubs imported so far", while the import is still under way; otherwise nothing */
 export function soFar(hub: Pick<SeasonHub, "clubs" | "clubs_total">) {
@@ -60,12 +75,13 @@ const COLS: [keyof SeasonPlayer, string][] = [
 
 export function SeasonSquad() {
   const teamId = Number(useParams().teamId);
-  const { data, error, loading, reload } = useApi<SeasonHub>("/api/pro/season");
+  const year = useYear();
+  const { data, error, loading, reload } = useApi<SeasonHub>(seasonApi(year));
   const [sort, setSort] = useState<keyof SeasonPlayer>("minutes");
   if (loading && !data) return <PageSkeleton label="Loading the squad" />;
   if (error || !data) return <ErrorNote message={error ?? "No data"} onRetry={reload} />;
   const club = data.featured?.find((f) => f.team_id === teamId);
-  if (!club) return <ErrorNote message="This club's 2024/25 squad is not in the data." />;
+  if (!club) return <ErrorNote message={`This club's ${data.season} squad is not in the data.`} />;
   const [c1, c2] = clubMeta(club.team).colors;
   const rows = [...club.players].sort((a, b) => {
     const x = a[sort] ?? -1;
@@ -77,7 +93,7 @@ export function SeasonSquad() {
       <PageHeader
         accent={c1 === "#ffffff" ? c2 : c1}
         eyebrow={
-          <Link to="/players" className="hover:underline">
+          <Link to={`/players?view=${year}`} className="hover:underline">
             ← Players, {data.season}
           </Link>
         }
@@ -87,7 +103,7 @@ export function SeasonSquad() {
             {club.team}
           </>
         }
-        leading={<Crest name={club.team} size={64} className="drop-shadow-lg" />}
+        leading={<Crest name={club.team} src={club.logo} size={64} className="drop-shadow-lg" />}
         subtitle={`${club.league} ${data.season} · ${club.players.length} players who played`}
       />
       <Card className="overflow-x-auto p-0">
@@ -109,10 +125,15 @@ export function SeasonSquad() {
             {rows.map((p) => (
               <tr key={p.id}>
                 <td className="p-3 font-semibold whitespace-nowrap">
-                  <Link to={seasonPlayerUrl(club.team_id, p.id)} className="hover:underline">
-                    {p.name}
-                  </Link>
-                  {p.nationality && <span className="text-ink-2 block text-xs font-normal">{p.nationality}</span>}
+                  <span className="flex items-center gap-3">
+                    <PlayerPhoto name={p.name} photo={p.photo} size={36} />
+                    <span>
+                      <Link to={seasonPlayerUrl(club.team_id, p.id, year)} className="hover:underline">
+                        {p.name}
+                      </Link>
+                      {p.nationality && <span className="text-ink-2 block text-xs font-normal">{p.nationality}</span>}
+                    </span>
+                  </span>
                 </td>
                 <td className="p-3">{p.position}</td>
                 <td className="num p-3 text-right">{p.age ?? "–"}</td>
@@ -139,6 +160,7 @@ interface SeasonProfile extends SeasonPlayer {
   fetched?: string;
   team_id: number;
   team: string;
+  logo?: string | null;
   league: string;
   totals: Record<string, number>;
   compared_with: string;
@@ -148,7 +170,10 @@ interface SeasonProfile extends SeasonPlayer {
 
 export function SeasonPlayerPage() {
   const { teamId = "", playerId = "" } = useParams();
-  const { data: p, error, loading, reload } = useApi<SeasonProfile>(`/api/pro/season/teams/${encodeURIComponent(teamId)}/players/${encodeURIComponent(playerId)}`);
+  const year = useYear();
+  const { data: p, error, loading, reload } = useApi<SeasonProfile>(
+    `/api/pro/season/teams/${encodeURIComponent(teamId)}/players/${encodeURIComponent(playerId)}?year=${year}`,
+  );
   if (loading && !p) return <PageSkeleton label="Loading the player" />;
   if (error || !p) return <ErrorNote message={error ?? "No data"} onRetry={reload} />;
   const [c1, c2] = clubMeta(p.team).colors;
@@ -160,7 +185,7 @@ export function SeasonPlayerPage() {
       <PageHeader
         accent={c1 === "#ffffff" ? c2 : c1}
         eyebrow={
-          <Link to="/players" className="hover:underline">
+          <Link to={`/players?view=${year}`} className="hover:underline">
             ← Players, {p.season}
           </Link>
         }
@@ -170,7 +195,7 @@ export function SeasonPlayerPage() {
             {p.name}
           </>
         }
-        leading={<Crest name={p.team} size={64} className="drop-shadow-lg" />}
+        leading={<PlayerPhoto name={p.name} photo={p.photo} team={p.team} logo={p.logo} size={88} className="drop-shadow-lg" />}
         subtitle={
           <span className="num">
             {p.team} · {p.position} · {p.league} {p.season}
@@ -219,6 +244,9 @@ export function SeasonPlayerPage() {
           ]}
         />
       </div>
+      <p className="text-ink-2 text-xs">
+        <PhotoCredit photo={p.photo} />
+      </p>
       <SeasonSource hub={p} />
     </div>
   );

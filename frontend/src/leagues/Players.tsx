@@ -2,6 +2,7 @@
 // Every name opens the player's own page (PlayerProfile).
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { PhotoCredits, PlayerPhoto } from "../shared/PlayerPhoto";
 import { useApi } from "../shared/useApi";
 import { Card, ErrorNote, Spinner, cn } from "../shared/ui";
 import type { PlayerRow } from "./types";
@@ -132,9 +133,12 @@ export function Players({ teamId }: { teamId: string }) {
             {rows.map((p) => (
               <tr key={p.name}>
                 <td className="p-3 font-semibold whitespace-nowrap">
-                  <Link to={profile(p)} className="hover:underline">
-                    {p.name}
-                  </Link>
+                  <span className="flex items-center gap-3">
+                    <PlayerPhoto name={p.name} photo={p.photo} size={32} />
+                    <Link to={profile(p)} className="hover:underline">
+                      {p.name}
+                    </Link>
+                  </span>
                 </td>
                 <td className="text-ink-2 p-3 whitespace-nowrap">{p.position ?? "–"}</td>
                 <td className="p-3 text-right">{p.minutes}</td>
@@ -152,6 +156,7 @@ export function Players({ teamId }: { teamId: string }) {
         Per-90 numbers need {data.min_minutes}+ minutes; percentages need enough attempts (100 passes, 30 long passes, 20 aerial
         duels, 15 dribbles, 10 shots). Tap-ins are goals from inside the six-yard box; long shots are from outside the box.
       </p>
+      <PhotoCredits people={data.players} />
     </div>
   );
 }

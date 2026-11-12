@@ -1,8 +1,10 @@
 // Club identity for tables, match cards and headers: a badge in the club's colours with its
 // three-letter code (LaLiga's abbreviations), and the W / D / L form guide.
-// A club's real crest where it is free to reuse (crests.ts); every other club gets a badge
-// drawn from its colours, not its crest.
-import { realCrest } from "./crests";
+// A club's real crest (crests.ts): the free ones kept in the app, then the one on Wikipedia, then
+// the logo its data brings (API-Football's); a club with none, or a crest that fails to load,
+// gets a badge drawn from its colours.
+import { useState } from "react";
+import { realCrest, wikiCrest } from "./crests";
 import { cn } from "./ui";
 
 interface ClubMeta {
@@ -132,18 +134,23 @@ function luminance(hex: string): number {
 }
 
 // Shield split diagonally in the club's two colours; the code is printed from 28 px up.
-export function Crest({ name, size = 28, className }: { name: string; size?: number; className?: string }) {
+export function Crest({ name, size = 28, className, src }: { name: string; size?: number; className?: string; src?: string | null }) {
+  const [failed, setFailed] = useState<string | null>(null);
   const real = realCrest(name);
-  if (real)
+  const url = real ? `${import.meta.env.BASE_URL}crests/${real.file}` : (wikiCrest(name)?.url ?? src);
+  if (url && failed !== url)
     return (
       <img
-        src={`${import.meta.env.BASE_URL}crests/${real.file}`}
+        src={url}
         alt=""
         aria-hidden
         width={size}
         height={Math.round(size * 1.15)}
         loading="lazy"
+        referrerPolicy="no-referrer"
+        onError={() => setFailed(url)}
         className={cn("shrink-0 object-contain", className)}
+        style={{ width: size, height: Math.round(size * 1.15) }}
       />
     );
   const { code, colors } = clubMeta(name);

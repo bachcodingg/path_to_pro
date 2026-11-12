@@ -22,5 +22,6 @@ frontend/public/demo/
 password/
 
 # API-Football season numbers: check their terms before publishing (backend/scouting/apifootball.py)
-backend/scouting/data/season_2024_25.json
+backend/scouting/data/season_20*.json
 .apifootball-cache/
+.media-cache/

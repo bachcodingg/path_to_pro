@@ -71,7 +71,7 @@ export function ProHome() {
       </div>
       <p className="text-ink-2 text-xs">
         Data: <a className="underline" href="https://github.com/statsbomb/open-data">StatsBomb Open Data</a>, used under StatsBomb's
-        open-data terms. No league logos; club crests only where free to reuse.
+        open-data terms. No league logos. Club crests: the free ones kept in the app, the others from Wikipedia; player photos from Wikimedia Commons, credited.
       </p>
       <CrestCredits />
     </div>

@@ -19,6 +19,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from functools import lru_cache
 
+from scouting import media
 from scouting.analysis import slug
 from scouting.competitions import COMPETITIONS, DEFAULT
 
@@ -363,6 +364,7 @@ def player_rows(team_id: str, comp: str = DEFAULT) -> dict | None:
         rows.append({
             "name": p["name"],
             "id": slug(p["name"]),  # the player's page: scouting.players.profile
+            "photo": media.photo(p["name"], team),
             "position": p["position"],
             "matches": p["matches"],
             "minutes": round(p["minutes"]),

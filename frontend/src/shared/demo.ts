@@ -238,7 +238,8 @@ async function route(path: string, method: string, body?: Json): Promise<Json> {
     if (method !== "GET") fail(405, "Read only");
     if (p === "/api/pro/competitions") return s.pro?.[p] ?? fail(404, "Not available in the demo");
     const rec = await proFile(p.split("/")[3]);
-    return rec[p] ?? fail(404, "Not in the dataset");
+    // The seasons are recorded with their ?year=, everything else without a query
+    return rec[q ? `${p}?${q}` : p] ?? rec[p] ?? fail(404, "Not in the dataset");
   }
 
   // ---- player
