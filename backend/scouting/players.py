@@ -22,7 +22,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from functools import lru_cache
 
-from scouting import style
+from scouting import media, style
 from scouting.analysis import slug
 from scouting.competitions import COMPETITIONS
 
@@ -136,6 +136,7 @@ def _summary(p: dict) -> dict:
     return {
         "name": p["name"],
         "id": slug(p["name"]),
+        "photo": media.photo(p["name"], p["team"]),  # from Wikimedia Commons, with its credit
         "position": p["position"],
         "group": group(p["position"]),
         "matches": p["matches"],

@@ -1,7 +1,13 @@
-// Real club crests, only where they are free to reuse: public domain (most are simple text
-// logos) or, for Barcelona, Bordeaux, Eibar and Paris Saint-Germain, public domain in the US,
-// where this site is hosted. Köln's is CC BY-SA 4.0. All are still trademarks of their clubs.
-// Every other club keeps the badge drawn from its colours (Club.tsx). Files: public/crests/.
+// Real club crests. Two kinds:
+// - Kept in the app (public/crests/), only where they are free to reuse: public domain (most
+//   are simple text logos) or, for Barcelona, Bordeaux, Eibar and Paris Saint-Germain, public
+//   domain in the US, where this site is hosted. Köln's is CC BY-SA 4.0.
+// - Every other StatsBomb club: the crest from its English Wikipedia article, shown from
+//   Wikimedia's servers (wikiCrests.json, written by `python -m scouting.media`). Most are not
+//   free licences; like Wikipedia, the app shows them only to identify the club.
+// All are trademarks of their clubs. A club with neither keeps the badge drawn from its colours.
+import WIKI from "./wikiCrests.json";
+
 export type CrestLicence = "pd" | "pd-us" | "cc-by-sa-4.0";
 
 export interface RealCrest {
@@ -63,4 +69,34 @@ export const LICENCE_TEXT: Record<CrestLicence, string> = {
 
 export function realCrest(name: string): RealCrest | null {
   return REAL_CRESTS[name] ?? REAL_CRESTS[ALIASES[name] ?? ""] ?? null;
+}
+
+export interface WikiCrest {
+  url: string;
+  /** The crest's file page on English Wikipedia */
+  file: string;
+}
+
+export const WIKI_CRESTS: Record<string, WikiCrest> = WIKI;
+
+// API-Football's names for clubs only the Wikipedia crests have
+const WIKI_ALIASES: Record<string, string> = {
+  "Atletico Madrid": "Atlético Madrid",
+  "SC Freiburg": "Freiburg",
+  "FC Augsburg": "Augsburg",
+  Marseille: "Olympique de Marseille",
+  Monaco: "AS Monaco",
+  Nice: "OGC Nice",
+  "Stade Brestois 29": "Stade Brestois",
+  "Saint Etienne": "Saint-Étienne",
+  Tottenham: "Tottenham Hotspur",
+  "West Ham": "West Ham United",
+  Newcastle: "Newcastle United",
+  Leicester: "Leicester City",
+  Bournemouth: "AFC Bournemouth",
+};
+
+/** The club's crest on Wikipedia, under the StatsBomb or API-Football name; null without one */
+export function wikiCrest(name: string): WikiCrest | null {
+  return WIKI_CRESTS[name] ?? WIKI_CRESTS[WIKI_ALIASES[name] ?? ALIASES[name] ?? ""] ?? null;
 }

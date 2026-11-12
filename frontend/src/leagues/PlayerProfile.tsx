@@ -3,8 +3,9 @@
 // the season totals. In a club season (one club's matches only) there is no fair comparison
 // group, so the page says so instead of ranking him.
 import { Link, useParams } from "react-router-dom";
-import { Crest, clubMeta } from "../shared/Club";
+import { clubMeta } from "../shared/Club";
 import { PageHeader } from "../shared/PageHeader";
+import { PhotoCredit, PlayerPhoto } from "../shared/PlayerPhoto";
 import { useApi } from "../shared/useApi";
 import { ErrorNote, PageSkeleton, StatTile } from "../shared/ui";
 import { PercentileBars, TotalsTable, type PlayerMeasure, type PlayerSummary } from "./PlayerParts";
@@ -50,7 +51,7 @@ export function PlayerProfile() {
             {p.name}
           </>
         }
-        leading={<Crest name={p.team} size={64} className="drop-shadow-lg" />}
+        leading={<PlayerPhoto name={p.name} photo={p.photo} team={p.team} size={88} className="drop-shadow-lg" />}
         subtitle={
           <span className="num">
             {p.position ?? "Position not recorded"} · {p.matches} matches · {p.minutes.toLocaleString("en")} minutes
@@ -76,7 +77,7 @@ export function PlayerProfile() {
       {p.shots.length > 0 && <TotalsTable rows={totalRows(t)} />}
       <p className="text-ink-2 text-xs">
         Data: <a className="underline" href="https://github.com/statsbomb/open-data">StatsBomb Open Data</a>, every event of the matches in the data.
-        Per-90 numbers from 450 minutes; percentiles from 900.
+        Per-90 numbers from 450 minutes; percentiles from 900. <PhotoCredit photo={p.photo} />
       </p>
     </div>
   );

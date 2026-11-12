@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from api.deps import CurrentUser, current_user
 from scouting import analysis, players, season, style
+from scouting.apifootball import SEASONS
 from scouting.competitions import COMPETITIONS, Competition
 
 router = APIRouter(prefix="/api/pro", tags=["pro leagues"])
@@ -44,16 +45,19 @@ def player_hub(user: CurrentUser = Depends(current_user)):
 
 
 @router.get("/season")
-def season_hub(user: CurrentUser = Depends(current_user)):
-    """The 2024/25 squads from API-Football's season totals, or available: false before the import."""
-    return season.hub()
+def season_hub(year: int = season.DEFAULT, user: CurrentUser = Depends(current_user)):
+    """A season's squads from API-Football's season totals (year = the year it starts: 2024 for
+    2024/25, 2025 for 2025/26), or available: false before its import."""
+    if year not in SEASONS:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"No {year} season in the app")
+    return season.hub(year)
 
 
 @router.get("/season/teams/{team_id}/players/{player_id}")
-def season_player(team_id: int, player_id: int, user: CurrentUser = Depends(current_user)):
-    out = season.profile(team_id, player_id)
+def season_player(team_id: int, player_id: int, year: int = season.DEFAULT, user: CurrentUser = Depends(current_user)):
+    out = season.profile(team_id, player_id, year)
     if out is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Player not in the 2024/25 data")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Player not in the {SEASONS.get(year, year)} data")
     return out
 
 

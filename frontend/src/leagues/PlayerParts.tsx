@@ -1,8 +1,8 @@
 // Pieces the player pages share: the hub's types, and percentile bars (how a player's per-90
 // numbers compare with the regulars in his position group).
 import { Link } from "react-router-dom";
-import { Crest } from "../shared/Club";
-import { LICENCE_TEXT, REAL_CRESTS } from "../shared/crests";
+import { LICENCE_TEXT, REAL_CRESTS, WIKI_CRESTS } from "../shared/crests";
+import { PlayerPhoto, type Photo } from "../shared/PlayerPhoto";
 import { Card, cn } from "../shared/ui";
 import { ordinal } from "./types";
 
@@ -33,6 +33,7 @@ export interface PlayerSummary {
   rating?: number | null;
   age?: number | null;
   nationality?: string | null;
+  photo?: Photo | null;
 }
 
 function fmt(m: PlayerMeasure, v: number | null): string {
@@ -101,11 +102,11 @@ export function TotalsTable({ rows }: { rows: [string, string | number | null][]
   );
 }
 
-// One row in a list of players: club badge, name, position, goals and assists
-export function PlayerLine({ to, team, p, sub }: { to: string; team: string; p: PlayerSummary; sub?: string }) {
+// One row in a list of players: photo with the club's crest, name, position, goals and assists
+export function PlayerLine({ to, team, logo, p, sub }: { to: string; team: string; logo?: string | null; p: PlayerSummary; sub?: string }) {
   return (
     <Link to={to} className="hover:bg-surface-2 flex items-center gap-3 px-3 py-2">
-      <Crest name={team} size={26} />
+      <PlayerPhoto name={p.name} photo={p.photo} team={team} logo={logo} size={40} />
       <span className="min-w-0 flex-1">
         <span className="block truncate font-semibold">{p.name}</span>
         <span className="text-ink-2 block truncate text-xs">{sub ?? `${team} · ${p.position ?? ""}`}</span>
@@ -119,13 +120,13 @@ export function PlayerLine({ to, team, p, sub }: { to: string; team: string; p: 
 
 // Which real crests are shown, under which licence, and where they come from
 export function CrestCredits() {
+  const others = Object.entries(WIKI_CRESTS).filter(([team]) => !REAL_CRESTS[team]);
   return (
     <details className="text-ink-2 text-xs">
       <summary className="cursor-pointer font-semibold">Club crests</summary>
       <p className="mt-1 max-w-3xl">
-        Real crests appear only where they are free to reuse: public domain (most are simple text logos), public domain in the US where this site is hosted, or
-        under a Creative Commons licence. They remain trademarks of their clubs, and these clubs have no connection with this app. Every other club has a
-        badge drawn from its colours.
+        Crests are trademarks of their clubs, and the clubs have no connection with this app. The ones kept in the app are free to reuse: public domain (most
+        are simple text logos), public domain in the US where this site is hosted, or under a Creative Commons licence:
       </p>
       <ul className="mt-1 grid gap-x-6 sm:grid-cols-2 lg:grid-cols-3">
         {Object.entries(REAL_CRESTS).map(([team, c]) => (
@@ -135,6 +136,19 @@ export function CrestCredits() {
             </a>
             : {LICENCE_TEXT[c.licence]}
             {c.author ? `, ${c.author}` : ""}
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 max-w-3xl">
+        The others are shown from Wikipedia, which uses most of them under fair use to identify the club, as this app does. The 2024/25 and 2025/26 squads
+        show the logos that come with API-Football's data.
+      </p>
+      <ul className="mt-1 grid gap-x-6 sm:grid-cols-2 lg:grid-cols-3">
+        {others.map(([team, c]) => (
+          <li key={team}>
+            <a className="underline" href={c.file}>
+              {team}
+            </a>
           </li>
         ))}
       </ul>

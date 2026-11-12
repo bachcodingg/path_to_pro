@@ -38,8 +38,8 @@ on every bar and as "vs" numbers.
 
 The page is laid out like a league website's club page: a strip of every club's badge to
 switch team, then a header in the club's colour with its position, points, record and form.
-The badges are drawn from the clubs' colours with LaLiga's three-letter codes, not from the
-clubs' crests, which are their trademarks.
+Every club shows its real crest (see Club crests below); a club without one gets a badge
+drawn from its colours with LaLiga's three-letter code.
 
 ## Data
 
@@ -124,13 +124,14 @@ and highest team, so a label can always be checked against the spread.
 The **Players** tab of the Pro League app (`/leagues/players`) analyses players from two
 sources.
 
-| | Match events (StatsBomb Open Data) | 2024/25 season (API-Football) |
+| | Match events (StatsBomb Open Data) | 2024/25 and 2025/26 seasons (API-Football) |
 | --- | --- | --- |
 | What it is | Every event of the matches in the free data | League season totals per player |
-| Seasons | La Liga, Premier League, Ligue 1 2015/16; PSG's league matches 2021/22 and 2022/23 (Mbappé, Messi, Neymar); Leverkusen 2023/24 | 2024/25: Premier League, La Liga, Ligue 1, Bundesliga, Serie A |
+| Seasons | La Liga, Premier League, Ligue 1 2015/16; PSG's league matches 2021/22 and 2022/23 (Mbappé, Messi, Neymar); Leverkusen 2023/24 | 2024/25 and 2025/26: Premier League, La Liga, Ligue 1, Bundesliga, Serie A |
 | Full squads | Real Madrid, Barcelona, PSG (2015/16 and 2021-23), Manchester City, Manchester United, Chelsea, Liverpool, Arsenal | The same nine clubs, Bayern included |
-| A player's page | Totals, per-90 rates, percentiles, every shot on a pitch map | Totals, per-90 rates, rating, percentiles |
-| Needs | Nothing: the data is committed | An API-Football key, imported once on the server |
+| A player's page | Photo, totals, per-90 rates, percentiles, every shot on a pitch map | Photo, totals, per-90 rates, rating, percentiles |
+| Photos | Wikimedia Commons, credited on each page | API-Football's |
+| Needs | Nothing: the data is committed | An API-Football key, imported on the server; 2025/26 needs a paid plan |
 
 - **Bayern Munich** have no league season in the free event data (only their matches
   against Leverkusen), so their squad is in the 2024/25 numbers only.
@@ -142,9 +143,10 @@ sources.
   2024/25. Ties count half and the player is part of his own group, so 50 is the middle. A
   club season (one club's matches only) has no fair group, so its pages show the numbers
   without percentiles. Per-90 rates start at 450 minutes.
-- **The 2024/25 import** (`python -m scouting.apifootball`, with `APIFOOTBALL_KEY` set):
-  API-Football's free plan allows 100 requests a day and seasons from two to four years
-  back, so 2024/25 is the newest it gives (the current season needs a paid plan). It also
+- **The API-Football import** (`python -m scouting.apifootball`, with `APIFOOTBALL_KEY` set;
+  `--season 2025` for 2025/26 only): API-Football's free plan allows 100 requests a day and
+  seasons from two to four years back, so 2024/25 is the newest it gives; 2025/26 needs a
+  paid plan, and with the free one the script says so and goes on with 2024/25. It also
   reads only the first 3 pages of any list, so a whole league (50+ pages) is out of reach.
   The script therefore reads each club's own players (2-3 pages) and its transfers (1), the
   featured clubs first: about 320 requests for the five leagues, so four days. The transfers
@@ -156,19 +158,36 @@ sources.
   data file names them (`lists_cut_after_3_pages`). For Real Madrid every player with league
   minutes was in the first three. It caches every page and carries
   on the next day; until every club is in, the page says how many are.
-  It keeps numbers only, never the API's player photos or club logos. Its output,
-  `backend/scouting/data/season_2024_25.json`, is in `.gitignore`: check API-Football's
-  terms before publishing it. Without it, the app says the season is not imported.
+  It keeps the numbers and the addresses of the API's player photos and club logos, which
+  the app shows from API-Football's servers. Its output,
+  `backend/scouting/data/season_2024_25.json` and `season_2025_26.json`, is in
+  `.gitignore`: check API-Football's terms before publishing it. Without it, the app says
+  the season is not imported.
+
+## Player photos
+
+`python -m scouting.media` finds every StatsBomb player on Wikidata and keeps a link to his
+photo on Wikimedia Commons with its author and licence (`backend/scouting/data/media.json`,
+committed: links and credits, no image files). Wikidata lists everyone who played for a
+club, so each club's list is read once and a StatsBomb name ("Lionel Andrés Messi
+Cuccittini") is matched when one of the player's names is the same or contained in it
+("Lionel Messi") and he was at the club that season. Recent signings often lack that spell
+on Wikidata, so a player not found that way is searched by name: a footballer whose clubs
+include his, or the only footballer of exactly that name. Two candidates and no way to
+choose: no photo, rather than the wrong face; the player keeps his initials. Each player
+page credits its photo, and every list of players has its credits folded away below it.
 
 ## Club crests
 
-A club's real crest is shown only where it is free to reuse
-(`frontend/src/shared/crests.ts`, files in `frontend/public/crests/`): public domain on
-Wikimedia Commons (mostly simple text logos, such as Bayern, Dortmund, Juventus, Inter and
-AC Milan), public domain in the US where the site is hosted (Barcelona, PSG, Bordeaux,
-Eibar), or CC BY-SA (Köln). They stay trademarks of their clubs. Real Madrid, the English
-clubs and the rest are copyrighted, so they keep a badge drawn from their colours. The Pro
-League home page lists every crest with its licence and source.
+Every club shows its real crest (`frontend/src/shared/crests.ts`). The ones free to reuse
+are kept in the app (`frontend/public/crests/`): public domain on Wikimedia Commons (mostly
+simple text logos, such as Bayern, Dortmund, Juventus, Inter and AC Milan), public domain in
+the US where the site is hosted (Barcelona, PSG, Bordeaux, Eibar), or CC BY-SA (Köln). The
+rest, Real Madrid and the English clubs among them, are shown from the club's English
+Wikipedia article (`wikiCrests.json`, written by `python -m scouting.media`): Wikipedia uses
+most of them under fair use to identify the club, and so does this app. The API-Football
+seasons show the logos that come with the data. All are trademarks of their clubs. The Pro
+League home page lists every crest with its source.
 
 ## Limits
 

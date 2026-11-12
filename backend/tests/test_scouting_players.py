@@ -1,11 +1,13 @@
-"""Pro player analysis: the event-data profiles (committed StatsBomb files) and the 2024/25
-season import (a made-up API-Football page in the API's documented shape, no network)."""
+"""Pro player analysis: the event-data profiles (committed StatsBomb files), their photos
+(committed links to Wikimedia), and the API-Football season import (made-up pages in the API's
+documented shape, no network)."""
 
+import io
 import json
 
 import pytest
 
-from scouting import apifootball, players, season
+from scouting import apifootball, media, players, season
 
 
 def test_featured_squads_and_best_of_the_rest():
@@ -45,14 +47,14 @@ def test_position_groups():
     assert players.group("Center Forward") == "Forward"
 
 
-def _item(pid, name, team_id, team, position, minutes, goals, assists, league=140, **extra):
+def _item(pid, name, team_id, team, position, minutes, goals, assists, league=140, year=2024, **extra):
     """One entry of API-Football's /players response."""
     return {
         "player": {"id": pid, "name": name, "firstname": name, "lastname": name, "age": 25, "nationality": "France",
                    "photo": "https://media.api-sports.io/x.png"},
         "statistics": [{
             "team": {"id": team_id, "name": team, "logo": "https://media.api-sports.io/t.png"},
-            "league": {"id": league, "season": 2024},
+            "league": {"id": league, "season": year},
             "games": {"appearences": 30, "lineups": 28, "minutes": minutes, "position": position, "rating": "7.4"},
             "shots": {"total": 100, "on": 50}, "goals": {"total": goals, "assists": assists, "conceded": 0, "saves": None},
             "passes": {"total": 900, "key": 40, "accuracy": 80}, "tackles": {"total": 10, "blocks": 1, "interceptions": 3},
@@ -95,21 +97,20 @@ def season_file(tmp_path, monkeypatch):
         if team != 610:  # Club 10's transfers are not in yet: left out until they are
             moves = [{"player": {"id": 4000}, "transfers": [move]}] if team in (602, 603) else []
             put(f"transfers_team{team}.json", {"response": moves})
-    out = tmp_path / "season.json"
-    monkeypatch.setattr(apifootball, "OUT", out)
-    monkeypatch.setattr(season, "OUT", out)
+    monkeypatch.setattr(apifootball, "DATA", tmp_path)
     season.load.cache_clear()
-    apifootball.write(cache, out)
-    yield out
+    apifootball.write(cache)
+    yield apifootball.out_path(2024)
     season.load.cache_clear()
 
 
-def test_season_import_keeps_numbers_not_photos(season_file):
-    text = season_file.read_text(encoding="utf-8")
-    assert "media.api-sports.io" not in text  # no photos or logos kept
-    data = json.loads(text)
+def test_season_import_keeps_numbers_and_image_links(season_file):
+    assert season_file.name == "season_2024_25.json"
+    data = json.loads(season_file.read_text(encoding="utf-8"))
     mbappe = next(p for p in data["leagues"][0]["players"] if p["id"] == 278)
     assert (mbappe["goals"], mbappe["pen_scored"], mbappe["minutes"], mbappe["rating"]) == (31, 7, 2900, 7.4)
+    # The addresses of API-Football's photo and logo, shown from its servers; not the images
+    assert (mbappe["photo"], mbappe["logo"]) == ("https://media.api-sports.io/x.png", "https://media.api-sports.io/t.png")
     # 11 of 14 clubs in: Club 10 lacks its transfers, Club 11 a page, "Not fetched yet" everything
     assert (data["clubs"], data["clubs_total"]) == (11, 14)
     assert {p["team"] for p in data["leagues"][0]["players"]} == {"Real Madrid"} | {f"Club {i}" for i in range(10)}
@@ -121,9 +122,14 @@ def test_season_import_keeps_numbers_not_photos(season_file):
 
 def test_season_hub_and_profile(season_file):
     hub = season.hub()
-    assert hub["available"] and hub["season"] == "2024/25"
+    assert hub["available"] and hub["season"] == "2024/25" and hub["year"] == 2024
+    assert hub["seasons"] == [
+        {"year": 2025, "season": "2025/26", "available": False},
+        {"year": 2024, "season": "2024/25", "available": True},
+    ]
     real = next(f for f in hub["featured"] if f["team"] == "Real Madrid")
-    assert real["players"][0]["name"] == "K. Mbappé"
+    assert real["players"][0]["name"] == "K. Mbappé" and real["logo"] == "https://media.api-sports.io/t.png"
+    assert real["players"][0]["photo"] == {"url": "https://media.api-sports.io/x.png", "via": "API-Football"}
     assert {b["team"] for b in hub["best"]} == {f"Club {i}" for i in range(10)}  # one per other club in so far
     assert (hub["clubs"], hub["clubs_total"]) == (11, 14)
     club0 = next(b for b in hub["best"] if b["team"] == "Club 0")
@@ -133,6 +139,36 @@ def test_season_hub_and_profile(season_file):
     assert goals["value"] == round(90 * 24 / 2900, 2) and goals["percentile"] >= 95  # top of 11, himself included
     assert p["compared_with"].endswith("(11 of 14 clubs imported so far)")
     assert season.profile(541, 999) is None
+    assert p["logo"] and p["photo"]["url"]
+
+
+def test_a_second_season_from_its_own_pages(season_file):
+    cache = season_file.parent / "cache"
+    (cache / "teams_league140_season2025.json").write_text(
+        json.dumps({"response": [{"team": {"id": 541, "name": "Real Madrid"}}], "errors": []}), encoding="utf-8"
+    )
+    # Pages of the 2025/26 season; the club's transfer list is the one 2024/25 already has
+    item = _item(278, "K. Mbappé", 541, "Real Madrid", "Attacker", 3000, 40, 5, year=2025)
+    (cache / "players_page1_season2025_team541.json").write_text(
+        json.dumps({"paging": {"current": 1, "total": 1}, "response": [item], "errors": []}), encoding="utf-8"
+    )
+    apifootball.write(cache, 2025)
+    season.load.cache_clear()
+    later, earlier = season.hub(2025), season.hub(2024)
+    assert later["available"] and later["season"] == "2025/26" and (later["clubs"], later["clubs_total"]) == (1, 1)
+    assert later["featured"][0]["players"][0]["goals"] == 40
+    assert earlier["featured"][0]["players"][0]["goals"] == 31  # each season keeps its own numbers
+    assert season.profile(541, 278, 2025)["season"] == "2025/26"
+    assert all(s["available"] for s in later["seasons"])
+
+
+def test_the_free_plan_refusing_a_season_is_told_apart(tmp_path, monkeypatch):
+    body = {"errors": {"plan": "Free plans do not have access to this season, try from 2022 to 2024."}}
+    monkeypatch.setattr(apifootball, "GAP_S", 0)
+    monkeypatch.setattr(apifootball.urllib.request, "urlopen", lambda req, timeout: io.BytesIO(json.dumps(body).encode()))
+    with pytest.raises(apifootball.PlanLimit, match="2022 to 2024"):
+        apifootball.fetch("key", tmp_path, log=lambda _: None, season=2025)
+    assert not list(tmp_path.iterdir())  # a refusal is not cached
 
 
 def _move(day, to, frm):
@@ -154,8 +190,45 @@ def test_a_player_counts_for_a_club_only_if_he_was_there_that_season():
 
 
 def test_season_without_the_file(tmp_path, monkeypatch):
-    monkeypatch.setattr(season, "OUT", tmp_path / "missing.json")
+    monkeypatch.setattr(apifootball, "DATA", tmp_path)
     season.load.cache_clear()
-    assert season.hub() == season._source() and season.hub()["available"] is False
+    assert season.hub() == season._source(2024) and season.hub()["available"] is False
+    assert season.hub(2025)["season"] == "2025/26" and not season.hub(2025)["available"]
     assert season.profile(541, 278) is None
     season.load.cache_clear()
+
+
+def test_a_statsbomb_name_matches_one_wikidata_player_or_none():
+    assert media._score("Lionel Andrés Messi Cuccittini", {"Lionel Messi"}) == 2
+    assert media._score("Luka Modrić", {"Luka Modric"}) == 3  # accents do not matter
+    assert media._score("Neymar da Silva Santos Júnior", {"Neymar"}) == 1
+    assert media._score("Jesé", {"Jesé Rodríguez", "Jese"}) == 3
+    assert media._score("Sergio Ramos", {"Sergio Busquets"}) == 0
+    people = {
+        "Q1": {"names": {"Marcelo"}, "img": "a.jpg", "spells": [(2007, 2022)]},
+        "Q2": {"names": {"Marcelo Díaz"}, "img": "b.jpg", "spells": [(1990, 1992)]},
+        "Q3": {"names": {"Daniel Carvajal"}, "img": None, "spells": [(2013, None)]},
+    }
+    assert media.match("Marcelo", people, (2015, 2016)) == "Q1"
+    assert media.match("Daniel Carvajal", people, (2015, 2016)) == "Q3"
+    two = {"Q4": {"names": {"Juan Pérez"}, "img": None, "spells": [(2015, 2016)]}} | {
+        "Q5": {"names": {"Juan Perez"}, "img": None, "spells": [(2015, 2016)]}
+    }
+    assert media.match("Juan Pérez", two, (2015, 2016)) is None  # two of them: no photo rather than the wrong one
+    # A sparse duplicate item with no dates loses to the one whose spell covers the season
+    dup = {"Q6": {"names": {"Kylian Mbappé"}, "img": "k.jpg", "spells": [(2017, 2024)]},
+           "Q7": {"names": {"Kylian Mbappé"}, "img": None, "spells": [(None, None)]}}  # fmt: skip
+    assert media.match("Kylian Mbappé", dup, (2021, 2023)) == "Q6"
+
+
+def test_players_carry_their_commons_photo_and_credit():
+    real = next(f for f in players.hub()["featured"] if f["team"] == "Real Madrid")
+    ronaldo = next(p for p in real["players"] if p["name"] == "Cristiano Ronaldo")["photo"]
+    assert ronaldo["url"].startswith("https://") and "wikimedia.org/" in ronaldo["url"]
+    assert ronaldo["page"].startswith("https://commons.wikimedia.org/") and ronaldo["licence"] and ronaldo["author"]
+    with_photo = sum(bool(p["photo"]) for p in real["players"])
+    assert with_photo >= len(real["players"]) * 0.8
+    assert media.photo("Nobody At All", "Real Madrid") is None
+    # Two players of one name are two people, each with his own photo
+    villa, monaco = media.photo("Adama Traoré", "Aston Villa"), media.photo("Adama Traoré", "AS Monaco")
+    assert villa != monaco

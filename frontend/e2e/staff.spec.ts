@@ -261,6 +261,9 @@ test("pro league app: player analysis, full squads, a player's page, real crests
   await expect(page.getByRole("heading", { name: "Player analysis: Cristiano Ronaldo" })).toBeVisible();
   await expect(page.getByRole("list", { name: "Percentiles" })).toContainText("Non-penalty goals");
   await expect(page.getByRole("heading", { name: "Cristiano Ronaldo's shots" })).toBeVisible();
+  // His real photo, from Wikimedia Commons, credited on the page
+  await expect(page.locator('header img[src*="/wikipedia/commons/"]')).toHaveCount(1);
+  await expect(page.getByText(/via Wikimedia Commons/)).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/pro-player.png`, fullPage: true });
 
   // One club's matches only: numbers, no ranking
@@ -273,14 +276,18 @@ test("pro league app: player analysis, full squads, a player's page, real crests
   await page.getByRole("cell", { name: "Riyad Mahrez" }).getByRole("link").click();
   await expect(page.getByRole("heading", { name: "Player analysis: Riyad Mahrez" })).toBeVisible();
 
-  // Real crests only where they are free to reuse
+  // Real crests: the free ones kept in the app, the others from Wikipedia
   await page.goto("leagues/la-liga");
   await expect(page.locator('img[src$="crests/barcelona.svg"]').first()).toBeVisible();
   await expect(page.locator('img[src$="crests/real-madrid.svg"]')).toHaveCount(0);
+  await expect(page.locator('img[src*="wikimedia.org/"]').first()).toBeAttached();
 
-  // The 2024/25 season needs an API key, imported on the server; until then it says so
+  // The API-Football seasons need a key, imported on the server; until then they say so
   await page.goto("leagues/players?view=season");
-  await expect(page.getByText(/not imported on this server yet/)).toBeVisible();
+  await expect(page.getByText(/The 2024\/25 numbers are not imported on this server yet/)).toBeVisible();
+  await page.getByRole("tab", { name: "2025/26 season" }).click();
+  await expect(page.getByText(/The 2025\/26 numbers are not imported/)).toBeVisible();
+  await expect(page.getByText(/needs a paid plan/)).toBeVisible();
 });
 
 test("pro league app: its own sign-in, and a deep link survives it", async ({ page }) => {

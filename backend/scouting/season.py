@@ -1,7 +1,8 @@
-"""Pro player analysis for the 2024/25 season, from API-Football's season totals
-(`scouting.apifootball` writes data/season_2024_25.json). Season totals, not match events:
-there are no shot maps here, but there are the squads as they are now, Mbappé at Real Madrid
-included, and Bayern Munich, whose league seasons the free event data does not have.
+"""Pro player analysis for the 2024/25 and 2025/26 seasons, from API-Football's season totals
+(`scouting.apifootball` writes data/season_2024_25.json and season_2025_26.json). Season
+totals, not match events: there are no shot maps here, but there are recent squads, Mbappé at
+Real Madrid included, and Bayern Munich, whose league seasons the free event data does not have.
+Every function takes the season as the year it starts (2024 = 2024/25).
 
 - Featured squads: every player of the clubs in `FEATURED`, with their league numbers.
 - Best of the rest: for every other club, the regular (`REGULAR_MINUTES`+) with the most goals
@@ -10,6 +11,7 @@ included, and Bayern Munich, whose league seasons the free event data does not h
   position group across every league in the file.
 
 Without the data file every function says so (`available: False`) instead of failing.
+Players and clubs carry the addresses of API-Football's photos and logos (`photo`, `logo`).
 """
 
 from __future__ import annotations
@@ -19,21 +21,29 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from functools import lru_cache
 
+from scouting import apifootball
 from scouting.analysis import slug
-from scouting.apifootball import FEATURED, OUT
+from scouting.apifootball import FEATURED, SEASONS
 
 REGULAR_MINUTES = 900
+DEFAULT = 2024
 
 
-@lru_cache(maxsize=1)
-def load() -> dict | None:
-    """The data file, or None when there is none or no club is fully in yet."""
-    d = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else None
+@lru_cache(maxsize=4)
+def load(year: int = DEFAULT) -> dict | None:
+    """The season's data file, or None when there is none or no club is fully in yet."""
+    f = apifootball.out_path(year)
+    d = json.loads(f.read_text(encoding="utf-8")) if year in SEASONS and f.exists() else None
     return d if d and d.get("leagues") else None
 
 
-def _all() -> list[dict]:
-    d = load() or {"leagues": []}
+def seasons() -> list[dict]:
+    """Every season the app knows, the latest first, and whether it is imported."""
+    return [{"year": y, "season": SEASONS[y], "available": load(y) is not None} for y in sorted(SEASONS, reverse=True)]
+
+
+def _all(year: int) -> list[dict]:
+    d = load(year) or {"leagues": []}
     return [p | {"league": lg["name"]} for lg in d["leagues"] for p in lg["players"] if p["minutes"] > 0]
 
 
@@ -44,6 +54,7 @@ def _summary(p: dict) -> dict:
         "slug": slug(p["name"] or str(p["id"])),
         "age": p.get("age"),
         "nationality": p.get("nationality"),
+        "photo": {"url": p["photo"], "via": "API-Football"} if p.get("photo") else None,
         "position": p["position"],
         "apps": p["apps"],
         "minutes": p["minutes"],
@@ -110,17 +121,21 @@ BY_GROUP: dict[str, tuple[str, ...]] = {
 }  # fmt: skip
 
 
-def _source() -> dict:
-    d = load()
+def _source(year: int) -> dict:
+    d = load(year)
     if d is None:
         return {
             "available": False,
-            "season": "2024/25",
+            "year": year,
+            "season": SEASONS.get(year, str(year)),
+            "seasons": seasons(),
             "source": "API-Football",
             "source_url": "https://www.api-football.com",
         }
     return {
         "available": True,
+        "year": year,
+        "seasons": seasons(),
         "season": d["season"],
         "source": d["source"],
         "source_url": d["source_url"],
@@ -131,17 +146,17 @@ def _source() -> dict:
     }
 
 
-def _so_far() -> str:
-    d = load() or {}
+def _so_far(year: int) -> str:
+    d = load(year) or {}
     if d.get("clubs") is None or d["clubs"] >= d["clubs_total"]:
         return ""
     return f" ({d['clubs']} of {d['clubs_total']} clubs imported so far)"
 
 
-def hub() -> dict:
-    if load() is None:
-        return _source()
-    players = _all()
+def hub(year: int = DEFAULT) -> dict:
+    if load(year) is None:
+        return _source(year)
+    players = _all(year)
     featured = []
     for team_id, name in FEATURED.items():
         squad = sorted((p for p in players if p["team_id"] == team_id), key=lambda p: -p["minutes"])
@@ -150,6 +165,7 @@ def hub() -> dict:
                 {
                     "team_id": team_id,
                     "team": name,
+                    "logo": squad[0].get("logo"),
                     "league": squad[0]["league"],
                     "players": [_summary(p) for p in squad],
                 }
@@ -160,8 +176,10 @@ def hub() -> dict:
         regulars = [p for p in players if p["team_id"] == team_id and p["minutes"] >= REGULAR_MINUTES]
         if regulars:
             top = max(regulars, key=lambda p: (p["goals"] + p["assists"], p["minutes"]))
-            best.append({"league": league, "team_id": team_id, "team": team, "player": _summary(top)})
-    return _source() | {"regular_minutes": REGULAR_MINUTES, "featured": featured, "best": best}
+            best.append(
+                {"league": league, "team_id": team_id, "team": team, "logo": top.get("logo"), "player": _summary(top)}
+            )
+    return _source(year) | {"regular_minutes": REGULAR_MINUTES, "featured": featured, "best": best}
 
 
 def _percentile(value: float, peers: list[float], lower_is_better: bool) -> int:
@@ -170,10 +188,10 @@ def _percentile(value: float, peers: list[float], lower_is_better: bool) -> int:
     return round(100 * (below + same / 2) / len(peers))
 
 
-def profile(team_id: int, player_id: int) -> dict | None:
-    if load() is None:
+def profile(team_id: int, player_id: int, year: int = DEFAULT) -> dict | None:
+    if load(year) is None:
         return None
-    players = _all()
+    players = _all(year)
     p = next((x for x in players if x["team_id"] == team_id and x["id"] == player_id), None)
     if p is None:
         return None
@@ -195,16 +213,17 @@ def profile(team_id: int, player_id: int) -> dict | None:
     keys = ("apps", "starts", "minutes", "goals", "assists", "pen_scored", "pen_missed", "shots", "shots_on", "passes",
             "key_passes", "tackles", "interceptions", "blocks", "duels", "duels_won", "dribbles", "dribbles_won",
             "fouls_drawn", "fouls", "yellow", "red", "saves", "conceded")  # fmt: skip
-    return _source() | {
+    return _source(year) | {
         **_summary(p),
         "team_id": team_id,
         "team": _team_name(p),
+        "logo": p.get("logo"),
         "league": p["league"],
         "first": p.get("first"),
         "last": p.get("last"),
         "totals": {k: p.get(k, 0) for k in keys},
         "compared_with": f"{len(peers)} {(p['position'] or 'player').lower()}s with {REGULAR_MINUTES}+ league minutes "
-        f"across {', '.join(lg['name'] for lg in load()['leagues'])}{_so_far()}",
+        f"across {', '.join(lg['name'] for lg in load(year)['leagues'])}{_so_far(year)}",
         "no_percentiles": None if regular else f"Ranked only from {REGULAR_MINUTES} minutes; he played {p['minutes']}.",
         "measures": measures,
     }
