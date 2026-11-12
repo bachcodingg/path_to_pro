@@ -121,9 +121,23 @@ def main(out: Path) -> None:
             for t in rec[f"{base}/teams"]["teams"]:
                 for sub in ("", "/style", "/players", "/shots"):
                     rec[f"{base}/teams/{t['id']}{sub}"] = get(h, f"{base}/teams/{t['id']}{sub}")
+                for p in rec[f"{base}/teams/{t['id']}/players"]["players"]:
+                    path = f"{base}/teams/{t['id']}/players/{p['id']}"
+                    rec[path] = get(h, path)
             for m in rec[f"{base}/matches"]["matches"]:
                 rec[f"{base}/matches/{m['id']}"] = get(h, f"{base}/matches/{m['id']}")
             pro[comp["id"]] = rec
+        # The player hub (event data), and the 2024/25 season when it has been imported
+        pro["players"] = {"/api/pro/players": get(h, "/api/pro/players")}
+        season = {"/api/pro/season": get(h, "/api/pro/season")}
+        if season["/api/pro/season"].get("available"):
+            hub = season["/api/pro/season"]
+            for team_id, p in [(f["team_id"], p) for f in hub["featured"] for p in f["players"]] + [
+                (b["team_id"], b["player"]) for b in hub["best"]
+            ]:
+                path = f"/api/pro/season/teams/{team_id}/players/{p['id']}"
+                season[path] = get(h, path)
+        pro["season"] = season
 
         def team_views(h: dict) -> dict:
             out = {f"/api/coach/squad-week?offset={o}": get(h, f"/api/coach/squad-week?offset={o}") for o in (0, 1)}

@@ -324,7 +324,7 @@ def test_demo_data_and_sign_up_are_separate_in_production(monkeypatch):
 def test_pro_leagues_are_open_to_every_signed_in_user(demo):
     client, _ = demo
     comps = client.get("/api/pro/competitions", headers=login(client, "p03@demo.pathtopro")).json()
-    assert [c["id"] for c in comps] == ["la-liga", "premier-league", "ligue-1", "bundesliga", "champions-league"]
+    assert [c["id"] for c in comps] == ["la-liga", "premier-league", "ligue-1", "bundesliga", "ligue-1-psg", "champions-league"]
     assert {c["id"]: c["coverage"] for c in comps}["champions-league"] == "finals"
     for email in ("coach@demo.pathtopro", "mencoach@demo.pathtopro", "physio@demo.pathtopro", "guardian02@demo.pathtopro"):
         assert client.get("/api/pro/la-liga/teams", headers=login(client, email)).status_code == 200

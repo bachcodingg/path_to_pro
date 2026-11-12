@@ -20,3 +20,7 @@ frontend/public/demo/
 
 # Local secrets (never commit)
 password/
+
+# API-Football season numbers: check their terms before publishing (backend/scouting/apifootball.py)
+backend/scouting/data/season_2024_25.json
+.apifootball-cache/

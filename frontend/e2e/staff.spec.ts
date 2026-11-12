@@ -249,6 +249,38 @@ test("pro leagues: Premier League, Leverkusen's unbeaten season, a Champions Lea
   await expect(page.getByRole("heading", { name: /^Hi / })).toBeVisible();
 });
 
+test("pro league app: player analysis, full squads, a player's page, real crests where free", async ({ page }) => {
+  await login(page, "coach@demo.pathtopro");
+  await page.goto("leagues/players?view=events");
+  await expect(page.getByRole("heading", { name: "Players", exact: true })).toBeVisible();
+  const featured = page.getByRole("region", { name: "Featured squads" });
+  await expect(featured.getByText("Bayern Munich")).toBeVisible(); // not in the free event data: says so
+  await featured.getByRole("link", { name: /Cristiano Ronaldo/ }).first().click();
+  await expect(page.getByRole("heading", { name: "Player analysis: Cristiano Ronaldo" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Percentiles" })).toContainText("Non-penalty goals");
+  await expect(page.getByRole("heading", { name: "Cristiano Ronaldo's shots" })).toBeVisible();
+  await page.screenshot({ path: `${SHOTS}/pro-player.png`, fullPage: true });
+
+  // One club's matches only: numbers, no ranking
+  await page.goto("leagues/ligue-1-psg/teams/paris-saint-germain/players/kylian-mbappe");
+  await expect(page.getByRole("heading", { name: "Player analysis: Kylian Mbappé" })).toBeVisible();
+  await expect(page.getByText(/no fair group to rank him against/)).toBeVisible();
+
+  // The squad table's names open the players
+  await page.goto("leagues/premier-league/teams/leicester-city?tab=players");
+  await page.getByRole("cell", { name: "Riyad Mahrez" }).getByRole("link").click();
+  await expect(page.getByRole("heading", { name: "Player analysis: Riyad Mahrez" })).toBeVisible();
+
+  // Real crests only where they are free to reuse
+  await page.goto("leagues/la-liga");
+  await expect(page.locator('img[src$="crests/barcelona.svg"]').first()).toBeVisible();
+  await expect(page.locator('img[src$="crests/real-madrid.svg"]')).toHaveCount(0);
+
+  // The 2024/25 season needs an API key, imported on the server; until then it says so
+  await page.goto("leagues/players?view=season");
+  await expect(page.getByText(/not imported on this server yet/)).toBeVisible();
+});
+
 test("pro league app: its own sign-in, and a deep link survives it", async ({ page }) => {
   await page.goto("leagues/champions-league?tab=finals");
   await expect(page.getByRole("heading", { name: "Pro League Data Tracking" })).toBeVisible();

@@ -1,7 +1,7 @@
 // The Pro League app's shell: a top bar with the competitions as tabs (as on the league
 // websites), a link over to PathToPro, and sign-out. Light theme for everyone: it is for
 // reading, like a league site.
-import { ArrowUpRight, LogOut, Trophy } from "lucide-react";
+import { ArrowUpRight, LogOut, Trophy, Users } from "lucide-react";
 import { useEffect } from "react";
 import { Link, NavLink, Outlet, useMatch } from "react-router-dom";
 import { APPS } from "../shared/apps";
@@ -66,6 +66,14 @@ export function LeaguesLayout() {
             }
           >
             <Trophy className="h-4 w-4" aria-hidden /> All
+          </NavLink>
+          <NavLink
+            to="/players"
+            className={({ isActive }) =>
+              cn("tap flex shrink-0 items-center gap-1.5 border-b-[3px] px-3 py-2 text-sm font-bold", isActive ? "border-pitch-300" : "border-transparent text-white/95 hover:text-white")
+            }
+          >
+            <Users className="h-4 w-4" aria-hidden /> Players
           </NavLink>
           {comps.data?.map((c) => (
             <NavLink

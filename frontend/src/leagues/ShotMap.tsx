@@ -1,6 +1,6 @@
-// Shot map: every shot a team took (or conceded), filtered by body part and situation,
-// with tap-in / box / long-shot totals computed from what is shown.
-import { useState } from "react";
+// Shot map: every shot a team took (or conceded), or one player's shots, filtered by body part
+// and situation, with tap-in / box / long-shot totals computed from what is shown.
+import { useState, type ReactNode } from "react";
 import { useApi } from "../shared/useApi";
 import { Card, ErrorNote, Spinner, cn } from "../shared/ui";
 import { Legend } from "./SetPieces";
@@ -34,17 +34,32 @@ interface Shot {
   minute: number;
 }
 
+function rowsToShots(columns: string[], rows: (string | number | boolean)[][], player = ""): Shot[] {
+  return rows.map((r) => ({ player, ...Object.fromEntries(columns.map((c, i) => [c, r[i]])) }) as unknown as Shot);
+}
+
 export function ShotMap({ teamId }: { teamId: string }) {
   const { base } = usePro();
   const { data, error, loading, reload } = useApi<Shots>(`${base}/teams/${encodeURIComponent(teamId)}/shots`);
   const [side, setSide] = useState<Side>("for");
-  const [body, setBody] = useState<keyof typeof BODY>("all");
-  const [sit, setSit] = useState<keyof typeof SITUATION>("all");
   if (loading && !data) return <Spinner label="Loading shots" />;
   if (error || !data) return <ErrorNote message={error ?? "No data"} onRetry={reload} />;
+  return (
+    <ShotView
+      all={rowsToShots(data.columns, data[side])}
+      toggle={<Toggle value={side} options={{ for: `${data.team} shots`, against: "Shots conceded" }} onChange={setSide} label="Whose shots" />}
+    />
+  );
+}
 
-  const idx = Object.fromEntries(data.columns.map((c, i) => [c, i]));
-  const all: Shot[] = data[side].map((r) => Object.fromEntries(data.columns.map((c) => [c, r[idx[c]]])) as unknown as Shot);
+// One player's shots (rows in the API's column order), on the same pitch
+export function PlayerShotMap({ name, columns, rows }: { name: string; columns: string[]; rows: (string | number | boolean)[][] }) {
+  return <ShotView all={rowsToShots(columns, rows, name)} title={`${name}'s shots`} />;
+}
+
+function ShotView({ all, toggle, title = "Shot map" }: { all: Shot[]; toggle?: ReactNode; title?: string }) {
+  const [body, setBody] = useState<keyof typeof BODY>("all");
+  const [sit, setSit] = useState<keyof typeof SITUATION>("all");
   const shots = all.filter(
     (s) =>
       (body === "all" || (body === "head" ? s.body === "H" : s.body === "R" || s.body === "L")) &&
@@ -59,8 +74,8 @@ export function ShotMap({ teamId }: { teamId: string }) {
   return (
     <Card>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-bold">Shot map</h3>
-        <Toggle value={side} options={{ for: `${data.team} shots`, against: "Shots conceded" }} onChange={setSide} label="Whose shots" />
+        <h3 className="font-bold">{title}</h3>
+        {toggle}
       </div>
       <div className="mb-2 flex flex-wrap gap-2">
         <Toggle value={body} options={BODY} onChange={setBody} label="Body part" />

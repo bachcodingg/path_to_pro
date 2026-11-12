@@ -12,6 +12,10 @@ const ProHome = lazy(() => import("./ProHome").then((m) => ({ default: m.ProHome
 const CompetitionPage = lazy(() => import("./Competition").then((m) => ({ default: m.CompetitionPage })));
 const TeamAnalysis = lazy(() => import("./TeamAnalysis").then((m) => ({ default: m.TeamAnalysis })));
 const MatchCentre = lazy(() => import("./Matches").then((m) => ({ default: m.MatchCentre })));
+const PlayersHub = lazy(() => import("./PlayersHub").then((m) => ({ default: m.PlayersHub })));
+const PlayerProfile = lazy(() => import("./PlayerProfile").then((m) => ({ default: m.PlayerProfile })));
+const SeasonSquad = lazy(() => import("./Season").then((m) => ({ default: m.SeasonSquad })));
+const SeasonPlayerPage = lazy(() => import("./Season").then((m) => ({ default: m.SeasonPlayerPage })));
 
 export function LeaguesApp() {
   const { user, loading } = useAuth();
@@ -28,9 +32,13 @@ export function LeaguesApp() {
       <Routes>
         <Route element={<LeaguesLayout />}>
           <Route index element={<ProHome />} />
+          <Route path="players" element={<PlayersHub />} />
+          <Route path="season/teams/:teamId" element={<SeasonSquad />} />
+          <Route path="season/teams/:teamId/players/:playerId" element={<SeasonPlayerPage />} />
           <Route path=":comp" element={<CompetitionPage />} />
           <Route path=":comp/teams/:teamId" element={<TeamAnalysis />} />
           <Route path=":comp/matches/:matchId" element={<MatchCentre />} />
+          <Route path=":comp/teams/:teamId/players/:playerId" element={<PlayerProfile />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

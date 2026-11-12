@@ -9,7 +9,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from api.deps import CurrentUser, current_user
-from scouting import analysis, style
+from scouting import analysis, players, season, style
 from scouting.competitions import COMPETITIONS, Competition
 
 router = APIRouter(prefix="/api/pro", tags=["pro leagues"])
@@ -34,6 +34,26 @@ def competitions(user: CurrentUser = Depends(current_user)):
     for c in COMPETITIONS.values():
         t = analysis.teams(c.key)
         out.append(c.to_json() | {"matches": t["matches"], "teams": len(t["teams"])})
+    return out
+
+
+@router.get("/players")
+def player_hub(user: CurrentUser = Depends(current_user)):
+    """Featured squads in full and the best player of every other club, from the event data."""
+    return players.hub()
+
+
+@router.get("/season")
+def season_hub(user: CurrentUser = Depends(current_user)):
+    """The 2024/25 squads from API-Football's season totals, or available: false before the import."""
+    return season.hub()
+
+
+@router.get("/season/teams/{team_id}/players/{player_id}")
+def season_player(team_id: int, player_id: int, user: CurrentUser = Depends(current_user)):
+    out = season.profile(team_id, player_id)
+    if out is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Player not in the 2024/25 data")
     return out
 
 
@@ -65,6 +85,15 @@ def team_style(comp: str, team_id: str, user: CurrentUser = Depends(current_user
 @router.get("/{comp}/teams/{team_id}/players")
 def team_players(comp: str, team_id: str, user: CurrentUser = Depends(current_user)):
     return _found(style.player_rows(team_id, _comp(comp).key))
+
+
+@router.get("/{comp}/teams/{team_id}/players/{player_id}")
+def player_profile(comp: str, team_id: str, player_id: str, user: CurrentUser = Depends(current_user)):
+    """One player's season: totals, per-90 rates with percentiles, and every shot."""
+    out = players.profile(_comp(comp).key, team_id, player_id)
+    if out is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Player not in the dataset")
+    return out
 
 
 @router.get("/{comp}/teams/{team_id}/shots")

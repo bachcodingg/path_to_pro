@@ -385,7 +385,7 @@ function Scoreboard() {
     ["30 s", "Morning check-in", "Four quick questions, on the phone"],
     ["9", "Hard safety rules", "Checked on every plan, every night"],
     ["38", "Ball-skill drills", "A session for each position"],
-    ["1,185", "Pro matches", "Five competitions to study"],
+    ["1,243", "Pro matches", "Six competitions to study"],
   ];
   return (
     <section className="mx-auto max-w-7xl px-4 pb-6 md:px-6">
@@ -943,6 +943,7 @@ const COMPS = [
   ["premier-league", "Premier League", "2015/16", "Leicester City's title season"],
   ["ligue-1", "Ligue 1", "2015/16", "377 of 380 matches"],
   ["bundesliga", "Bundesliga", "2023/24", "Leverkusen, unbeaten champions"],
+  ["ligue-1-psg", "PSG in Ligue 1", "2021/22 and 2022/23", "Mbappé, Messi and Neymar"],
   ["champions-league", "Champions League", "Finals 2004-2019", "14 finals"],
 ] as const;
 
@@ -988,8 +989,11 @@ function ProLeagues() {
       </ul>
       <div className="mt-14 flex flex-wrap items-end justify-between gap-4">
         <Reveal>
-          <h3 className="font-display text-3xl leading-none font-extrabold uppercase md:text-4xl">Inside Pro League: 1,185 matches</h3>
-          <p className="mt-2 text-white/65">How a team passes, shoots, defends and takes set pieces, player by player. Tables with form and a match centre for every result.</p>
+          <h3 className="font-display text-3xl leading-none font-extrabold uppercase md:text-4xl">Inside Pro League: 1,243 matches and every player in them</h3>
+          <p className="mt-2 text-white/65">
+            How a team passes, shoots, defends and takes set pieces, and a page for every player: full squads of the biggest clubs, percentiles and shot maps.
+            Tables with form, and a match centre for every result.
+          </p>
         </Reveal>
         <Reveal>
           <a href={leagues.url} className="inline-flex items-center gap-1.5 font-semibold text-sky-300 hover:underline">
@@ -997,8 +1001,10 @@ function ProLeagues() {
           </a>
         </Reveal>
       </div>
-      <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        {COMPS.map(([id, name, season, note], i) => (
+      <ul className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {COMPS.map(([id, name, season, note], i) => {
+          const face = COMP_FACES[id] as (typeof COMP_FACES)[string] | undefined;
+          return (
           <Reveal key={id} delay={i * 0.06}>
             <li className="group relative h-full overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] p-5 transition-colors hover:border-white/25">
               <span
@@ -1015,10 +1021,11 @@ function ProLeagues() {
               <p className="font-display mt-6 text-2xl leading-tight font-bold uppercase">{name}</p>
               <p className="text-sm font-semibold text-white/70">{season}</p>
               <p className="mt-2 text-sm text-white/50">{note}</p>
+              {face && (
               <figure className="mt-5 flex items-center gap-3 border-t border-white/10 pt-4">
                 <img
-                  src={photoUrl(COMP_FACES[id].file)}
-                  alt={COMP_FACES[id].alt}
+                  src={photoUrl(face.file)}
+                  alt={face.alt}
                   width={240}
                   height={240}
                   loading="lazy"
@@ -1027,13 +1034,15 @@ function ProLeagues() {
                   style={{ boxShadow: `0 0 0 2px ${COMP_COLOR[id]}` }}
                 />
                 <figcaption className="min-w-0 text-sm leading-tight font-semibold">
-                  {COMP_FACES[id].name}
-                  <span className="block font-normal text-white/50">{COMP_FACES[id].team}</span>
+                  {face.name}
+                  <span className="block font-normal text-white/50">{face.team}</span>
                 </figcaption>
               </figure>
+              )}
             </li>
           </Reveal>
-        ))}
+          );
+        })}
       </ul>
       <p className="mt-4 text-xs text-white/40">Match events from StatsBomb Open Data.</p>
     </section>
