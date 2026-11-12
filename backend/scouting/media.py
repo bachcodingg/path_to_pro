@@ -87,7 +87,7 @@ LANGS = ("en", "es", "fr", "de", "it", "pt", "nl")
 
 def _get(url: str, params: dict, tries: int = 8) -> dict:
     full = f"{url}?{urllib.parse.urlencode(params)}"
-    cached = CACHE / f"{hashlib.sha1(full.encode()).hexdigest()}.json"
+    cached = CACHE / f"{hashlib.sha256(full.encode()).hexdigest()}.json"
     if cached.exists():
         return json.loads(cached.read_text(encoding="utf-8"))
     body = urllib.parse.urlencode(params).encode()
