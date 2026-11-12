@@ -146,8 +146,12 @@ sources.
   API-Football's free plan allows 100 requests a day and seasons from two to four years
   back, so 2024/25 is the newest it gives (the current season needs a paid plan). It also
   reads only the first 3 pages of any list, so a whole league (50+ pages) is out of reach.
-  The script therefore reads each club's own players (2-3 pages), the featured clubs first:
-  about 225 requests for the five leagues, so three days. A few big clubs list more than 60
+  The script therefore reads each club's own players (2-3 pages) and its transfers (1), the
+  featured clubs first: about 320 requests for the five leagues, so four days. The transfers
+  are needed because the API files a player's whole season under the club he is at now as
+  well as the one he played for (Joan García's Espanyol season also shows as Barcelona's):
+  a player counts for a club only if its transfer list puts him there for a month or more
+  of the season. A few big clubs list more than 60
   players (youth and departed players included), so their fourth page is out of reach; the
   data file names them (`lists_cut_after_3_pages`). For Real Madrid every player with league
   minutes was in the first three. It caches every page and carries

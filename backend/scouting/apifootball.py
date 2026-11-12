@@ -5,9 +5,16 @@ goals, assists, shots, passes, duels, dribbles, tackles, cards. Its free plan al
 requests a day, only the seasons from two to four years back (in 2026: up to 2024 = 2024/25,
 Mbappé's first season at Real Madrid), and only the first 3 pages of any list, so a whole
 league (50+ pages) cannot be read in one go. This script reads each club's own players
-instead: the clubs of each league (1 request per league), then every club's players (2-3
-pages of 20), the featured clubs first. That is about 225 requests for the five leagues, so
-three days on the free plan. It caches every page it gets and stops cleanly at the daily
+instead: the clubs of each league (1 request per league), then for every club its players
+(2-3 pages of 20) and its transfers (1 request), the featured clubs first. That is about 320
+requests for the five leagues, so four days on the free plan.
+
+Why the transfers: API-Football files a player's whole 2024/25 season under the club he is at
+now, as well as under the club he played for. Joan García's Espanyol season also appears as
+Barcelona's, where he only arrived in July 2025, and a player back from a loan appears at his
+parent club too. A club's transfer list says when each player came and went, so a player
+counts for a club only if he was there for at least a month of the season
+(`SEASON_START`..`SEASON_END`). It caches every page it gets and stops cleanly at the daily
 limit: run it again the next day and it carries on from the cache. The data file says how
 many clubs are in so far, and the app shows that.
 
@@ -49,6 +56,8 @@ FEATURED: dict[int, str] = {
     157: "Bayern Munich",
 }
 MAX_PAGES = 3  # the free plan refuses page 4 and beyond
+SEASON_START, SEASON_END = date(2024, 8, 15), date(2025, 5, 25)
+MIN_DAYS = 30  # at a club for less than this of the season: not his club that season
 OUT = Path(__file__).resolve().parent / "data" / "season_2024_25.json"
 GAP_S = 6.5  # the free plan allows 10 requests a minute
 
@@ -67,8 +76,13 @@ def _fetch(path: str, params: dict, key: str, cache: Path) -> dict:
         req = urllib.request.Request(
             f"{BASE}{path}?{urllib.parse.urlencode(params)}", headers={"x-apisports-key": key}
         )
-        with urllib.request.urlopen(req, timeout=60) as r:
-            body = json.loads(r.read().decode("utf-8"))
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r:
+                body = json.loads(r.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            if e.code == 429:  # the daily quota, sometimes sent as HTTP 429 instead of an "errors" object
+                raise DailyLimit(f"HTTP 429 {e.reason}") from e
+            raise
         errors = body.get("errors")
         # API-Football reports plan and quota problems with HTTP 200 and an "errors" object:
         # "requests" = the daily quota, "rateLimit" = too many this minute, anything else = refused
@@ -113,6 +127,42 @@ def _squad_pages(cache: Path, team: int, key: str | None = None) -> list[dict] |
     return pages
 
 
+def _transfers(cache: Path, team: int, key: str | None = None) -> list[dict] | None:
+    """The club's transfer list (every player who came or went, with dates), or None if not cached."""
+    params = {"team": team}
+    if key is None and not _cached(cache, "/transfers", params).exists():
+        return None
+    return _fetch("/transfers", params, key or "", cache).get("response", [])
+
+
+def _day(text) -> date | None:
+    try:
+        return date.fromisoformat(str(text)[:10])
+    except ValueError:
+        return None
+
+
+def _at_club(moves: list[dict], team: int) -> bool:
+    """From one player's transfers involving this club: was he there for MIN_DAYS of the season?
+    No transfer involving the club (an academy player, or no record) counts as there."""
+    events = sorted(
+        (d, (m.get("teams") or {}).get("in", {}).get("id") == team)
+        for m in moves
+        if (d := _day(m.get("date"))) is not None
+        and team in ((m.get("teams") or {}).get("in", {}).get("id"), (m.get("teams") or {}).get("out", {}).get("id"))
+    )
+    if not events:
+        return True
+    days, since = 0, None if events[0][1] else date.min  # first move out of the club: he was there before
+    for d, arrives in events + [(date.max, False)]:
+        if arrives and since is None:
+            since = d
+        elif not arrives and since is not None:
+            days += max(0, (min(d, SEASON_END) - max(since, SEASON_START)).days)
+            since = None
+    return days >= MIN_DAYS
+
+
 def fetch(key: str, cache: Path, log=print) -> bool:
     """Every club of every league, the featured clubs first; True when nothing is missing."""
     try:
@@ -121,7 +171,8 @@ def fetch(key: str, cache: Path, log=print) -> bool:
         order = [t for t in FEATURED if t in names] + [c for c in names if c not in FEATURED]
         for i, team in enumerate(order, 1):
             pages = _squad_pages(cache, team, key) or []
-            log(f"  {i}/{len(order)} {names[team]}: {len(pages)} page(s)")
+            moves = _transfers(cache, team, key) or []
+            log(f"  {i}/{len(order)} {names[team]}: {len(pages)} page(s), {len(moves)} players in its transfers")
     except DailyLimit as e:
         log(f"Stopped at API-Football's daily limit ({e}). Run again tomorrow; the cache keeps what came in.")
         return False
@@ -188,8 +239,8 @@ def _row(p: dict, st: dict) -> dict | None:
 
 
 def write(cache: Path, out: Path = OUT) -> dict:
-    """The data file from the cache: every club whose players are all in, league by league."""
-    leagues, total, cut = [], 0, []
+    """The data file from the cache: every club whose players and transfers are in, league by league."""
+    leagues, total, cut, dropped = [], 0, [], 0
     for league, name in LEAGUES.items():
         clubs = _clubs(cache, league) or []
         total += len(clubs)
@@ -197,8 +248,10 @@ def write(cache: Path, out: Path = OUT) -> dict:
         done = 0
         for team, club in clubs:
             pages = _squad_pages(cache, team)
-            if pages is None:  # not fetched yet, or only some of its pages: leave the club out
+            transfers = _transfers(cache, team)
+            if pages is None or transfers is None:  # not all in yet: leave the club out
                 continue
+            moves = {t["player"]["id"]: t.get("transfers", []) for t in transfers if t.get("player")}
             done += 1
             if pages[-1].get("paging", {}).get("total", 1) > MAX_PAGES:
                 # Past page 3 the free plan stops; for Real Madrid that was youth players with no minutes
@@ -206,8 +259,12 @@ def write(cache: Path, out: Path = OUT) -> dict:
             for body in pages:
                 for item in body.get("response", []):
                     for r in _rows(item, league):
-                        if r["team_id"] == team:  # a January move: each club keeps its own part
-                            rows[(r["team_id"], r["id"])] = r
+                        if r["team_id"] != team:  # a January move: each club keeps its own part
+                            continue
+                        if not _at_club(moves.get(r["id"], []), team):  # filed under his later club
+                            dropped += 1
+                            continue
+                        rows[(r["team_id"], r["id"])] = r
         if rows:
             leagues.append({
                 "id": league, "name": name, "clubs": done, "clubs_total": len(clubs),
@@ -221,6 +278,7 @@ def write(cache: Path, out: Path = OUT) -> dict:
         "clubs": sum(lg["clubs"] for lg in leagues),
         "clubs_total": total,
         "lists_cut_after_3_pages": cut,
+        "left_out_not_at_the_club_that_season": dropped,
         "leagues": leagues,
     }
     out.write_text(json.dumps(data, ensure_ascii=False, indent=0), encoding="utf-8")

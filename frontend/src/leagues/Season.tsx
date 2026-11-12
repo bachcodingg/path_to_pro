@@ -20,7 +20,7 @@ export interface SeasonHub {
   source: string;
   source_url: string;
   fetched?: string;
-  /** Clubs imported so far: the free API plan brings in about 40 a day */
+  /** Clubs imported so far: the free API plan brings in about 30 a day */
   clubs?: number | null;
   clubs_total?: number | null;
   regular_minutes?: number;

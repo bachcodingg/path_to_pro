@@ -123,7 +123,7 @@ function SeasonView({ hub }: { hub: { data: SeasonHub | null; error: string | nu
     <>
       {soFar(data) && (
         <p className="text-ink-2 text-sm">
-          {soFar(data)}: the free API plan allows about 40 clubs a day, so the rest of the clubs and their best players
+          {soFar(data)}: the free API plan allows about 30 clubs a day, so the rest of the clubs and their best players
           follow. Percentiles compare with the players imported so far.
         </p>
       )}

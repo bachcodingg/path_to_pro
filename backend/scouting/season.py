@@ -27,7 +27,9 @@ REGULAR_MINUTES = 900
 
 @lru_cache(maxsize=1)
 def load() -> dict | None:
-    return json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else None
+    """The data file, or None when there is none or no club is fully in yet."""
+    d = json.loads(OUT.read_text(encoding="utf-8")) if OUT.exists() else None
+    return d if d and d.get("leagues") else None
 
 
 def _all() -> list[dict]:
@@ -123,7 +125,7 @@ def _source() -> dict:
         "source": d["source"],
         "source_url": d["source_url"],
         "fetched": d["fetched"],
-        # Clubs in so far: the free plan imports about 40 a day (scouting.apifootball)
+        # Clubs in so far: the free plan imports about 30 a day (scouting.apifootball)
         "clubs": d.get("clubs"),
         "clubs_total": d.get("clubs_total"),
     }

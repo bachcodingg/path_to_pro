@@ -72,6 +72,9 @@ def season_file(tmp_path, monkeypatch):
     for i in range(12):
         squads[600 + i] = [_item(1000 + i, f"Forward {i}", 600 + i, f"Club {i}", "Attacker", 1500 + 50 * i, i, 1)]
     squads[600].append(_item(2000, "Bench", 600, "Club 0", "Attacker", 200, 0, 0))
+    # API-Football files his Club 2 season under Club 3 too, where he only arrived in July 2025
+    squads[602].append(_item(4000, "Moved Later", 602, "Club 2", "Midfielder", 2000, 0, 2))
+    squads[603].append(_item(4000, "Moved Later", 603, "Club 3", "Midfielder", 2000, 0, 2))
     names = {541: "Real Madrid"} | {600 + i: f"Club {i}" for i in range(12)} | {700: "Not fetched yet"}
 
     def put(name, body):
@@ -87,6 +90,11 @@ def season_file(tmp_path, monkeypatch):
                 {"paging": {"current": n, "total": len(pages)}, "response": chunk})
     # Club 11's second page is missing: the club is left out, not shown with half a squad
     put("players_page1_season2024_team611.json", {"paging": {"current": 1, "total": 2}, "response": squads[611]})
+    move = {"date": "2025-07-01", "type": "Free", "teams": {"in": {"id": 603}, "out": {"id": 602}}}
+    for team in squads:
+        if team != 610:  # Club 10's transfers are not in yet: left out until they are
+            moves = [{"player": {"id": 4000}, "transfers": [move]}] if team in (602, 603) else []
+            put(f"transfers_team{team}.json", {"response": moves})
     out = tmp_path / "season.json"
     monkeypatch.setattr(apifootball, "OUT", out)
     monkeypatch.setattr(season, "OUT", out)
@@ -102,9 +110,12 @@ def test_season_import_keeps_numbers_not_photos(season_file):
     data = json.loads(text)
     mbappe = next(p for p in data["leagues"][0]["players"] if p["id"] == 278)
     assert (mbappe["goals"], mbappe["pen_scored"], mbappe["minutes"], mbappe["rating"]) == (31, 7, 2900, 7.4)
-    # 12 of 14 clubs in: Club 11 has a page missing and "Not fetched yet" has none
-    assert (data["clubs"], data["clubs_total"]) == (12, 14)
-    assert {p["team"] for p in data["leagues"][0]["players"]} == {"Real Madrid"} | {f"Club {i}" for i in range(11)}
+    # 11 of 14 clubs in: Club 10 lacks its transfers, Club 11 a page, "Not fetched yet" everything
+    assert (data["clubs"], data["clubs_total"]) == (11, 14)
+    assert {p["team"] for p in data["leagues"][0]["players"]} == {"Real Madrid"} | {f"Club {i}" for i in range(10)}
+    # His season counts for Club 2, where he played it, not for Club 3, where he went next
+    assert [p["team"] for p in data["leagues"][0]["players"] if p["id"] == 4000] == ["Club 2"]
+    assert data["left_out_not_at_the_club_that_season"] == 1
     assert any(p["name"] == "Reserve" for p in data["leagues"][0]["players"])  # Club 1's second page
 
 
@@ -113,15 +124,33 @@ def test_season_hub_and_profile(season_file):
     assert hub["available"] and hub["season"] == "2024/25"
     real = next(f for f in hub["featured"] if f["team"] == "Real Madrid")
     assert real["players"][0]["name"] == "K. Mbappé"
-    assert {b["team"] for b in hub["best"]} == {f"Club {i}" for i in range(11)}  # one per other club in so far
-    assert (hub["clubs"], hub["clubs_total"]) == (12, 14)
+    assert {b["team"] for b in hub["best"]} == {f"Club {i}" for i in range(10)}  # one per other club in so far
+    assert (hub["clubs"], hub["clubs_total"]) == (11, 14)
     club0 = next(b for b in hub["best"] if b["team"] == "Club 0")
     assert club0["player"]["name"] == "Forward 0"  # the bench player is below the minutes line
     p = season.profile(541, 278)
     goals = next(m for m in p["measures"] if m["key"] == "np_goals90")
-    assert goals["value"] == round(90 * 24 / 2900, 2) and goals["percentile"] >= 95  # top of 12, himself included
-    assert p["compared_with"].endswith("(12 of 14 clubs imported so far)")
+    assert goals["value"] == round(90 * 24 / 2900, 2) and goals["percentile"] >= 95  # top of 11, himself included
+    assert p["compared_with"].endswith("(11 of 14 clubs imported so far)")
     assert season.profile(541, 999) is None
+
+
+def _move(day, to, frm):
+    return {"date": day, "teams": {"in": {"id": to}, "out": {"id": frm}}}
+
+
+def test_a_player_counts_for_a_club_only_if_he_was_there_that_season():
+    at = apifootball._at_club
+    assert at([], 1)  # no transfer with the club: an academy player
+    assert at([_move("2024-07-01", 1, 2)], 1)  # signed before the season (Mbappé)
+    assert not at([_move("2025-07-01", 1, 2)], 1)  # signed after it (Joan García at Barcelona)
+    assert at([_move("2025-07-01", 1, 2)], 2)  # ... and still counts for the club he left
+    loan = [_move("2024-07-10", 3, 1), _move("2025-06-30", 1, 3)]
+    assert not at(loan, 1) and at(loan, 3)  # a season on loan counts for the loan club only
+    january = [_move("2025-01-20", 2, 1)]
+    assert at(january, 1) and at(january, 2)  # a January move: both clubs
+    assert not at([_move("2024-08-25", 2, 1)], 1)  # left in the first ten days: not his club
+    assert at([_move("bad date", 1, 2)], 1)  # an unreadable date is ignored
 
 
 def test_season_without_the_file(tmp_path, monkeypatch):
